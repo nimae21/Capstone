@@ -496,7 +496,7 @@
 <section class="hero container">
     <div class="hero-content">
         <span class="hero-badge"><i class="fas fa-bolt"></i> FUTURE DROP 2025</span>
-        <h1>RUN IN <span style="color:#e53e3e;">RED</span><br>LIMITLESS EDITION</h1>
+        <h1>RUNNNNNN! <span style="color:#e53e3e;">RED</span><br>LIMITLESS EDITION</h1>
         <p>Experience the next generation of footwear. Carbon-infused soles, adaptive fit, and a design that turns heads. Join the movement.</p>
         <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
             <a href="#" class="btn-red-small" style="padding: 0.9rem 2rem; font-size: 1rem;">SHOP NOW</a>
