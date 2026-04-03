@@ -598,7 +598,7 @@
         <div class="footer-col">
             <div class="logo" style="margin-bottom: 1rem;">
                 <i class="fas fa-shoe-prints"></i>
-                <span>STRIDE</span>
+                <span>Achilles</span>
             </div>
             <p>White · Black · Red<br>Capstone Project 2025</p>
             <div class="social-icons">
