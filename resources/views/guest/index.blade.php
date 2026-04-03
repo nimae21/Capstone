@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STRIDE · Future of Footwear | Landing Page</title>
+    <title>Achilles · Wear Your Weakness | Landing Page</title>
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Fonts: Space Grotesk (futuristic) -->
@@ -474,7 +474,7 @@
 <nav class="navbar">
     <a href="#" class="logo">
         <i class="fas fa-shoe-prints"></i>
-        <span>STRIDE//</span>
+        <span>Achilles//</span>
     </a>
     
     <div class="nav-icons">
@@ -509,7 +509,7 @@
         </div>
     </div>
     <div class="hero-image">
-        <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600" alt="Red STRIDE shoe">
+        <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600" alt="Red Achilles shoe">
     </div>
 </section>
 
@@ -588,8 +588,8 @@
 <!-- Call to Action Banner -->
 <div class="cta-banner container">
     <h2>#CAPSTONE FUTURE</h2>
-    <p>Join the STRIDE community and get 15% off your first order. Early access to limited drops.</p>
-    <button class="btn-large" onclick="alert('Welcome! Use code STRIDE15 at checkout.')">SIGN UP & SAVE →</button>
+    <p>Join the Achilles community and get 15% off your first order. Early access to limited drops.</p>
+    <button class="btn-large" onclick="alert('Welcome! Use code ACHILLES15 at checkout.')">SIGN UP & SAVE →</button>
 </div>
 
 <!-- Footer -->
@@ -626,7 +626,7 @@
         </div>
     </div>
     <div class="copyright container">
-        <i class="far fa-copyright"></i> 2025 STRIDE · Built with <i class="fas fa-heart" style="color:#e53e3e;"></i> for capstone project
+        <i class="far fa-copyright"></i> 2025 Achilles · Built with <i class="fas fa-heart" style="color:#e53e3e;"></i> for capstone project
     </div>
 </footer>
 
