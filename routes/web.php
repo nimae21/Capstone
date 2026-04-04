@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\guest\GuestController;
+use App\Http\Controllers\Admin\ProductVariantController;
 //public routes
 Route::get('/', [GuestController::class, 'index'])->name('index');
 
@@ -47,4 +48,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
         Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
         Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
+
+    // Product Variant Routes
+    Route::prefix('products/{product}')->group(function () {
+    Route::get('/variants', [ProductVariantController::class, 'index'])->name('variants.index');
+    Route::post('/variants', [ProductVariantController::class, 'store'])->name('variants.store');
+    Route::delete('/variants/{variant}', [ProductVariantController::class, 'destroy'])->name('variants.destroy');
+});
 });
