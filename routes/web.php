@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\guest\GuestController;
+use App\Http\Controllers\Admin\StockController;
 
 //public routes
 Route::get('/', [GuestController::class, 'index'])->name('index');
@@ -50,7 +51,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
         Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
 
-    // Product Variant Routes
+ // Product Variant Routes
 
 // List variants of a product
 Route::get('/products/{product}/variants', [ProductVariantController::class, 'index'])
@@ -71,4 +72,23 @@ Route::put('/variants/{variant}', [ProductVariantController::class, 'update'])
 // Delete variant
 Route::delete('/variants/{variant}', [ProductVariantController::class, 'destroy'])
     ->name('variants.destroy');
+
+//Stock Routes
+
+//Stock Routes
+Route::get('/variants/{product_variant_id}/stocks', [StockController::class, 'index'])
+    ->name('stocks.index');
+
+Route::post('/variants/{product_variant_id}/stocks', [StockController::class, 'store'])
+    ->name('stocks.store');
+
+Route::get('/stocks/{stock}/edit', [StockController::class, 'edit'])
+    ->name('stocks.edit');
+
+Route::put('/stocks/{stock}', [StockController::class, 'update'])
+    ->name('stocks.update');
+
+Route::delete('/stocks/{stock}', [StockController::class, 'destroy'])
+    ->name('stocks.destroy');
 });
+

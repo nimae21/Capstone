@@ -20,5 +20,9 @@ class ProductVariant extends Model
     {
         return $this->belongsTo(Product::class, 'product_id', 'product_id');
     }
+    public function stocks()
+    {
+        return $this->hasMany(Stock::class, 'product_variant_id', 'product_variant_id');
+    }
 
 }
