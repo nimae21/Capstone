@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('product_variants', function (Blueprint $table) {
             $table->id('product_variant_id');
-
             $table->unsignedBigInteger('product_id');
             $table->string('size');
             $table->string('color');

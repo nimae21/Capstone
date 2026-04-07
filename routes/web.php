@@ -5,8 +5,9 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\ProductController;
-use App\Http\Controllers\guest\GuestController;
 use App\Http\Controllers\Admin\ProductVariantController;
+use App\Http\Controllers\guest\GuestController;
+
 //public routes
 Route::get('/', [GuestController::class, 'index'])->name('index');
 
@@ -50,9 +51,24 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
 
     // Product Variant Routes
-    Route::prefix('products/{product}')->group(function () {
-    Route::get('/variants', [ProductVariantController::class, 'index'])->name('variants.index');
-    Route::post('/variants', [ProductVariantController::class, 'store'])->name('variants.store');
-    Route::delete('/variants/{variant}', [ProductVariantController::class, 'destroy'])->name('variants.destroy');
-});
+
+// List variants of a product
+Route::get('/products/{product}/variants', [ProductVariantController::class, 'index'])
+    ->name('products.variants.index');
+
+// Store a new variant
+Route::post('/products/{product}/variants', [ProductVariantController::class, 'store'])
+    ->name('products.variants.store');
+
+// Edit variant
+Route::get('/variants/{variant}/edit', [ProductVariantController::class, 'edit'])
+    ->name('variants.edit');
+
+// Update variant
+Route::put('/variants/{variant}', [ProductVariantController::class, 'update'])
+    ->name('variants.update');
+
+// Delete variant
+Route::delete('/variants/{variant}', [ProductVariantController::class, 'destroy'])
+    ->name('variants.destroy');
 });
