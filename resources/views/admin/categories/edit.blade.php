@@ -1,8 +1,8 @@
 @extends('layouts.admin')
 
-@section('title', 'Edit Product')
-@section('page-title', 'Edit Product')
-@section('page-subtitle', 'Update product details here.')
+@section('title', 'Edit Category')
+@section('page-title', 'Edit Category')
+@section('page-subtitle', 'Update category details here.')
 
 @section('styles')
     <!-- Tailwind CSS + Google Fonts -->
@@ -53,12 +53,12 @@
             border-color: #d1d5db;
         }
 
-        /* 3D Input/Select/Textarea focus */
-        .input-3d, select.input-3d, textarea.input-3d {
+        /* 3D Input/Textarea focus */
+        .input-3d, textarea.input-3d {
             transition: all 0.2s ease;
             box-shadow: inset 0 1px 2px rgba(0,0,0,0.02), 0 1px 1px rgba(0,0,0,0.01);
         }
-        .input-3d:focus, select.input-3d:focus, textarea.input-3d:focus {
+        .input-3d:focus, textarea.input-3d:focus {
             transform: translateZ(2px);
             box-shadow: 0 0 0 3px rgba(0,0,0,0.05), inset 0 1px 2px rgba(0,0,0,0.02);
             border-color: #9ca3af;
@@ -77,70 +77,46 @@
 
 @section('content')
     <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Back to Products Link -->
+        <!-- Back to Categories Link -->
         <div class="mb-6">
-            <a href="{{ route('admin.products.index') }}" class="back-link inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition">
+            <a href="{{ route('admin.categories.index') }}" class="back-link inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                Back to Products
+                Back to Categories
             </a>
         </div>
 
-        <!-- Edit Product Form Card -->
+        <!-- Edit Category Form Card -->
         <div class="card-3d bg-white rounded-xl p-6 md:p-8">
             <div class="flex items-center gap-3 mb-6">
                 <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l5 5a2 2 0 01.586 1.414V19a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
                 </div>
-                <h3 class="text-2xl font-bold text-gray-800 tracking-tight">Edit Product</h3>
+                <h3 class="text-2xl font-bold text-gray-800 tracking-tight">Edit Category</h3>
             </div>
 
-            <form action="{{ route('admin.products.update', $product->product_id) }}" method="POST" class="space-y-6">
+            <form action="{{ route('admin.categories.update', $categories->category_id) }}" method="POST" class="space-y-6">
                 @csrf
                 @method('PUT')
 
-                <!-- Product Name -->
+                <!-- Category Name -->
                 <div>
-                    <label for="product_name" class="block text-sm font-medium text-gray-700 mb-1">Product Name <span class="text-gray-500">*</span></label>
-                    <input type="text" name="product_name" id="product_name" value="{{ old('product_name', $product->product_name) }}" required
+                    <label for="category_name" class="block text-sm font-medium text-gray-700 mb-1">Category Name <span class="text-gray-500">*</span></label>
+                    <input type="text" name="category_name" id="category_name" value="{{ old('category_name', $categories->category_name) }}" required
                            class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:border-gray-400 input-3d transition bg-white text-gray-800">
                 </div>
 
                 <!-- Description -->
                 <div>
-                    <label for="product_description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <textarea name="product_description" id="product_description" rows="4"
-                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:border-gray-400 input-3d transition bg-white text-gray-800">{{ old('product_description', $product->product_description) }}</textarea>
-                </div>
-
-                <!-- Category -->
-                <div>
-                    <label for="category_id" class="block text-sm font-medium text-gray-700 mb-1">Category <span class="text-gray-500">*</span></label>
-                    <select name="category_id" id="category_id" required class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:border-gray-400 input-3d transition bg-white text-gray-800">
-                        @foreach($categories as $category)
-                            <option value="{{ $category->category_id }}" {{ (old('category_id', $product->category_id) == $category->category_id) ? 'selected' : '' }}>
-                                {{ $category->category_name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- Brand -->
-                <div>
-                    <label for="brand_id" class="block text-sm font-medium text-gray-700 mb-1">Brand <span class="text-gray-500">*</span></label>
-                    <select name="brand_id" id="brand_id" required class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:border-gray-400 input-3d transition bg-white text-gray-800">
-                        @foreach($brands as $brand)
-                            <option value="{{ $brand->brand_id }}" {{ (old('brand_id', $product->brand_id) == $brand->brand_id) ? 'selected' : '' }}>
-                                {{ $brand->brand_name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <label for="category_description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea name="category_description" id="category_description" rows="4"
+                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:border-gray-400 input-3d transition bg-white text-gray-800">{{ old('category_description', $categories->category_description) }}</textarea>
                 </div>
 
                 <!-- Submit Button -->
                 <div class="pt-2">
                     <button type="submit" class="btn-3d-white w-full">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        Update Product
+                        Update Category
                     </button>
                 </div>
             </form>
