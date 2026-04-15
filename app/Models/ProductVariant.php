@@ -24,5 +24,9 @@ class ProductVariant extends Model
     {
         return $this->hasMany(Stock::class, 'product_variant_id', 'product_variant_id');
     }
+    public function orderItems()
+{
+    return $this->hasMany(OrderItem::class, 'product_variant_id', 'product_variant_id');
+}
 
 }

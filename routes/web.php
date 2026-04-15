@@ -92,3 +92,7 @@ Route::delete('/stocks/{stock}', [StockController::class, 'destroy'])
     ->name('stocks.destroy');
 });
 
+
+//ORDER ROUTES
+Route::post('/checkout', [OrderController::class, 'store'])->name('checkout.store');
+

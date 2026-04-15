@@ -370,6 +370,11 @@
                                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                                                 Manage Stocks
                                                             </a>
+
+                                                            <a href="{{ route('admin.products.variants.index', $product->product_id) }}" class="btn-sm-3d-white">
+                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L9 14"/></svg>
+                                                                Manage Variants
+                                                            </a>
                                                         </div>
                                                     </td>
                                                 </tr>
