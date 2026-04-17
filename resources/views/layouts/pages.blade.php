@@ -566,9 +566,11 @@
     @endauth
     <i class="fas fa-search"></i>
     <i class="far fa-heart"></i>
-    <div class="cart-icon" onclick="toggleCart()">
-        <i class="fas fa-shopping-bag"></i>
-        <span id="cartCount" class="cart-count">0</span>
+    <div class="cart-icon">
+       <a href="{{ route('cart.index') }}" class="cart-icon">
+    <i class="fas fa-shopping-bag"></i>
+    <span id="cartCount" class="cart-count">0</span>
+</a>
     </div>
 </div>
     </nav>

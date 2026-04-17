@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\guest\GuestController;
 use App\Http\Controllers\Admin\StockController;
+use App\Http\Controllers\CartController;
 
 //public routes
 Route::get('/', [GuestController::class, 'index'])->name('index');
@@ -92,7 +93,17 @@ Route::delete('/stocks/{stock}', [StockController::class, 'destroy'])
     ->name('stocks.destroy');
 });
 
+//cart routes
+Route::middleware(['auth'])->group(function () {
 
-//ORDER ROUTES
-Route::post('/checkout', [OrderController::class, 'store'])->name('checkout.store');
+    Route::post('/cart/add', [CartController::class, 'store'])->name('cart.add');
+
+    Route::patch('/cart/item/{id}/increase', [CartController::class, 'increase'])->name('cart.increase');
+
+    Route::patch('/cart/item/{id}/decrease', [CartController::class, 'decrease'])->name('cart.decrease');
+
+    Route::delete('/cart/item/{id}', [CartController::class, 'remove'])->name('cart.remove');
+
+    Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+});
 

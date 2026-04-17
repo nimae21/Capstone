@@ -31,18 +31,39 @@
 </div>
 
 <div class="product-grid container" id="productGrid">
-    @for ($i = 0; $i < 24; $i++)
-    <div class="shoe-card" data-category="{{ ['running','basketball','trail','training','casual'][$i % 5] }}" data-price="{{ 6700 + ($i % 15) * 280 }}">
-        @if($i < 8)
-        <span class="shoe-badge">NEW</span>
-        @endif
-        <img class="shoe-image" src="https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=400" alt="shoe">
-        <h3>{{ ['Alpha Force', 'Rock Grid', 'Court Phantom', 'Urban Walk', 'Max Train', 'Lifestyle Pro', 'Rapid Strike', 'Terra Grip', 'Carbon X', 'Hyper Jump', 'Wildfire', 'Zenith Run'][$i % 12] }} {{ floor($i / 12) + 1 }}</h3>
-        <div class="shoe-category" style="color:#e53e3e;">men · {{ ['running','basketball','trail','training','casual'][$i % 5] }}</div>
-        <div class="price">₱{{ number_format(6700 + ($i % 15) * 280, 2) }}</div>
-       
+    @foreach($products as $product)
+    <div style="border:1px solid #ccc; margin:10px; padding:10px;">
+        <h3>{{ $product->product_name }}</h3>
+        <p>{{ $product->product_description }}</p>
+
+        @foreach($product->variants as $variant)
+            @php
+                $stock = $variant->stocks->last();
+            @endphp
+
+            <div style="margin-left:20px;">
+                Size: {{ $variant->size }} |
+                Color: {{ $variant->color }} <br>
+
+                Price: {{ $stock->price ?? 0 }} |
+                Stock: {{ $stock->quantity ?? 0 }}
+
+                <!-- ✅ MOVE FORM HERE -->
+                <form action="{{ route('cart.add') }}" method="POST">
+                    @csrf
+
+                    <input type="hidden" name="product_variant_id" value="{{ $variant->product_variant_id }}">
+
+                    <input type="number" name="quantity" min="1" value="1" required>
+
+                    <button type="submit">Add to Cart</button>
+                </form>
+            </div>
+        @endforeach
     </div>
-    @endfor
+@endforeach
+
+
 </div>
 
 @push('scripts')

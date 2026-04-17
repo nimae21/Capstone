@@ -30,18 +30,26 @@
 </div>
 
 <div class="product-grid container" id="productGrid">
-    @for ($i = 0; $i < 24; $i++)
-    <div class="shoe-card" data-category="{{ ['toddler','little kids','big kids','running','play'][$i % 5] }}" data-price="{{ 3300 + ($i % 12) * 220 }}">
-        @if($i < 8)
-        <span class="shoe-badge">NEW</span>
-        @endif
-        <img class="shoe-image" src="https://images.unsplash.com/photo-1514989940723-e8e51635b782?w=400" alt="shoe">
-        <h3>{{ ['Mini Grip', 'Blaze Lit', 'Fusion Jr', 'Wild Run', 'Kid Stomp', 'Speed Jr', 'Play Day', 'Rapid Kid', 'Tiny Runner', 'Little Hero', 'Jump Star', 'Fun Sprint'][$i % 12] }} {{ floor($i / 12) + 1 }}</h3>
-        <div class="shoe-category" style="color:#e53e3e;">kids · {{ ['toddler','little kids','big kids','running','play'][$i % 5] }}</div>
-        <div class="price">₱{{ number_format(3300 + ($i % 12) * 220, 2) }}</div>
-       
+    @foreach($products as $product)
+    <div style="border:1px solid #ccc; margin:10px; padding:10px;">
+        <h3>{{ $product->product_name }}</h3>
+        <p>{{ $product->product_description }}</p>
+
+        @foreach($product->variants as $variant)
+            @php
+                $stock = $variant->stocks->last();
+            @endphp
+
+            <div style="margin-left:20px;">
+                Size: {{ $variant->size }} |
+                Color: {{ $variant->color }} <br>
+
+                Price: {{ $stock->price ?? 0 }} |
+                Stock: {{ $stock->quantity ?? 0 }}
+            </div>
+        @endforeach
     </div>
-    @endfor
+@endforeach
 </div>
 
 @push('scripts')
