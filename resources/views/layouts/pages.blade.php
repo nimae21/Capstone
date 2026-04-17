@@ -564,6 +564,9 @@
         <a href="{{ route('login') }}" class="auth-btn">Login</a>
         <a href="{{ route('register') }}" class="auth-btn">Register</a>
     @endauth
+    <a href="{{ route('checkout') }}" class="auth-btn">
+        Checkout
+    </a>
     <i class="fas fa-search"></i>
     <i class="far fa-heart"></i>
     <div class="cart-icon">

@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\guest\GuestController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 
 //public routes
 Route::get('/', [GuestController::class, 'index'])->name('index');
@@ -107,3 +108,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 });
 
+Route::get('/checkout', [CheckoutController::class, 'checkout'])->name('checkout');
+Route::post('/checkout', [CheckoutController::class, 'placeOrder'])->name('checkout.place');
+
+Route::get('/orders', [CheckoutController::class, 'myOrders'])->name('orders.index');
+Route::get('/orders/{id}', [CheckoutController::class, 'showOrder'])->name('orders.show');

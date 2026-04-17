@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Cart;
 
 class CartItem extends Model
 {
@@ -19,4 +20,9 @@ class CartItem extends Model
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id', 'product_variant_id');
     }
+
+    public function cart()
+{
+    return $this->belongsTo(Cart::class, 'cart_id', 'cart_id');
+}
 }

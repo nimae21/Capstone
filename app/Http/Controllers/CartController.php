@@ -63,6 +63,66 @@ class CartController extends Controller
     }
 
     return redirect()->route('cart.index')
-        ->with('success', 'Added to cart!');
+    ->with('success', 'Added to cart!');
+}
+
+public function increase($id)
+{
+    $item = CartItem::with('cart')->findOrFail($id);
+
+    abort_if(!$item->cart || $item->cart->user_id !== auth()->id(), 403);
+
+    $item->increment('quantity');
+
+    return response()->json([
+        'success' => true,
+        'quantity' => $item->quantity
+    ]);
+    $variant = $item->variant;
+$stock = $variant->stocks()->latest()->first();
+
+if ($item->quantity + 1 > $stock->quantity) {
+    return response()->json([
+        'success' => false,
+        'message' => 'Not enough stock'
+    ], 400);
+}
+
+}
+
+public function decrease($id)
+{
+    $item = CartItem::with('cart')->findOrFail($id);
+
+    abort_if(!$item->cart || $item->cart->user_id !== auth()->id(), 403);
+
+    if ($item->quantity <= 1) {
+        $item->delete();
+
+        return response()->json([
+            'success' => true,
+            'removed' => true
+        ]);
+    }
+
+    $item->decrement('quantity');
+
+    return response()->json([
+        'success' => true,
+        'quantity' => $item->quantity
+    ]);
+}
+
+public function remove($id)
+{
+    $item = CartItem::with('cart')->findOrFail($id);
+
+    abort_if(!$item->cart || $item->cart->user_id !== auth()->id(), 403);
+
+    $item->delete();
+
+    return response()->json([
+        'success' => true
+    ]);
 }
 }
