@@ -567,6 +567,7 @@
     <a href="{{ route('checkout') }}" class="auth-btn">
         Checkout
     </a>
+    <a href="{{ route('orders.index') }}">My Orders</a>
     <i class="fas fa-search"></i>
     <i class="far fa-heart"></i>
     <div class="cart-icon">

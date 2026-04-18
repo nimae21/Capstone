@@ -1,15 +1,24 @@
-<h1>Order Details</h1>
+<h2>Order Details</h2>
 
-<p>Order ID: {{ $order->order_id }}</p>
-<p>Total: {{ $order->total_amount }}</p>
-<p>Status: {{ $order->status }}</p>
+<p><strong>Order ID:</strong> {{ $order->order_id }}</p>
+<p><strong>Name:</strong> {{ $order->full_name }}</p>
+<p><strong>Address:</strong> 
+    {{ $order->street }}, 
+    {{ $order->barangay }}, 
+    {{ $order->city }}, 
+    {{ $order->province }}
+</p>
+
+<hr>
 
 <h3>Items</h3>
 
 @foreach($order->items as $item)
-    <p>
-        {{ $item->variant->product->product_name }}
-        - Qty: {{ $item->quantity }}
-        - Price: {{ $item->price }}
-    </p>
+    <div style="margin-bottom:10px;">
+        <p>
+            {{ $item->variant->product->name ?? 'Product' }}
+        </p>
+        <p>Qty: {{ $item->quantity }}</p>
+        <p>Price: ₱{{ $item->price }}</p>
+    </div>
 @endforeach

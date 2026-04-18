@@ -111,4 +111,15 @@ public function myOrders()
 
     return view('orders.index', compact('orders'));
 }
+
+
+public function show($id)
+{
+    $order = Order::with('items.variant.product')
+        ->where('order_id', $id)
+        ->where('user_id', auth()->id())
+        ->firstOrFail();
+
+    return view('orders.show', compact('order'));
+}
 }

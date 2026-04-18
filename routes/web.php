@@ -112,4 +112,4 @@ Route::get('/checkout', [CheckoutController::class, 'checkout'])->name('checkout
 Route::post('/checkout', [CheckoutController::class, 'placeOrder'])->name('checkout.place');
 
 Route::get('/orders', [CheckoutController::class, 'myOrders'])->name('orders.index');
-Route::get('/orders/{id}', [CheckoutController::class, 'showOrder'])->name('orders.show');
+Route::get('/orders/{id}', [CheckoutController::class, 'show'])->name('orders.show');
