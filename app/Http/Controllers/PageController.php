@@ -48,6 +48,14 @@ class PageController extends Controller
         return view('pages.new');
     }
 
+    public function showProduct($id)
+{
+    $product = Product::with('variants.stocks')
+        ->findOrFail($id);
+
+    return view('product.show', compact('product'));
+}
+
     
 }
     

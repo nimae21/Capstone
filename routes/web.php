@@ -11,16 +11,17 @@ use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 
+
 //public routes
 Route::get('/', [GuestController::class, 'index'])->name('index');
-
+Route::get('/product/{id}', [PageController::class, 'showProduct'])->name('product.show');
 
 
 //auth routes
-Auth::routes(); // adds login, register, password routes
+Auth::routes(['verify' => true]); // adds login, register, password routes, and email verification routes
 
 // User dashboard
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/home', [PageController::class, 'home'])->name('home');
     Route::get('/men', [PageController::class, 'men'])->name('men');
     Route::get('/women', [PageController::class, 'women'])->name('women');
@@ -52,6 +53,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
         Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
         Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
+        
+
 
  // Product Variant Routes
 

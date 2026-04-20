@@ -30,26 +30,34 @@
 </div>
 
 <div class="product-grid container" id="productGrid">
+    <div class="product-grid container" id="productGrid">
     @foreach($products as $product)
-    <div style="border:1px solid #ccc; margin:10px; padding:10px;">
-        <h3>{{ $product->product_name }}</h3>
-        <p>{{ $product->product_description }}</p>
+        @php
+            // Get first variant + stock for preview price
+            $firstVariant = $product->variants->first();
+            $stock = $firstVariant ? $firstVariant->stocks->last() : null;
+        @endphp
 
-        @foreach($product->variants as $variant)
-            @php
-                $stock = $variant->stocks->last();
-            @endphp
+        <div class="shoe-card" 
+             data-category="all" 
+             data-price="{{ $stock->price ?? 0 }}">
 
-            <div style="margin-left:20px;">
-                Size: {{ $variant->size }} |
-                Color: {{ $variant->color }} <br>
+            <!-- PRODUCT IMAGE (placeholder for now) -->
+            <img src="https://via.placeholder.com/300" class="shoe-image" alt="Product Image">
 
-                Price: {{ $stock->price ?? 0 }} |
-                Stock: {{ $stock->quantity ?? 0 }}
-            </div>
-        @endforeach
-    </div>
-@endforeach
+            <h3>{{ $product->product_name }}</h3>
+
+            <p class="price">
+                ₱{{ $stock->price ?? '0.00' }}
+            </p>
+
+            <!-- ✅ IMPORTANT: GO TO PRODUCT PAGE -->
+            <a href="{{ route('product.show', $product->product_id) }}" class="btn btn-card">
+                View Product
+            </a>
+        </div>
+    @endforeach
+</div>
 </div>
 
 @push('scripts')
