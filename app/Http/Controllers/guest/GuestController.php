@@ -12,6 +12,8 @@ class GuestController extends Controller
         return view('guest.index');
     }
 
+    
+
 }
     
 

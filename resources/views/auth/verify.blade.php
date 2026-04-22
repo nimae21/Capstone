@@ -45,10 +45,7 @@
                             ← Back to Login
                         </a>
 
-                        <!-- Back to home -->
-                        <a href="{{ route('home') }}" class="btn btn-primary btn-sm">
-                            Go to Home
-                        </a>
+
 
                         <!-- Logout -->
                         <form method="POST" action="{{ route('logout') }}">
@@ -66,4 +63,4 @@
         </div>
     </div>
 </div>
-@endsection
+@endsection                     

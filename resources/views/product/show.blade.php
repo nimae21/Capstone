@@ -2,55 +2,129 @@
 <p>{{ $product->product_description }}</p>
 
 <!-- COLOR SELECT -->
-<label>Color:</label>
-<select id="variantSelect">
+<h4>Color:</h4>
+<div id="variant-container">
     @foreach($product->variants as $variant)
-        @php $stock = $variant->stocks->last(); @endphp
-
-        <option 
-            value="{{ $variant->product_variant_id }}"
-            data-price="{{ $stock->price ?? 0 }}"
-            data-stock="{{ $stock->quantity ?? 0 }}"
-        >
-            {{ $variant->color }} - Size {{ $variant->size }}
-        </option>
+        <button 
+            class="variant-btn"
+            data-id="{{ $variant->product_variant_id }}">
+            {{ $variant->color }}
+        </button>
     @endforeach
-</select>
+</div>
+
+<!-- SIZE SELECT -->
+<h4>Size:</h4>
+<div id="size-container">
+    <p>Select color first</p>
+</div>
 
 <!-- DISPLAY PRICE -->
-<p>Price: <span id="priceDisplay"></span></p>
+<p>Price: <span id="priceDisplay">0</span></p>
 
 <!-- DISPLAY STOCK -->
-<p>Stock: <span id="stockDisplay"></span></p>
+<p>Stock: <span id="stockDisplay">0</span></p>
 
 <!-- ADD TO CART -->
 <form action="{{ route('cart.add') }}" method="POST">
     @csrf
 
     <input type="hidden" name="product_variant_id" id="selectedVariant">
+    <input type="hidden" name="size" id="selectedSize">
 
     <input type="number" name="quantity" min="1" value="1">
 
-    <button type="submit">Add to Cart</button>
+    <button type="submit" onclick="return validateSelection()">Add to Cart</button>
 </form>
 
-
 <script>
-const select = document.getElementById('variantSelect');
-const priceDisplay = document.getElementById('priceDisplay');
-const stockDisplay = document.getElementById('stockDisplay');
-const selectedVariant = document.getElementById('selectedVariant');
+const variants = @json($product->variants);
 
-function updateVariant() {
-    const option = select.options[select.selectedIndex];
+let selectedVariant = null;
+let selectedSize = null;
 
-    priceDisplay.innerText = option.dataset.price;
-    stockDisplay.innerText = option.dataset.stock;
-    selectedVariant.value = option.value;
+/* =========================
+   COLOR CLICK
+========================= */
+document.querySelectorAll('.variant-btn').forEach(button => {
+    button.addEventListener('click', function () {
+
+        document.querySelectorAll('.variant-btn')
+            .forEach(btn => btn.classList.remove('active'));
+
+        this.classList.add('active');
+
+        selectedVariant = this.dataset.id;
+        document.getElementById('selectedVariant').value = selectedVariant;
+
+        renderSizes(selectedVariant);
+    });
+});
+
+/* =========================
+   RENDER SIZES (FROM VARIANT)
+========================= */
+function renderSizes(variantId) {
+    const sizeContainer = document.getElementById('size-container');
+    sizeContainer.innerHTML = '';
+
+    const variant = variants.find(v => v.product_variant_id == variantId);
+
+    if (!variant) {
+        console.error("Variant not found");
+        return;
+    }
+
+    // SIZE IS FROM VARIANT (NOT STOCK)
+    const button = document.createElement('button');
+    button.classList.add('size-btn');
+
+    button.dataset.size = variant.size;
+
+    button.innerText = variant.size;
+
+    sizeContainer.appendChild(button);
+
+    attachSizeEvents();
 }
 
-select.addEventListener('change', updateVariant);
+/* =========================
+   SIZE CLICK
+========================= */
+function attachSizeEvents() {
+    document.querySelectorAll('.size-btn').forEach(button => {
 
-// initialize
-updateVariant();
+        button.addEventListener('click', function () {
+
+            document.querySelectorAll('.size-btn')
+                .forEach(btn => btn.classList.remove('active'));
+
+            this.classList.add('active');
+
+            selectedSize = this.dataset.size;
+
+            document.getElementById('selectedSize').value = selectedSize;
+
+            // STOCK INFO COMES FROM STOCK TABLE (FIRST RECORD)
+            const variant = variants.find(v => v.product_variant_id == selectedVariant);
+            const stock = variant.stocks?.[0];
+
+            if (stock) {
+                document.getElementById('priceDisplay').innerText = stock.price;
+                document.getElementById('stockDisplay').innerText = stock.quantity;
+            }
+        });
+    });
+}
+
+/* =========================
+   VALIDATION
+========================= */
+function validateSelection() {
+    if (!selectedVariant || !selectedSize) {
+        alert('Please select color and size');
+        return false;
+    }
+    return true;
+}
 </script>
