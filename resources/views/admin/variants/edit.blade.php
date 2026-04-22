@@ -5,7 +5,7 @@
 @section('content')
 <h1>Edit Variant</h1>
 
-<form action="{{ route('admin.variants.update', $variant->productvariant_id) }}" method="POST">
+<form action="{{ route('admin.variants.update', $variant->product_variant_id) }}" method="POST">
     @csrf
     @method('PUT')
 

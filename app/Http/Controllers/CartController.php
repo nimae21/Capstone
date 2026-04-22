@@ -12,11 +12,13 @@ class CartController extends Controller
 {
    public function index()
 {
-    $cart = Cart::with('items.variant.product')
-        ->where('user_id', auth()->id())
-        ->where('status', 0)
-        ->first();
-
+    $cart = Cart::with([
+    'items.variant.product',
+    'items.variant.stocks'
+])
+->where('user_id', auth()->id())
+->where('status', 0)
+->first();
     return view('cart.index', compact('cart'));
 }
 
@@ -24,46 +26,60 @@ class CartController extends Controller
     public function store(Request $request)
 {
     $request->validate([
-        'product_variant_id' => 'required|exists:product_variants,product_variant_id',
-        'quantity' => 'required|integer|min:1',
+        'product_variant_id' => 'required',
+        'quantity' => 'required|integer|min:1'
     ]);
 
-    // Get or create cart
-    $cart = Cart::firstOrCreate([
-        'user_id' => auth()->id(),
-        'status' => 0
-    ]);
+    $userId = auth()->id();
 
-    // Get variant + stock
-    $variant = ProductVariant::findOrFail($request->product_variant_id);
-    $stock = $variant->stocks()->latest()->first();
+    // Get active cart
+    $cart = Cart::firstOrCreate(
+        ['user_id' => $userId, 'status' => 0]
+    );
 
-    if (!$stock) {
-        return back()->with('error', 'No stock available');
+    // Get variant
+    $variant = ProductVariant::with('stocks')
+        ->where('product_variant_id', $request->product_variant_id)
+        ->firstOrFail();
+
+    // Get stock (latest or first)
+    $stock = $variant->stocks->last();
+
+    if (!$stock || $stock->quantity <= 0) {
+        return back()->with('error', 'Out of stock');
     }
 
-    // Find existing item
-    $item = CartItem::where('cart_id', $cart->cart_id)
-        ->where('product_variant_id', $variant->product_variant_id)
-        ->first();
+    // Check if item already exists in cart
+    $existingItem = CartItem::where('cart_id', $cart->cart_id)
+    ->where('product_variant_id', $request->product_variant_id)
+    ->first();
 
-    if ($item) {
-        // Update quantity
-        $item->update([
-            'quantity' => $item->quantity + $request->quantity
+    if ($existingItem) {
+        // Update quantity instead of duplicate
+        $newQty = $existingItem->quantity + $request->quantity;
+
+        if ($newQty > $stock->quantity) {
+            return back()->with('error', 'Not enough stock');
+        }
+
+        $existingItem->update([
+            'quantity' => $newQty
         ]);
     } else {
         // Create new item
+        if ($request->quantity > $stock->quantity) {
+            return back()->with('error', 'Not enough stock');
+        }
+
         CartItem::create([
-            'cart_id' => $cart->cart_id,
-            'product_variant_id' => $variant->product_variant_id,
-            'quantity' => $request->quantity,
-            'price' => $stock->price,
-        ]);
+    'cart_id' => $cart->cart_id,
+    'product_variant_id' => $request->product_variant_id,
+    'quantity' => $request->quantity,
+    'price' => $stock->price // ✅ THIS IS THE FIX
+]);     
     }
 
-    return redirect()->route('cart.index')
-    ->with('success', 'Added to cart!');
+    return redirect()->route('cart.index')->with('success', 'Added to cart');
 }
 
 public function increase($id)
@@ -79,13 +95,13 @@ public function increase($id)
         'quantity' => $item->quantity
     ]);
     $variant = $item->variant;
-$stock = $variant->stocks()->latest()->first();
+$stock = $cartItem->variant->stocks->last();
 
-if ($item->quantity + 1 > $stock->quantity) {
+if ($cartItem->quantity >= $stock->quantity) {
     return response()->json([
-        'success' => false,
-        'message' => 'Not enough stock'
+        'error' => 'Max stock reached'
     ], 400);
+
 }
 
 }
