@@ -12,86 +12,144 @@
         * { font-family: 'Inter', sans-serif; }
 
         body {
-            background: linear-gradient(145deg, #f1f5f9 0%, #eef2f6 100%);
+            background: linear-gradient(145deg, #f0f4f8 0%, #e9eef3 100%);
+            position: relative;
+        }
+
+        /* Cinematic animated gradient background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 40%, rgba(220,38,38,0.04) 0%, rgba(0,0,0,0.02) 50%, transparent 80%);
+            animation: cinematicMove 20s ease infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+        @keyframes cinematicMove {
+            0% { transform: translate(0, 0); }
+            50% { transform: translate(5%, 5%); }
+            100% { transform: translate(0, 0); }
         }
 
         /* 3D Card effect */
         .card-3d {
-            transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             transform: translateZ(0);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.03);
+            box-shadow: 0 8px 20px -6px rgba(0,0,0,0.05), 0 1px 1px rgba(0,0,0,0.02);
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(2px);
+            border: 1px solid rgba(255,255,255,0.5);
         }
         .card-3d:hover {
-            transform: translateY(-6px) translateZ(12px) scale(1.01);
-            box-shadow: 0 25px 35px -12px rgba(0, 0, 0, 0.15), 0 4px 8px -4px rgba(0, 0, 0, 0.05);
+            transform: translateY(-6px) translateZ(12px);
+            box-shadow: 0 25px 35px -12px rgba(0, 0, 0, 0.15);
+            border-color: rgba(220,38,38,0.2);
         }
 
-        /* Realistic 3D Button - White */
-        .btn-3d-white {
+        /* Bold gradient titles - Black & Red */
+        .gradient-title {
+            font-weight: 800 !important;
+            background: linear-gradient(135deg, #000000, #dc2626);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        /* 3D Button - Red Update */
+        .btn-3d-red {
             position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            background: #ffffff;
-            color: #1f2937;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
             font-weight: 600;
             padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            border: none;
             cursor: pointer;
-            transition: all 0.05s linear;
-            box-shadow: 0 6px 0 #cbd5e1, 0 3px 8px rgba(0,0,0,0.1);
+            transition: all 0.08s linear;
+            box-shadow: 0 8px 0 #991b1b, 0 4px 12px rgba(0,0,0,0.1);
             transform: translateY(-2px);
         }
-        .btn-3d-white:active {
-            transform: translateY(4px);
-            box-shadow: 0 1px 0 #cbd5e1, 0 3px 8px rgba(0,0,0,0.05);
+        .btn-3d-red:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 #991b1b;
         }
-        .btn-3d-white:hover {
-            background: #f9fafb;
-            border-color: #d1d5db;
+        .btn-3d-red:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
         }
 
-        /* 3D Input/Select/Textarea focus */
-        .input-3d, select.input-3d, textarea.input-3d {
+        /* Premium input fields */
+        .input-premium {
             transition: all 0.2s ease;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.02), 0 1px 1px rgba(0,0,0,0.01);
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 0.625rem 1rem;
+            width: 100%;
         }
-        .input-3d:focus, select.input-3d:focus, textarea.input-3d:focus {
-            transform: translateZ(2px);
-            box-shadow: 0 0 0 3px rgba(0,0,0,0.05), inset 0 1px 2px rgba(0,0,0,0.02);
-            border-color: #9ca3af;
+        .input-premium:focus {
+            transform: translateY(-1px);
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
             outline: none;
         }
 
-        /* Back link subtle */
+        /* Back link */
         .back-link {
-            transition: all 0.15s ease;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #4b5563;
         }
         .back-link:hover {
-            transform: translateX(-2px);
+            transform: translateX(-4px);
+            color: #dc2626;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #94a3b8, #64748b);
+            border-radius: 10px;
         }
     </style>
 @endsection
 
 @section('content')
-    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10">
         <!-- Back to Products Link -->
         <div class="mb-6">
-            <a href="{{ route('admin.products.index') }}" class="back-link inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition">
+            <a href="{{ route('admin.products.index') }}" class="back-link">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 Back to Products
             </a>
         </div>
 
         <!-- Edit Product Form Card -->
-        <div class="card-3d bg-white rounded-xl p-6 md:p-8">
+        <div class="card-3d rounded-2xl p-6 md:p-8">
             <div class="flex items-center gap-3 mb-6">
-                <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 shadow-inner">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                 </div>
-                <h3 class="text-2xl font-bold text-gray-800 tracking-tight">Edit Product</h3>
+                <h3 class="text-2xl font-bold gradient-title">Edit Product</h3>
             </div>
 
             <form action="{{ route('admin.products.update', $product->product_id) }}" method="POST" class="space-y-6">
@@ -100,22 +158,22 @@
 
                 <!-- Product Name -->
                 <div>
-                    <label for="product_name" class="block text-sm font-medium text-gray-700 mb-1">Product Name <span class="text-gray-500">*</span></label>
+                    <label for="product_name" class="block text-sm font-semibold text-gray-700 mb-1">Product Name <span class="text-red-500">*</span></label>
                     <input type="text" name="product_name" id="product_name" value="{{ old('product_name', $product->product_name) }}" required
-                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:border-gray-400 input-3d transition bg-white text-gray-800">
+                           class="input-premium">
                 </div>
 
                 <!-- Description -->
                 <div>
-                    <label for="product_description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <label for="product_description" class="block text-sm font-semibold text-gray-700 mb-1">Description</label>
                     <textarea name="product_description" id="product_description" rows="4"
-                           class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:border-gray-400 input-3d transition bg-white text-gray-800">{{ old('product_description', $product->product_description) }}</textarea>
+                           class="input-premium resize-none">{{ old('product_description', $product->product_description) }}</textarea>
                 </div>
 
                 <!-- Category -->
                 <div>
-                    <label for="category_id" class="block text-sm font-medium text-gray-700 mb-1">Category <span class="text-gray-500">*</span></label>
-                    <select name="category_id" id="category_id" required class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:border-gray-400 input-3d transition bg-white text-gray-800">
+                    <label for="category_id" class="block text-sm font-semibold text-gray-700 mb-1">Category <span class="text-red-500">*</span></label>
+                    <select name="category_id" id="category_id" required class="input-premium">
                         @foreach($categories as $category)
                             <option value="{{ $category->category_id }}" {{ (old('category_id', $product->category_id) == $category->category_id) ? 'selected' : '' }}>
                                 {{ $category->category_name }}
@@ -126,8 +184,8 @@
 
                 <!-- Brand -->
                 <div>
-                    <label for="brand_id" class="block text-sm font-medium text-gray-700 mb-1">Brand <span class="text-gray-500">*</span></label>
-                    <select name="brand_id" id="brand_id" required class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:border-gray-400 input-3d transition bg-white text-gray-800">
+                    <label for="brand_id" class="block text-sm font-semibold text-gray-700 mb-1">Brand <span class="text-red-500">*</span></label>
+                    <select name="brand_id" id="brand_id" required class="input-premium">
                         @foreach($brands as $brand)
                             <option value="{{ $brand->brand_id }}" {{ (old('brand_id', $product->brand_id) == $brand->brand_id) ? 'selected' : '' }}>
                                 {{ $brand->brand_name }}
@@ -138,12 +196,17 @@
 
                 <!-- Submit Button -->
                 <div class="pt-2">
-                    <button type="submit" class="btn-3d-white w-full">
+                    <button type="submit" class="btn-3d-red w-full">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         Update Product
                     </button>
                 </div>
             </form>
+        </div>
+
+        <!-- Optional: Small elegant tip (like product management hint) -->
+        <div class="mt-6 text-center">
+            <p class="text-xs text-gray-400">Keep your product catalog organised with clear names and categories.</p>
         </div>
     </div>
 @endsection

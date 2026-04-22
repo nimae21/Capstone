@@ -12,223 +12,298 @@
         * { font-family: 'Inter', sans-serif; }
 
         body {
-            background: linear-gradient(145deg, #f1f5f9 0%, #eef2f6 100%);
+            background: linear-gradient(145deg, #f0f4f8 0%, #e9eef3 100%);
+            position: relative;
+        }
+
+        /* Cinematic animated gradient background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 40%, rgba(220,38,38,0.04) 0%, rgba(0,0,0,0.02) 50%, transparent 80%);
+            animation: cinematicMove 20s ease infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+        @keyframes cinematicMove {
+            0% { transform: translate(0, 0); }
+            50% { transform: translate(5%, 5%); }
+            100% { transform: translate(0, 0); }
         }
 
         /* 3D Card effect */
         .card-3d {
-            transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             transform: translateZ(0);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.03);
+            box-shadow: 0 8px 20px -6px rgba(0,0,0,0.05), 0 1px 1px rgba(0,0,0,0.02);
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(2px);
+            border: 1px solid rgba(255,255,255,0.5);
         }
         .card-3d:hover {
-            transform: translateY(-6px) translateZ(12px) scale(1.02);
-            box-shadow: 0 25px 35px -12px rgba(0, 0, 0, 0.15), 0 4px 8px -4px rgba(0, 0, 0, 0.05);
+            transform: translateY(-6px) translateZ(12px);
+            box-shadow: 0 25px 35px -12px rgba(0, 0, 0, 0.15);
+            border-color: rgba(220,38,38,0.2);
         }
 
-        /* Realistic 3D Button - White */
-        .btn-3d-white {
+        /* Bold gradient titles - Black & Red */
+        .gradient-title {
+            font-weight: 800 !important;
+            background: linear-gradient(135deg, #000000, #dc2626);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        /* 3D Button - Red (Add Category) */
+        .btn-3d-red {
             position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            background: #ffffff;
-            color: #1f2937;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
             font-weight: 600;
             padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            border: none;
             cursor: pointer;
-            transition: all 0.05s linear;
-            box-shadow: 0 6px 0 #cbd5e1, 0 3px 8px rgba(0,0,0,0.1);
+            transition: all 0.08s linear;
+            box-shadow: 0 8px 0 #991b1b, 0 4px 12px rgba(0,0,0,0.1);
             transform: translateY(-2px);
         }
-        .btn-3d-white:active {
-            transform: translateY(4px);
-            box-shadow: 0 1px 0 #cbd5e1, 0 3px 8px rgba(0,0,0,0.05);
+        .btn-3d-red:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 #991b1b;
         }
-        .btn-3d-white:hover {
-            background: #f9fafb;
-            border-color: #d1d5db;
+        .btn-3d-red:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
         }
 
-        /* Realistic 3D Button - White Small (Delete) */
-        .btn-delete-3d-white {
+        /* Small 3D Button - Red (Delete) */
+        .btn-sm-red {
             position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 0.35rem;
-            background: #ffffff;
-            color: #4b5563;
+            background: #ef4444;
+            color: white;
             font-weight: 500;
             font-size: 0.75rem;
             padding: 0.4rem 1rem;
-            border-radius: 0.375rem;
-            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            border: 1px solid #dc2626;
             cursor: pointer;
             transition: all 0.05s linear;
-            box-shadow: 0 4px 0 #cbd5e1, 0 2px 6px rgba(0,0,0,0.08);
+            box-shadow: 0 3px 0 #991b1b;
             transform: translateY(-1px);
         }
-        .btn-delete-3d-white:active {
+        .btn-sm-red:active {
             transform: translateY(3px);
-            box-shadow: 0 1px 0 #cbd5e1, 0 2px 6px rgba(0,0,0,0.04);
+            box-shadow: 0 0px 0 #991b1b;
         }
-        .btn-delete-3d-white:hover {
-            background: #f9fafb;
-            color: #1f2937;
-            border-color: #d1d5db;
+        .btn-sm-red:hover {
+            background: #dc2626;
+        }
+
+        /* Premium input fields */
+        .input-premium {
+            transition: all 0.2s ease;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 0.625rem 1rem;
+            width: 100%;
+        }
+        .input-premium:focus, .textarea-premium:focus {
+            transform: translateY(-1px);
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+            outline: none;
+        }
+        .textarea-premium {
+            transition: all 0.2s ease;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 0.625rem 1rem;
+            width: 100%;
+            resize: vertical;
+        }
+
+        /* Stats card premium */
+        .stat-card {
+            background: linear-gradient(115deg, #ffffff, #fefefe);
+            border-radius: 1rem;
+            transition: all 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -12px rgba(0,0,0,0.1);
         }
 
         /* 3D Table Row */
         .table-row {
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             transform: translateZ(0);
-            box-shadow: 0 1px 0 rgba(0,0,0,0.02);
         }
         .table-row:hover {
-            transform: translateX(4px) translateY(-2px) translateZ(8px) scale(1.01);
-            background: #ffffff;
-            box-shadow: 0 8px 15px -6px rgba(0, 0, 0, 0.08), -3px 0 0 #cbd5e1;
-            z-index: 2;
+            transform: translateX(4px) translateY(-2px) translateZ(6px);
+            background: linear-gradient(90deg, #ffffff, #fafcff);
+            box-shadow: 0 8px 15px -6px rgba(0, 0, 0, 0.08);
             position: relative;
+            z-index: 2;
         }
 
-        /* 3D effect for the guidelines tip box */
-        .tip-3d {
-            transition: all 0.2s ease;
-            transform: translateZ(0);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        /* Premium tips card (glass + gradient) */
+        .tips-premium-gradient {
+            background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,250,252,0.98));
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.08);
+            position: relative;
+            overflow: hidden;
         }
-        .tip-3d:hover {
-            transform: translateY(-2px) translateZ(4px);
-            box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.1);
-            background: #fefefe;
+        .tips-premium-gradient::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -20%;
+            width: 150%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(220,38,38,0.06) 0%, transparent 70%);
+            pointer-events: none;
         }
-
-        /* Input focus - neutral */
-        .input-3d {
-            transition: all 0.2s ease;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.02), 0 1px 1px rgba(0,0,0,0.01);
+        .tip-item {
+            border-left: 2px solid #e2e8f0;
+            transition: all 0.2s;
         }
-        .input-3d:focus, .textarea-3d:focus {
-            transform: translateZ(2px);
-            box-shadow: 0 0 0 3px rgba(0,0,0,0.05), inset 0 1px 2px rgba(0,0,0,0.02);
-            border-color: #9ca3af;
-            outline: none;
-        }
-
-        /* Textarea specific */
-        .textarea-3d {
-            transition: all 0.2s ease;
-            resize: vertical;
+        .tip-item:hover {
+            border-left-color: #dc2626;
+            background: rgba(255,255,255,0.5);
+            transform: translateX(2px);
         }
 
         /* Scrollbar */
         .custom-scroll::-webkit-scrollbar {
-            height: 4px;
-            width: 4px;
+            height: 5px;
+            width: 5px;
         }
         .custom-scroll::-webkit-scrollbar-track {
             background: #e2e8f0;
             border-radius: 10px;
         }
         .custom-scroll::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+            background: linear-gradient(135deg, #94a3b8, #64748b);
             border-radius: 10px;
         }
     </style>
 @endsection
 
 @section('content')
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 relative z-10">
         
         <!-- Success Alert -->
         @if(session('success'))
-            <div class="bg-white border-l-4 border-gray-400 text-gray-700 p-4 rounded-lg shadow-md flex items-center justify-between transition-all hover:shadow-lg hover:translate-y-px">
+            <div class="bg-white/90 backdrop-blur-sm border-l-4 border-emerald-400 text-gray-700 p-4 rounded-xl shadow-md flex items-center justify-between transition-all hover:shadow-lg">
                 <div class="font-medium">{{ session('success') }}</div>
-                <button onclick="this.parentElement.style.display='none'" class="text-gray-400 hover:text-gray-600 transition">×</button>
+                <button onclick="this.parentElement.style.display='none'" class="text-gray-400 hover:text-gray-600 transition">✕</button>
             </div>
         @endif
 
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div class="card-3d bg-white rounded-xl p-6">
+            <div class="stat-card p-6 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Categories</p>
-                        <p class="text-4xl font-bold text-gray-900 mt-2">{{ $categories->count() }}</p>
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Categories</p>
+                        <p class="text-4xl font-black text-gray-800 mt-2">{{ $categories->count() }}</p>
                     </div>
-                    <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center text-red-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                     </div>
                 </div>
-                <div class="mt-3 h-0.5 w-10 bg-gray-200 rounded-full"></div>
+                <div class="mt-3 h-0.5 w-12 bg-gradient-to-r from-red-300 to-transparent rounded-full"></div>
             </div>
 
-            <div class="card-3d bg-white rounded-xl p-6">
+            <div class="stat-card p-6 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Active Categories</p>
-                        <p class="text-4xl font-bold text-gray-900 mt-2">{{ $categories->where('category_name', '!=', null)->count() }}</p>
+                        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Active Categories</p>
+                        <p class="text-4xl font-black text-gray-800 mt-2">{{ $categories->where('category_name', '!=', null)->count() }}</p>
                     </div>
-                    <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </div>
                 </div>
-                <div class="mt-3 h-0.5 w-10 bg-gray-200 rounded-full"></div>
+                <div class="mt-3 h-0.5 w-12 bg-gradient-to-r from-gray-300 to-transparent rounded-full"></div>
             </div>
         </div>
 
         <!-- Two Column Layout -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Add Category Form -->
-            <div class="card-3d bg-white rounded-xl p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-5">Create New Category</h3>
+            <div class="card-3d rounded-2xl p-6">
+                <div class="flex items-center gap-2 mb-5">
+                    <div class="w-1 h-5 bg-gradient-to-b from-red-600 to-black rounded-full"></div>
+                    <h3 class="text-md font-bold gradient-title">Create New Category</h3>
+                </div>
                 <form action="{{ route('admin.categories.store') }}" method="POST" class="space-y-5">
                     @csrf
                     <div>
-                        <label for="category_name" class="block text-sm font-medium text-gray-700 mb-1">Category Name <span class="text-gray-500">*</span></label>
+                        <label for="category_name" class="block text-sm font-semibold text-gray-700 mb-1">Category Name <span class="text-red-500">*</span></label>
                         <input type="text" name="category_name" id="category_name" placeholder="e.g., Sneakers, Boots, Sandals" required
-                               class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:border-gray-400 input-3d transition bg-white text-gray-800">
+                               class="input-premium">
                     </div>
                     <div>
-                        <label for="category_description" class="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                        <label for="category_description" class="block text-sm font-semibold text-gray-700 mb-1">Description (optional)</label>
                         <textarea name="category_description" id="category_description" rows="3" placeholder="Describe the category..."
-                               class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:border-gray-400 input-3d textarea-3d transition bg-white text-gray-800"></textarea>
+                               class="textarea-premium"></textarea>
                     </div>
-                    <button type="submit" class="btn-3d-white w-full">
+                    <button type="submit" class="btn-3d-red w-full">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         Add Category
                     </button>
                 </form>
             </div>
 
-            <!-- Guidelines Panel -->
-            <div class="card-3d bg-white rounded-xl p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-5">Category Guidelines</h3>
-                <ul class="space-y-2 text-gray-600 text-sm">
-                    <li class="flex items-start gap-2">• Use clear, descriptive category names.</li>
-                    <li class="flex items-start gap-2">• Keep descriptions concise but meaningful.</li>
-                    <li class="flex items-start gap-2">• Deleting a category won't remove products (they become uncategorized).</li>
-                    <li class="flex items-start gap-2">• Well-organized categories help customers find products faster.</li>
-                </ul>
-                <div class="mt-5 pt-4 border-t border-gray-100">
-                    <div class="tip-3d flex items-center gap-2 text-sm p-3 -mx-1 rounded-lg transition-all">
-                        <span class="font-medium text-gray-800">Tip:</span>
-                        <span class="text-gray-600">Group similar products under main categories for better navigation.</span>
+            <!-- Premium Guidelines Panel -->
+            <div class="tips-premium-gradient rounded-2xl p-6 relative">
+                <div class="relative z-2">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl shadow-inner">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                        </div>
+                        <h3 class="text-lg font-bold gradient-title">Category Guidelines</h3>
+                    </div>
+                    <ul class="space-y-2 text-gray-600 text-sm">
+                        <li class="tip-item pl-3 py-1">Use clear, descriptive category names.</li>
+                        <li class="tip-item pl-3 py-1">Keep descriptions concise but meaningful.</li>
+                        <li class="tip-item pl-3 py-1">Deleting a category won't remove products (they become uncategorized).</li>
+                        <li class="tip-item pl-3 py-1">Well-organized categories help customers find products faster.</li>
+                    </ul>
+                    <div class="mt-5 pt-4 border-t border-gray-100">
+                        <div class="tip-3d flex items-center gap-2 text-sm p-3 -mx-1 rounded-lg transition-all">
+                            <span class="font-medium text-gray-800">💡 Tip:</span>
+                            <span class="text-gray-600">Group similar products under main categories for better navigation.</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Categories Table -->
-        <div class="card-3d bg-white rounded-xl overflow-hidden">
+        <div class="card-3d rounded-2xl overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-gray-800">All Categories</h3>
-                <span class="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">{{ $categories->count() }} total</span>
+                <h3 class="text-lg font-bold gradient-title">All Categories</h3>
+                <span class="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{{ $categories->count() }} total</span>
             </div>
             <div class="overflow-x-auto custom-scroll">
                 <table class="w-full text-left">
@@ -254,7 +329,8 @@
                                     <form action="{{ route('admin.categories.destroy', $category->category_id) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete category \"{{ addslashes($category->category_name) }}\"? This action cannot be undone.');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn-delete-3d-white">
+                                        <button type="submit" class="btn-sm-red">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                             Delete
                                         </button>
                                     </form>
