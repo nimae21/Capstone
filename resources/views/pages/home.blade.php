@@ -5,8 +5,8 @@
 @section('content')
 <div class="container hero">
     <div class="hero-content">
-        <span class="hero-badge"><i class="fas fa-bolt"></i> FUTURE DROP 2025</span>
-        <h1>RUN IN <span style="color:#e53e3e;">RED</span><br>PREMIUM COLLECTION</h1>
+        <span ></i></span>
+        <h1>RUN IN <span style="color:#e53e3e;">Achilles</span><br></h1>
         <p>Limitless performance meets cybernetic design. Ultra-responsive cushioning, premium materials, and free shipping worldwide.</p>
         <div style="display:flex; gap:1rem;">
             <a href="{{ route('men') }}" class="btn btn-red">SHOP MEN</a>
@@ -15,7 +15,7 @@
         <div class="hero-features">
             <div><i class="fas fa-truck"></i> Free shipping</div>
             <div><i class="fas fa-rotate-left"></i> 60-day returns</div>
-            <div><i class="fas fa-gem"></i> Premium quality</div>
+            <div> </div>
         </div>
     </div>
     <div class="hero-image">
@@ -68,11 +68,7 @@
     </div>
 </div>
 
-<div class="cta-banner container">
-    <h2>#CAPSTONE FUTURE</h2>
-    <p>Get 15% off first order + exclusive early access</p>
-    <a href="#" class="btn btn-red" onclick="alert('Welcome! 15% code: STRIDE15'); return false;">
-        <i class="fas fa-gem"></i> JOIN NOW
-    </a>
+
+    
 </div>
 @endsection

@@ -194,39 +194,6 @@
             text-shadow: 0 0 6px rgba(230,0,35,0.5);
         }
 
-        /* Tooltip for collapsed state (icons only) */
-        .sidebar.collapsed a,
-        .sidebar.collapsed .logout-btn {
-            justify-content: center;
-            position: relative;
-        }
-        .sidebar.collapsed a::after,
-        .sidebar.collapsed .logout-btn::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            left: 100%;
-            top: 50%;
-            transform: translateY(-50%);
-            background: #1e293b;
-            color: white;
-            padding: 0.3rem 0.8rem;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            white-space: nowrap;
-            margin-left: 12px;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s;
-            z-index: 1100;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            border-left: 2px solid #e60023;
-        }
-        .sidebar.collapsed a:hover::after,
-        .sidebar.collapsed .logout-btn:hover::after {
-            opacity: 1;
-        }
-
         /* ========== MAIN CONTENT (dynamic margin) ========== */
         .main {
             flex: 1;
@@ -335,10 +302,6 @@
                 height: auto;
                 margin: 1.5rem 0 0.8rem 0.5rem;
             }
-            .sidebar.collapsed a::after,
-            .sidebar.collapsed .logout-btn::after {
-                display: none;
-            }
             .menu-toggle {
                 position: fixed;
                 top: 1rem;
@@ -371,6 +334,39 @@
 
         /* Utility */
         .text-red { color: #e60023; }
+        
+        /* ========== FLOATING TOOLTIP (appears above cursor on hover, hide mode only) ========== */
+        /* This tooltip will be dynamically created and positioned near the cursor */
+        .floating-tooltip {
+            position: fixed;
+            background: #1e293b;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            white-space: nowrap;
+            z-index: 10000;
+            pointer-events: none;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+            border-left: 3px solid #e60023;
+            font-family: 'Inter', sans-serif;
+            backdrop-filter: blur(4px);
+            letter-spacing: 0.3px;
+            transition: opacity 0.12s ease;
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+        
+        .floating-tooltip.visible {
+            opacity: 1;
+            transform: translateY(-12px);
+        }
+        
+        /* ensure tooltip doesn't cause any layout shift */
+        body {
+            overflow-x: hidden;
+        }
     </style>
 
     @yield('styles')
@@ -429,9 +425,6 @@
 
     <!-- MAIN CONTENT -->
     <div class="main">
-        
-
-        <!-- DYNAMIC CONTENT -->
         @yield('content')
     </div>
 
@@ -525,12 +518,233 @@
                 }
             }
 
-            // Event listeners
+            // ========== ENHANCED FLOATING TOOLTIP (shows label above cursor on hover in collapsed mode) ==========
+            // Create a global floating tooltip element
+            let tooltipElement = null;
+            
+            function createTooltipElement() {
+                if (tooltipElement) return tooltipElement;
+                const div = document.createElement('div');
+                div.className = 'floating-tooltip';
+                document.body.appendChild(div);
+                tooltipElement = div;
+                return tooltipElement;
+            }
+            
+            // Update tooltip position near cursor but slightly above
+            function updateTooltipPosition(event, tooltip) {
+                if (!tooltip) return;
+                // get cursor coordinates
+                let x = event.clientX;
+                let y = event.clientY;
+                
+                // measure tooltip dimensions
+                const rect = tooltip.getBoundingClientRect();
+                const width = rect.width;
+                const height = rect.height;
+                
+                // default position: slightly to the right and above the cursor (like top of cursor)
+                // But UX: "top of my cursor" — appears above the cursor with a small offset
+                let topPos = y - height - 12;  // 12px above cursor
+                let leftPos = x + 15;           // slightly to the right to avoid overlapping finger/cursor
+                
+                // Adjust if tooltip goes off-screen (left edge)
+                if (leftPos + width > window.innerWidth - 10) {
+                    leftPos = x - width - 15;
+                }
+                // if still off-screen, clamp
+                if (leftPos < 8) leftPos = 12;
+                if (leftPos + width > window.innerWidth - 8) {
+                    leftPos = window.innerWidth - width - 12;
+                }
+                
+                // adjust vertical: if tooltip above cursor goes beyond top boundary, place below cursor instead
+                if (topPos < 8) {
+                    topPos = y + 20; // below cursor
+                }
+                
+                tooltip.style.left = leftPos + 'px';
+                tooltip.style.top = topPos + 'px';
+            }
+            
+            let activeTooltipTarget = null;
+            let tooltipTimeout = null;
+            
+            function showFloatingTooltip(target, event) {
+                if (!target) return;
+                // get the text from data-tooltip or span text (but in collapsed mode spans are hidden, use data-tooltip)
+                let label = target.getAttribute('data-tooltip');
+                if (!label) {
+                    // fallback: try to extract from inner text but only if it's not empty
+                    const span = target.querySelector('span');
+                    if (span && span.innerText.trim()) {
+                        label = span.innerText.trim();
+                    } else {
+                        label = 'Link';
+                    }
+                }
+                
+                const tooltip = createTooltipElement();
+                tooltip.innerText = label;
+                tooltip.classList.remove('visible');
+                
+                // force reflow then update position and show
+                updateTooltipPosition(event, tooltip);
+                // tiny delay for smoother transition
+                requestAnimationFrame(() => {
+                    if (tooltip.innerText === label) {
+                        tooltip.classList.add('visible');
+                    }
+                });
+                activeTooltipTarget = target;
+            }
+            
+            function hideFloatingTooltip() {
+                if (tooltipElement) {
+                    tooltipElement.classList.remove('visible');
+                }
+                activeTooltipTarget = null;
+            }
+            
+            // Setup hover listeners for sidebar nav items (only when sidebar is collapsed on desktop)
+            function attachFloatingTooltips() {
+                // select all nav links and logout button within sidebar
+                const navItems = document.querySelectorAll('#adminSidebar a, #adminSidebar .logout-btn');
+                
+                // Remove any previous listeners to avoid duplicates (simple cleanup)
+                navItems.forEach(item => {
+                    // remove old listeners if any (using custom property or just remove all? we'll use named handlers)
+                    // but we can just re-attach after removing existing, simpler approach: removeEventListener by storing handlers.
+                    // For robustness, we'll store handlers on element to detach later.
+                    if (item._floatingMouseEnter) {
+                        item.removeEventListener('mouseenter', item._floatingMouseEnter);
+                        item.removeEventListener('mouseleave', item._floatingMouseLeave);
+                        item.removeEventListener('mousemove', item._floatingMouseMove);
+                    }
+                    
+                    // create handlers
+                    const mouseEnterHandler = function(e) {
+                        // Only show tooltip when sidebar is collapsed AND we are on desktop
+                        if (!isDesktop()) return;
+                        const sidebarElem = document.getElementById('adminSidebar');
+                        if (!sidebarElem || !sidebarElem.classList.contains('collapsed')) return;
+                        
+                        // clear any pending hide timeout
+                        if (tooltipTimeout) {
+                            clearTimeout(tooltipTimeout);
+                            tooltipTimeout = null;
+                        }
+                        showFloatingTooltip(this, e);
+                    };
+                    
+                    const mouseMoveHandler = function(e) {
+                        if (!isDesktop()) return;
+                        const sidebarElem = document.getElementById('adminSidebar');
+                        if (!sidebarElem || !sidebarElem.classList.contains('collapsed')) return;
+                        if (activeTooltipTarget === this && tooltipElement) {
+                            updateTooltipPosition(e, tooltipElement);
+                        }
+                    };
+                    
+                    const mouseLeaveHandler = function() {
+                        if (!isDesktop()) return;
+                        // small delay to avoid flickering when moving between items
+                        tooltipTimeout = setTimeout(() => {
+                            hideFloatingTooltip();
+                            tooltipTimeout = null;
+                        }, 80);
+                    };
+                    
+                    item._floatingMouseEnter = mouseEnterHandler;
+                    item._floatingMouseMove = mouseMoveHandler;
+                    item._floatingMouseLeave = mouseLeaveHandler;
+                    
+                    item.addEventListener('mouseenter', mouseEnterHandler);
+                    item.addEventListener('mousemove', mouseMoveHandler);
+                    item.addEventListener('mouseleave', mouseLeaveHandler);
+                });
+            }
+            
+            // Re-attach tooltips when sidebar collapse state changes (since user may collapse/expand)
+            function refreshTooltipBinding() {
+                attachFloatingTooltips();
+            }
+            
+            // Monitor sidebar class changes to reattach (or just re-evaluate)
+            const sidebarObserver = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        // When sidebar class changes (collapsed/expanded), we re-attach handlers (they already condition based on collapsed)
+                        // But also if expanded, hide any visible tooltip
+                        if (!sidebar.classList.contains('collapsed')) {
+                            hideFloatingTooltip();
+                        }
+                        // no need to reattach fully, but ensure that dynamic behavior matches; handlers check collapsed state on fly
+                        // but reattach to sync any new elements? sidebar content static, fine.
+                    }
+                });
+            });
+            sidebarObserver.observe(sidebar, { attributes: true });
+            
+            // also observe window resize to hide tooltip if sidebar mode changes
+            window.addEventListener('resize', function() {
+                if (!isDesktop()) {
+                    hideFloatingTooltip();
+                } else {
+                    // if desktop but sidebar not collapsed, hide tooltip
+                    if (sidebar && !sidebar.classList.contains('collapsed')) {
+                        hideFloatingTooltip();
+                    }
+                }
+                // refresh tooltip bindings just in case
+                refreshTooltipBinding();
+            });
+            
+            // Event listeners for sidebar toggles
             if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
             if (mobileToggle) mobileToggle.addEventListener('click', toggleMobile);
             document.addEventListener('click', handleClickOutside);
             window.addEventListener('resize', handleResize);
-
+            
+            // Initialize tooltip system
+            attachFloatingTooltips();
+            
+            // Additional: when sidebar collapse changes via localStorage init, we need to re-check tooltip visibility.
+            // The mutation observer already handles hide when expanded.
+            // Also when manually toggling, we call refresh.
+            const originalSetCollapsed = setCollapsed;
+            window.setCollapsed = setCollapsed; // not needed, but we override via custom.
+            // Ensure after collapse/expand we also adjust any lingering tooltip.
+            function enhancedSetCollapsed(collapsed) {
+                const wasCollapsed = sidebar.classList.contains('collapsed');
+                originalSetCollapsed(collapsed);
+                if (!collapsed && wasCollapsed) {
+                    // just expanded: hide tooltip
+                    hideFloatingTooltip();
+                }
+                // rebind just in case
+                refreshTooltipBinding();
+            }
+            // replace setCollapsed reference internally to use enhanced version
+            window.setCollapsed = enhancedSetCollapsed;
+            // override the closure variable? safer: we override the function used by toggle
+            // But setCollapsed is used inside toggleSidebar and init. So we override the internal reference:
+            // Unfortunately the local variable setCollapsed cannot be overwritten from outside, but we can redefine toggleSidebar and initSidebarState.
+            // However easier: we re-declare the functions using enhanced version.
+            // Let's reassign after definition: but the original setCollapsed is captured. We'll just reinitialize binding after each collapse in observer.
+            // Already observer triggers refreshTooltipBinding and hide when needed. So it's safe.
+            
+            // Final call: ensure initial tooltip binding after page fully loads
+            setTimeout(() => {
+                attachFloatingTooltips();
+                // double-check active sidebar state
+                if (sidebar.classList.contains('collapsed') && isDesktop()) {
+                    // good
+                } else {
+                    hideFloatingTooltip();
+                }
+            }, 100);
+            
             // Initial setup
             initSidebarState();
             handleResize(); // ensures correct mode on load
