@@ -1,203 +1,96 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>My Orders | ACHILLES</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
-    <style>
-        * { font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-        body { background-color: #ffffff; overflow-x: hidden; }
-        @keyframes subtleFloat {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-8px) rotate(1deg); }
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(24px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes float3D {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-3px); }
-            100% { transform: translateY(0px); }
-        }
-        .float-orb { animation: subtleFloat 12s ease-in-out infinite; }
-        .float-orb-delayed { animation: subtleFloat 15s ease-in-out infinite reverse; }
-        .card-hover-glow {
-            transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-        }
-        .card-hover-glow:hover {
-            box-shadow: 0 25px 40px -12px rgba(220, 38, 38, 0.25), 0 0 0 1px rgba(220, 38, 38, 0.15);
-            transform: translateY(-6px);
-        }
-        .status-badge {
-            backdrop-filter: blur(4px);
-        }
-        .button-arrow-hover span {
-            transition: transform 0.25s ease;
-        }
-        .button-arrow-hover:hover span {
-            transform: translateX(4px);
-        }
-        .glass-nav {
-            background: rgba(255, 255, 255, 0.82);
-            backdrop-filter: blur(16px);
-        }
-        .hero-grid-pattern {
-            background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.02) 1px, transparent 1px);
-            background-size: 32px 32px;
-        }
-        .fade-in-up {
-            animation: fadeInUp 0.5s ease-out forwards;
-        }
-        .filter-dropdown {
-            position: absolute;
-            right: 0;
-            top: calc(100% + 8px);
-            min-width: 200px;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.02);
-            z-index: 9999;
-            overflow: hidden;
-        }
-        .relative {
-            z-index: 10;
-        }
-        .relative .filter-dropdown {
-            z-index: 9999;
-        }
-        
-        /* 3D Button Styles */
-        .btn-3d {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            color: white;
-            font-weight: 600;
-            border-radius: 12px;
-            padding: 10px 20px;
-            font-size: 0.875rem;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 0 0 #7f1d1d, 0 2px 8px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
-        }
-        .btn-3d:hover {
-            transform: translateY(0px);
-            box-shadow: 0 1px 0 0 #7f1d1d, 0 4px 12px rgba(220, 38, 38, 0.4);
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        }
-        .btn-3d:active {
-            transform: translateY(2px);
-            box-shadow: 0 0px 0 0 #7f1d1d;
-        }
-        
-        .btn-3d-white {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            background: white;
-            color: #1f2937;
-            font-weight: 500;
-            border-radius: 12px;
-            padding: 10px 20px;
-            font-size: 0.875rem;
-            border: 1px solid #e5e7eb;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 0 0 #d1d5db;
-            transform: translateY(-1px);
-        }
-        .btn-3d-white:hover {
-            transform: translateY(0px);
-            box-shadow: 0 0px 0 0 #d1d5db;
-            background: #f9fafb;
-            border-color: #9ca3af;
-        }
-        .btn-3d-white:active {
-            transform: translateY(1px);
-        }
-        
-        .filter-btn-3d {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(8px);
-            color: #374151;
-            font-weight: 500;
-            border-radius: 9999px;
-            padding: 10px 20px;
-            font-size: 0.875rem;
-            border: 1px solid #e5e7eb;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 0 0 #d1d5db;
-            transform: translateY(-1px);
-        }
-        .filter-btn-3d:hover {
-            transform: translateY(0px);
-            box-shadow: 0 0px 0 0 #d1d5db;
-            background: white;
-            border-color: #dc2626;
-        }
-        
-        .sort-select-3d {
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(8px);
-            padding: 8px 12px;
-            border-radius: 9999px;
-            border: 1px solid #f3f4f6;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #1f2937;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 1px 0 0 #e5e7eb;
-        }
-        .sort-select-3d:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 0 0 #d1d5db;
-        }
-    </style>
-</head>
-<body class="antialiased">
+@extends('layouts.app')
 
-    <!-- CINEMATIC BACKGROUND ORBS + LIGHTING -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div class="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-red-50/40 rounded-full blur-[100px] float-orb"></div>
-        <div class="absolute bottom-[-10%] right-[-5%] w-[550px] h-[550px] bg-gray-100/60 rounded-full blur-[120px] float-orb-delayed"></div>
-        <div class="absolute top-[30%] right-[20%] w-[300px] h-[300px] bg-red-100/30 rounded-full blur-[80px]"></div>
-        <div class="hero-grid-pattern absolute inset-0 opacity-40"></div>
-        <div class="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-white via-white/95 to-transparent pointer-events-none"></div>
-    </div>
+@section('title', 'My Orders - ACHILLES')
 
-    <div class="relative z-10 max-w-7xl mx-auto px-5 lg:px-8 py-6">
-        
-        <!-- STICKY NAVBAR -->
-        <div class="sticky top-4 z-50 rounded-2xl glass-nav border border-white/40 shadow-sm mb-8 transition-all duration-300">
-            <div class="flex items-center justify-between py-3 px-6 flex-wrap gap-4">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 bg-gradient-to-br from-red-600 to-red-400 rounded-xl shadow-md flex items-center justify-center">
-                        <div class="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                    <span class="font-bold text-xl tracking-tight bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">ACHILLES</span>
-                </div>
+@section('content')
+    <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-10">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Header -->
+            <div class="mb-8">
+                <a href="{{ route('home') }}" class="inline-flex items-center gap-2 text-red-600 hover:text-red-700 font-semibold mb-4">
+                    <i class="fas fa-arrow-left"></i> Back to Shop
+                </a>
+                <h1 class="text-4xl font-black bg-gradient-to-r from-black to-red-600 bg-clip-text text-transparent">My Orders</h1>
+                <p class="text-gray-600 mt-2">Track and manage all your purchases</p>
             </div>
-        </div>
 
-        <!-- HERO + HEADER SECTION -->
-        <div class="relative mb-12 mt-2 fade-in-up">
-            <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-                <div class="space-y-3">
-                    <h1 class="text-5xl md:text-6xl font-bold tracking-tight text-gray-900 leading-[1.1]">My Orders</h1>
-                    <p class="text-gray-500 text-base md:text-lg tracking-wide max-w-xl">Track, manage, and explore your purchases — cinematic luxury experience.</p>
-                    <div class="w-16 h-0.5 bg-red-500/70 rounded-full mt-2"></div>
+            @if($orders->count() > 0)
+                <div class="grid grid-cols-1 gap-6">
+                    @foreach($orders as $order)
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+                                <!-- Order Number -->
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-500 uppercase">Order ID</p>
+                                    <p class="text-2xl font-bold text-gray-900">#{{ $order->order_id }}</p>
+                                </div>
+
+                                <!-- Order Date -->
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-500 uppercase">Date</p>
+                                    <p class="font-semibold text-gray-900">{{ $order->created_at->format('M d, Y') }}</p>
+                                    <p class="text-xs text-gray-500">{{ $order->created_at->format('H:i A') }}</p>
+                                </div>
+
+                                <!-- Status -->
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-500 uppercase">Status</p>
+                                    @php
+                                        $statusColors = [
+                                            'pending' => 'bg-yellow-100 text-yellow-700',
+                                            'paid' => 'bg-blue-100 text-blue-700',
+                                            'shipped' => 'bg-purple-100 text-purple-700',
+                                            'completed' => 'bg-green-100 text-green-700',
+                                            'cancelled' => 'bg-red-100 text-red-700',
+                                        ];
+                                    @endphp
+                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-bold {{ $statusColors[$order->status] ?? 'bg-gray-100 text-gray-700' }}">
+                                        {{ ucfirst($order->status) }}
+                                    </span>
+                                </div>
+
+                                <!-- Items Count -->
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-500 uppercase">Items</p>
+                                    <p class="text-2xl font-bold text-gray-900">{{ $order->items->count() }}</p>
+                                </div>
+
+                                <!-- Amount & Action -->
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-500 uppercase">Total</p>
+                                    <p class="text-2xl font-bold text-red-600">₱{{ number_format($order->total_amount, 2) }}</p>
+                                    <a href="{{ route('orders.show', $order->order_id) }}" class="inline-block mt-2 text-red-600 hover:text-red-700 font-semibold text-sm">
+                                        View Details →
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <!-- Pagination -->
+                @if($orders->hasPages())
+                    <div class="mt-8">
+                        {{ $orders->links() }}
+                    </div>
+                @endif
+            @else
+                <!-- Empty State -->
+                <div class="bg-white rounded-2xl p-16 shadow-sm border border-gray-100 text-center">
+                    <div class="mb-6">
+                        <i class="fas fa-box-open text-6xl text-gray-300"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">No orders yet</h2>
+                    <p class="text-gray-600 mb-6">You haven't made any purchases yet. Start shopping to create your first order!</p>
+                    <a href="{{ route('home') }}" class="inline-block bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3 px-8 rounded-lg transition-all shadow-lg hover:shadow-xl">
+                        <i class="fas fa-store mr-2"></i> Start Shopping
+                    </a>
+                </div>
+            @endif
+        </div>
+    </div>
+@endsection
                 </div>
                 <div class="flex flex-wrap items-center gap-4">
                     <div class="relative" style="z-index: 9999;">

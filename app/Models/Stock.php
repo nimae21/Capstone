@@ -21,4 +21,9 @@ class Stock extends Model
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id', 'product_variant_id');
     }
+
+    public function movements()
+    {
+        return $this->hasMany(StockMovement::class, 'stock_id', 'stock_id');
+    }
 }

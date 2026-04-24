@@ -564,7 +564,7 @@
         <a href="{{ route('login') }}" class="auth-btn">Login</a>
         <a href="{{ route('register') }}" class="auth-btn">Register</a>
     @endauth
-    <a href="{{ route('checkout') }}" class="auth-btn">
+    <a href="{{ route('checkout.index') }}" class="auth-btn">
         Checkout
     </a>
     <a href="{{ route('orders.index') }}">My Orders</a>

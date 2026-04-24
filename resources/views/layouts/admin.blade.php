@@ -400,8 +400,12 @@
         <a href="{{ route('admin.brands.index') }}" data-tooltip="Brands" class="{{ request()->routeIs('admin.brands.*') ? 'active' : '' }}">
             <i class="fas fa-building"></i> <span>Brands</span>
         </a>
-        <a href="#" data-tooltip="Orders"><i class="fas fa-shopping-bag"></i> <span>Orders</span></a>
-        <a href="#" data-tooltip="Users"><i class="fas fa-users"></i> <span>Users</span></a>
+        <a href="{{ route('admin.users.index') }}" data-tooltip="Users" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+            <i class="fas fa-users"></i> <span>Users</span>
+        </a>
+        <a href="{{ route('admin.orders.index') }}" data-tooltip="Orders" class="{{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
+            <i class="fas fa-shopping-bag"></i> <span>Orders</span>
+        </a>
 
         <div class="sidebar-divider"></div>
 

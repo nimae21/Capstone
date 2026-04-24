@@ -308,7 +308,7 @@
                     <div class="w-1 h-5 bg-gradient-to-b from-red-600 to-black rounded-full"></div>
                     <h3 class="text-md font-bold gradient-title">Create New Product</h3>
                 </div>
-                <form action="{{ route('admin.products.store') }}" method="POST" class="space-y-4">
+                <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                     @csrf
                     <div>
                         <label for="product_name" class="block text-xs font-semibold text-gray-700 mb-1">Product Name <span class="text-red-400">*</span></label>
@@ -337,6 +337,12 @@
                                 <option value="{{ $brand->brand_id }}">{{ $brand->brand_name }}</option>
                             @endforeach
                         </select>
+                    </div>
+                    <div>
+                        <label for="images" class="block text-xs font-semibold text-gray-700 mb-1">Product Images <span class="text-amber-500 text-xs">(Optional)</span></label>
+                        <input type="file" name="images[]" id="images" accept="image/*" multiple
+                               class="input-compact file:bg-gray-100 file:border-0 file:rounded file:cursor-pointer">
+                        <p class="text-gray-500 text-xs mt-1">Upload multiple images (JPG, PNG, GIF, WebP - Max 5MB each)</p>
                     </div>
                     <button type="submit" class="btn-create-3d w-full py-2 rounded-lg font-semibold text-sm">
                         <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>

@@ -11,9 +11,12 @@ use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Admin\StockController;
+use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\AdminOrderController;
 
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\UserAddressController;
 
 
 /*
@@ -54,6 +57,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/kids', [PageController::class, 'kids'])->name('kids');
     Route::get('/sale', [PageController::class, 'sale'])->name('sale');
     Route::get('/new', [PageController::class, 'new'])->name('new');
+    
+    // All products listing (for back to shop button)
+    Route::get('/products', [PageController::class, 'home'])->name('products.index');
 
 
     /*
@@ -82,10 +88,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     */
 
     Route::get('/checkout', [CheckoutController::class, 'checkout'])
-        ->name('checkout');
+        ->name('checkout.index');
 
-    Route::post('/checkout', [CheckoutController::class, 'placeOrder'])
-        ->name('checkout.place');
+    Route::post('/checkout/place-order', [CheckoutController::class, 'placeOrder'])
+        ->name('checkout.place-order');
 
 
     /*
@@ -99,6 +105,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/orders/{id}', [CheckoutController::class, 'show'])
         ->name('orders.show');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADDRESSES
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/addresses', [UserAddressController::class, 'index'])
+        ->name('addresses.index');
+
+    Route::get('/addresses/create', [UserAddressController::class, 'create'])
+        ->name('addresses.create');
+
+    Route::post('/addresses', [UserAddressController::class, 'store'])
+        ->name('addresses.store');
+
+    Route::get('/addresses/{address}/edit', [UserAddressController::class, 'edit'])
+        ->name('addresses.edit');
+
+    Route::put('/addresses/{address}', [UserAddressController::class, 'update'])
+        ->name('addresses.update');
+
+    Route::delete('/addresses/{address}', [UserAddressController::class, 'destroy'])
+        ->name('addresses.destroy');
+
+    Route::post('/addresses/{address}/set-default', [UserAddressController::class, 'setDefault'])
+        ->name('addresses.set-default');
 });
 
 
@@ -170,4 +204,35 @@ Route::middleware(['auth', 'admin'])
 
         Route::delete('/stocks/{stock}', [StockController::class, 'destroy'])
             ->name('stocks.destroy');
+
+
+        // Users Management
+        Route::get('/users', [AdminUserController::class, 'index'])
+            ->name('users.index');
+
+        Route::get('/users/create-admin', [AdminUserController::class, 'createAdmin'])
+            ->name('users.create-admin');
+
+        Route::post('/users/create-admin', [AdminUserController::class, 'storeAdmin'])
+            ->name('users.store-admin');
+
+        Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])
+            ->name('users.edit');
+
+        Route::put('/users/{user}', [AdminUserController::class, 'update'])
+            ->name('users.update');
+
+        Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])
+            ->name('users.destroy');
+
+
+        // Orders Management
+        Route::get('/orders', [AdminOrderController::class, 'index'])
+            ->name('orders.index');
+
+        Route::get('/orders/{order}', [AdminOrderController::class, 'show'])
+            ->name('orders.show');
+
+        Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])
+            ->name('orders.update-status');
     });

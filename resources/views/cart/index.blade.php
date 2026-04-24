@@ -1,136 +1,163 @@
-<h1>Your Cart</h1>
+@extends('layouts.app')
 
-@if($cart && $cart->items->count())
+@section('title', 'Shopping Cart - ACHILLES')
 
-    @php $total = 0; @endphp
+@section('content')
+    <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-10">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Header -->
+            <div class="mb-8">
+                <a href="{{ route('home') }}" class="inline-flex items-center gap-2 text-red-600 hover:text-red-700 font-semibold mb-4">
+                    <i class="fas fa-arrow-left"></i> Back to Shop
+                </a>
+                <h1 class="text-4xl font-black bg-gradient-to-r from-black to-red-600 bg-clip-text text-transparent">Your Shopping Cart</h1>
+                <p class="text-gray-600 mt-2">Review your items before checkout</p>
+            </div>
 
-    <table border="1" cellpadding="10">
-        <thead>
-            <tr>
-                <th>Product</th>
-                <th>Details</th>
-                <th>Price</th>
-                <th>Quantity</th>
-                <th>Subtotal</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
+            @if(session('success'))
+                <div class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg">
+                    <p class="text-green-700 font-medium">{{ session('success') }}</p>
+                </div>
+            @endif
 
-        <tbody>
-        @foreach($cart->items as $item)
+            @if(session('error'))
+                <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
+                    <p class="text-red-700 font-medium">{{ session('error') }}</p>
+                </div>
+            @endif
 
-            @php
-                $variant = $item->variant;
-                $product = $variant->product;
-                $stock = $variant->stocks->last();
+            @if($cart && $cart->items->count() > 0)
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Cart Items -->
+                    <div class="lg:col-span-2 space-y-4">
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                            <h2 class="text-lg font-bold mb-6 flex items-center gap-2">
+                                <i class="fas fa-shopping-bag text-red-600"></i>
+                                <span>Cart Items ({{ $cart->items->count() }})</span>
+                            </h2>
 
-                $subtotal = $item->price * $item->quantity;
-                $total += $subtotal;
-            @endphp
+                            <div class="space-y-4">
+                                @php $total = 0; @endphp
+                                @foreach($cart->items as $item)
+                                    @php
+                                        $variant = $item->variant;
+                                        $product = $variant->product;
+                                        $stock = $variant->stocks()->latest()->first();
+                                        $subtotal = $item->price * $item->quantity;
+                                        $total += $subtotal;
+                                    @endphp
+                                    
+                                    <div class="border border-gray-200 rounded-xl p-4 flex gap-4 hover:shadow-md transition-shadow">
+                                        <!-- Product Image -->
+                                        <div class="w-24 h-24 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center">
+                                            @if($product->images->first())
+                                                <img src="{{ asset('storage/' . $product->images->first()->image_path) }}" alt="{{ $product->product_name }}" class="w-full h-full object-cover rounded-lg">
+                                            @else
+                                                <i class="fas fa-shoe-prints text-gray-400 text-2xl"></i>
+                                            @endif
+                                        </div>
 
-            <tr>
-                <!-- PRODUCT -->
-                <td>
-                    <strong>{{ $product->product_name }}</strong>
-                </td>
+                                        <!-- Product Details -->
+                                        <div class="flex-1">
+                                            <p class="font-bold text-gray-900">{{ $product->product_name }}</p>
+                                            <p class="text-sm text-gray-600">{{ $variant->size }} / {{ $variant->color }}</p>
+                                            <p class="text-sm font-semibold text-red-600 mt-1">₱{{ number_format($item->price, 2) }}</p>
+                                        </div>
 
-                <!-- VARIANT DETAILS -->
-                <td>
-                    Color: {{ $variant->color }} <br>
-                    Size: {{ $variant->size }}
-                </td>
+                                        <!-- Quantity Control -->
+                                        <div class="flex flex-col items-center justify-center gap-2">
+                                            <form action="{{ route('cart.increase', $item->cart_item_id) }}" method="POST" class="inline">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 font-bold" {{ $item->quantity >= ($stock?->quantity ?? 0) ? 'disabled' : '' }}>+</button>
+                                            </form>
+                                            
+                                            <span class="font-semibold text-gray-900 w-6 text-center">{{ $item->quantity }}</span>
+                                            
+                                            <form action="{{ route('cart.decrease', $item->cart_item_id) }}" method="POST" class="inline">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 font-bold" {{ $item->quantity <= 1 ? 'disabled' : '' }}>−</button>
+                                            </form>
+                                        </div>
 
-                <!-- PRICE -->
-                <td>
-                    ₱{{ number_format($item->price, 2) }}
-                </td>
+                                        <!-- Subtotal & Remove -->
+                                        <div class="flex flex-col items-end justify-between">
+                                            <p class="font-bold text-gray-900">₱{{ number_format($subtotal, 2) }}</p>
+                                            
+                                            <form action="{{ route('cart.remove', $item->cart_item_id) }}" method="POST" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-600 hover:text-red-700 font-semibold text-sm">
+                                                    <i class="fas fa-trash mr-1"></i> Remove
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
 
-                <!-- QUANTITY -->
-                <td>
-                    {{ $item->quantity }}
-                </td>
+                    <!-- Order Summary Sidebar -->
+                    <div>
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 sticky top-24">
+                            <h2 class="text-lg font-bold mb-6 flex items-center gap-2">
+                                <i class="fas fa-receipt text-red-600"></i>
+                                <span>Order Summary</span>
+                            </h2>
 
-                <!-- SUBTOTAL -->
-                <td>
-                    ₱{{ number_format($subtotal, 2) }}
-                </td>
+                            <div class="space-y-3 mb-6 pb-6 border-b border-gray-200">
+                                <div class="flex justify-between text-gray-600">
+                                    <span>Subtotal:</span>
+                                    <span class="font-semibold">₱{{ number_format($total, 2) }}</span>
+                                </div>
+                                <div class="flex justify-between text-gray-600">
+                                    <span>Shipping:</span>
+                                    <span class="font-semibold text-green-600">FREE</span>
+                                </div>
+                                <div class="flex justify-between text-lg font-bold">
+                                    <span>Total:</span>
+                                    <span class="text-red-600">₱{{ number_format($total, 2) }}</span>
+                                </div>
+                            </div>
 
-                <!-- ACTIONS -->
-                <td>
-                    <!-- INCREASE -->
-                    <button 
-                        onclick="increaseItem({{ $item->cart_item_id }})"
-                        {{ $item->quantity >= $stock->quantity ? 'disabled' : '' }}>
-                        +
-                    </button>
+                            <!-- Checkout Button -->
+                            <a href="{{ route('checkout.index') }}" class="block w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3 rounded-lg text-center transition-all shadow-lg hover:shadow-xl mb-3">
+                                <i class="fas fa-credit-card mr-2"></i> Proceed to Checkout
+                            </a>
 
-                    <!-- DECREASE -->
-                    <button 
-                        onclick="decreaseItem({{ $item->cart_item_id }})"
-                        {{ $item->quantity <= 1 ? 'disabled' : '' }}>
-                        -
-                    </button>
+                            <!-- Continue Shopping -->
+                            <a href="{{ route('home') }}" class="block text-center text-gray-600 hover:text-gray-900 font-medium">
+                                ← Continue Shopping
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @else
+                <!-- Empty Cart -->
+                <div class="bg-white rounded-2xl p-16 shadow-sm border border-gray-100 text-center">
+                    <div class="mb-6">
+                        <i class="fas fa-shopping-cart text-6xl text-gray-300"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
+                    <p class="text-gray-600 mb-6">You haven't added any items to your cart yet. Start shopping to add items!</p>
+                    <a href="{{ route('home') }}" class="inline-block bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3 px-8 rounded-lg transition-all shadow-lg hover:shadow-xl">
+                        <i class="fas fa-store mr-2"></i> Start Shopping
+                    </a>
+                </div>
+            @endif
+        </div>
+    </div>
 
-                    <!-- REMOVE -->
-                    <button onclick="removeItem({{ $item->cart_item_id }})">
-                        Remove
-                    </button>
-                </td>
-            </tr>
-
-        @endforeach
-        </tbody>
-    </table>
-
-    <h3>Total: ₱{{ number_format($total, 2) }}</h3>
-
-@else
-    <p>Your cart is empty.</p>
-@endif
-
-
-<script>
-function increaseItem(id) {
-    fetch(`/cart/item/${id}/increase`, {
-        method: 'PATCH',
-        credentials: 'same-origin',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
-        }
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.error) {
-            alert(data.error);
-        } else {
-            location.reload();
-        }
-    });
-}
-
-function decreaseItem(id) {
-    fetch(`/cart/item/${id}/decrease`, {
-        method: 'PATCH',
-        credentials: 'same-origin',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
-        }
-    })
-    .then(res => res.json())
-    .then(data => location.reload());
-}
-
-function removeItem(id) {
-    fetch(`/cart/item/${id}`, {
-        method: 'DELETE',
-        credentials: 'same-origin',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        }
-    })
-    .then(res => res.json())
-    .then(data => location.reload());
-}
-</script>
+    <script>
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                if(this.querySelector('button[type="submit"]').disabled) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+@endsection

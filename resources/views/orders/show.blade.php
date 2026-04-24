@@ -1,3 +1,201 @@
+@extends('layouts.app')
+
+@section('title', 'Order #' . $order->order_id . ' - ACHILLES')
+
+@section('content')
+    <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-10">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Back Button -->
+            <a href="{{ route('orders.index') }}" class="inline-flex items-center gap-2 text-red-600 hover:text-red-700 font-semibold mb-8">
+                <i class="fas fa-arrow-left"></i> Back to My Orders
+            </a>
+
+            <!-- Header -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-4xl font-black bg-gradient-to-r from-black to-red-600 bg-clip-text text-transparent">Order #{{ $order->order_id }}</h1>
+                        <p class="text-gray-600 mt-2">Placed on {{ $order->created_at->format('F d, Y \a\t H:i A') }}</p>
+                    </div>
+                    <div class="text-right">
+                        @php
+                            $statusColors = [
+                                'pending' => 'bg-yellow-100 text-yellow-700',
+                                'paid' => 'bg-blue-100 text-blue-700',
+                                'shipped' => 'bg-purple-100 text-purple-700',
+                                'completed' => 'bg-green-100 text-green-700',
+                                'cancelled' => 'bg-red-100 text-red-700',
+                            ];
+                        @endphp
+                        <span class="inline-block px-4 py-2 rounded-full text-sm font-bold {{ $statusColors[$order->status] ?? 'bg-gray-100 text-gray-700' }}">
+                            {{ ucfirst($order->status) }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Main Content -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Order Items -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                            <i class="fas fa-box text-red-600"></i>
+                            <span>Order Items ({{ $order->items->count() }})</span>
+                        </h2>
+
+                        <div class="space-y-4">
+                            @foreach($order->items as $item)
+                                <div class="border border-gray-200 rounded-xl p-4 flex gap-4">
+                                    <div class="w-20 h-20 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center">
+                                        @if($item->variant->product->images->first())
+                                            <img src="{{ asset('storage/' . $item->variant->product->images->first()->image_path) }}" alt="{{ $item->variant->product->product_name }}" class="w-full h-full object-cover rounded-lg">
+                                        @else
+                                            <i class="fas fa-shoe-prints text-gray-400 text-xl"></i>
+                                        @endif
+                                    </div>
+
+                                    <div class="flex-1">
+                                        <p class="font-bold text-gray-900">{{ $item->variant->product->product_name }}</p>
+                                        <p class="text-sm text-gray-600">{{ $item->variant->size }} / {{ $item->variant->color }}</p>
+                                        <p class="text-sm font-semibold text-red-600 mt-1">₱{{ number_format($item->price, 2) }} each</p>
+                                    </div>
+
+                                    <div class="text-right">
+                                        <p class="font-semibold text-gray-900">Qty: {{ $item->quantity }}</p>
+                                        <p class="text-lg font-bold text-gray-900 mt-2">₱{{ number_format($item->price * $item->quantity, 2) }}</p>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Shipping Address -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                            <i class="fas fa-map-marker-alt text-red-600"></i>
+                            <span>Shipping Address</span>
+                        </h2>
+                        <div class="text-gray-700 space-y-2">
+                            <p class="font-semibold text-lg">{{ $order->full_name }}</p>
+                            <p>{{ $order->street }}, {{ $order->barangay }}</p>
+                            <p>{{ $order->city }}, {{ $order->province }} {{ $order->postal_code }}</p>
+                            <p class="font-semibold">📞 {{ $order->phone_number }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Payment Information -->
+                    @if($order->payment)
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                                <i class="fas fa-credit-card text-red-600"></i>
+                                <span>Payment Information</span>
+                            </h2>
+                            <div class="space-y-3 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Payment Method:</span>
+                                    <span class="font-semibold">{{ ucfirst(str_replace('_', ' ', $order->payment->method)) }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Status:</span>
+                                    @php
+                                        $paymentStatusColors = [
+                                            'pending' => 'bg-yellow-100 text-yellow-700',
+                                            'completed' => 'bg-green-100 text-green-700',
+                                            'failed' => 'bg-red-100 text-red-700',
+                                        ];
+                                    @endphp
+                                    <span class="inline-block px-2 py-1 rounded text-xs font-bold {{ $paymentStatusColors[$order->payment->status] ?? 'bg-gray-100 text-gray-700' }}">
+                                        {{ ucfirst($order->payment->status) }}
+                                    </span>
+                                </div>
+                                @if($order->payment->payment_date)
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Payment Date:</span>
+                                        <span class="font-semibold">{{ $order->payment->payment_date->format('F d, Y H:i A') }}</span>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                <!-- Sidebar -->
+                <div class="space-y-6">
+                    <!-- Order Total -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <h2 class="text-xl font-bold mb-4">Order Total</h2>
+                        <div class="space-y-2 pb-4 border-b border-gray-200">
+                            <div class="flex justify-between text-gray-600">
+                                <span>Subtotal:</span>
+                                <span class="font-semibold">₱{{ number_format($order->total_amount, 2) }}</span>
+                            </div>
+                            <div class="flex justify-between text-gray-600">
+                                <span>Shipping:</span>
+                                <span class="font-semibold text-green-600">FREE</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between text-lg font-bold pt-4">
+                            <span>Total:</span>
+                            <span class="text-red-600">₱{{ number_format($order->total_amount, 2) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Order Timeline -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <h2 class="text-xl font-bold mb-4">Timeline</h2>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex gap-3">
+                                <div class="flex-shrink-0 w-3 h-3 bg-red-600 rounded-full mt-1.5"></div>
+                                <div>
+                                    <p class="font-semibold text-gray-900">Order Placed</p>
+                                    <p class="text-gray-500">{{ $order->created_at->format('M d, Y H:i A') }}</p>
+                                </div>
+                            </div>
+                            @if($order->payment && $order->payment->payment_date)
+                                <div class="flex gap-3">
+                                    <div class="flex-shrink-0 w-3 h-3 bg-green-600 rounded-full mt-1.5"></div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900">Payment Received</p>
+                                        <p class="text-gray-500">{{ $order->payment->payment_date->format('M d, Y H:i A') }}</p>
+                                    </div>
+                                </div>
+                            @endif
+                            @if($order->status === 'shipped')
+                                <div class="flex gap-3">
+                                    <div class="flex-shrink-0 w-3 h-3 bg-blue-600 rounded-full mt-1.5"></div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900">Shipped</p>
+                                        <p class="text-gray-500">{{ $order->updated_at->format('M d, Y H:i A') }}</p>
+                                    </div>
+                                </div>
+                            @elseif($order->status === 'completed')
+                                <div class="flex gap-3">
+                                    <div class="flex-shrink-0 w-3 h-3 bg-purple-600 rounded-full mt-1.5"></div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900">Delivered</p>
+                                        <p class="text-gray-500">{{ $order->updated_at->format('M d, Y H:i A') }}</p>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <a href="{{ route('orders.index') }}" class="block w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg text-center transition-all mb-3">
+                            ← Back to Orders
+                        </a>
+                        <a href="{{ route('home') }}" class="block w-full border-2 border-gray-300 hover:border-red-600 text-gray-900 hover:text-red-600 font-bold py-2 rounded-lg text-center transition-all">
+                            Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
 <!DOCTYPE html>
 <html lang="en">
 <head>
