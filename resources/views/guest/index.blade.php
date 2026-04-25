@@ -781,7 +781,7 @@
         document.querySelectorAll('.category-card').forEach(card => {
             card.addEventListener('click', () => {
                 const cat = card.querySelector('h3')?.innerText || 'category';
-                alert(`Browse ${cat} collection — premium, certified authentic footwear.`);
+                alert(`Browse ${cat} Please Log In First`);
             });
         });
 
@@ -790,7 +790,7 @@
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const product = btn.closest('.product-card')?.querySelector('h3')?.innerText || 'item';
-                alert(`✨ ${product} — authentic design, elite comfort. Add to wishlist?`);
+                alert(`✨ ${product} —Please Log In First to view details and purchase.`);
             });
         });
 
@@ -799,7 +799,7 @@
             card.addEventListener('click', (e) => {
                 if(e.target.classList.contains('quick-view')) return;
                 const name = card.querySelector('h3')?.innerText;
-                alert(`🛒 ${name} — verified authentic. View details.`);
+                alert(`🛒 ${name} — Please Log In First`);
             });
         });
 

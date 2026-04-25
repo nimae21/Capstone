@@ -3,17 +3,16 @@
 namespace App\Http\Controllers\guest;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\Product;
 
 class GuestController extends Controller
 {
     public function index()
     {
-        return view('guest.index');
+        $products = Product::with(['category', 'brand', 'images'])
+            ->latest()
+            ->paginate(6);
+
+        return view('guest.index', compact('products'));
     }
-
-    
-
 }
-    
-

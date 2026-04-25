@@ -132,7 +132,6 @@
         }
     </style>
 @endsection
-
 @section('content')
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10">
         <!-- Back to Products Link -->
@@ -143,6 +142,30 @@
             </a>
         </div>
 
+        <!-- Current Product Images -->
+<div class="mb-6">
+    <label class="block text-sm font-semibold text-gray-700 mb-2">
+        Current Images
+    </label>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        @forelse($product->images as $image)
+            <div class="relative">
+                <img src="{{ asset($image->image_path) }}"
+                     class="w-full h-28 object-cover rounded-xl border">
+
+                @if($image->is_primary)
+                    <span class="absolute top-2 left-2 text-xs bg-red-500 text-white px-2 py-1 rounded">
+                        Primary
+                    </span>
+                @endif
+            </div>
+        @empty
+            <p class="text-sm text-gray-400">No images available.</p>
+        @endforelse
+    </div>
+</div>
+
         <!-- Edit Product Form Card -->
         <div class="card-3d rounded-2xl p-6 md:p-8">
             <div class="flex items-center gap-3 mb-6">
@@ -152,7 +175,10 @@
                 <h3 class="text-2xl font-bold gradient-title">Edit Product</h3>
             </div>
 
-            <form action="{{ route('admin.products.update', $product->product_id) }}" method="POST" class="space-y-6">
+            <form action="{{ route('admin.products.update', $product->product_id) }}"
+      method="POST" 
+      enctype="multipart/form-data"
+      class="space-y-6">
                 @csrf
                 @method('PUT')
 
@@ -194,6 +220,18 @@
                     </select>
                 </div>
 
+                <!-- Upload New Images -->
+<div>
+    <label class="block text-sm font-semibold text-gray-700 mb-1">
+        Add New Images
+    </label>
+
+    <input type="file"
+           name="images[]"
+           multiple
+           class="input-premium">
+</div>
+
                 <!-- Submit Button -->
                 <div class="pt-2">
                     <button type="submit" class="btn-3d-red w-full">
@@ -210,3 +248,36 @@
         </div>
     </div>
 @endsection
+
+@if(session('success') || session('error') || $errors->any())
+<div id="systemModal"
+     class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+
+    <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+
+        @if(session('success'))
+            <h2 class="text-green-600 font-bold text-lg mb-2">Success</h2>
+            <p class="text-gray-700">{{ session('success') }}</p>
+        @endif
+
+        @if(session('error'))
+            <h2 class="text-red-600 font-bold text-lg mb-2">Error</h2>
+            <p class="text-gray-700">{{ session('error') }}</p>
+        @endif
+
+        @if($errors->any())
+            <h2 class="text-yellow-600 font-bold text-lg mb-2">Validation Error</h2>
+            <ul class="text-sm text-gray-700 list-disc ml-5">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        @endif
+
+        <button onclick="document.getElementById('systemModal').remove()"
+                class="mt-4 w-full bg-black text-white py-2 rounded-lg">
+            Close
+        </button>
+    </div>
+</div>
+@endif

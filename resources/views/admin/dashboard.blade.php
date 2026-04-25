@@ -337,10 +337,10 @@
         <div>
             <h2 class="section-header text-gray-800 mb-4">Quick Actions</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <a href="#" class="btn-3d-green text-center">+ Add Product</a>
-                <a href="#" class="btn-3d-green text-center">+ Add Category</a>
-                <a href="#" class="btn-3d-blue text-center">Manage Orders</a>
-                <a href="#" class="btn-3d-blue text-center">Manage Users</a>
+                <a href="{{ route('admin.products.index') }}" class="btn-3d-green text-center">+ Add Product</a>
+                <a href="{{ route('admin.categories.index') }}" class="btn-3d-green text-center">+ Add Category</a>
+                <a href="{{ route('admin.orders.index') }}" class="btn-3d-blue text-center">Manage Orders</a>
+                <a href="{{ route('admin.users.index') }}" class="btn-3d-blue text-center">Manage Users</a>
             </div>
         </div>
 

@@ -10,18 +10,30 @@ use App\Models\Category;
 use App\Models\Brand;
 use App\Models\ProductImage;
 use Illuminate\Support\Facades\Storage;
+use App\Models\ProductVariant;
 
 
 
 class ProductController extends Controller
 {
-    public function index(){
- $products = Product::with(['category', 'brand'])->paginate(5);
+    public function index(Request $request)
+{
+    $search = $request->input('search');
 
-        $categories = Category::all();
-        $brands = Brand::all();
-        return view('admin.products.index', compact('products', 'categories', 'brands'));
-    }
+    $products = Product::with(['category', 'brand','variants'])
+        ->when($search, function ($query, $search) {
+            $query->whereRaw('LOWER(product_name) LIKE ?', ['%' . strtolower($search) . '%'])
+                  ->orWhereRaw('LOWER(product_description) LIKE ?', ['%' . strtolower($search) . '%']);
+        })
+        ->paginate(5)
+        ->withQueryString();
+
+    $categories = Category::all();
+    $brands = Brand::all();
+    $totalVariants = ProductVariant::count();
+
+    return view('admin.products.index', compact('products', 'categories', 'brands', 'search', 'totalVariants'));
+}
  public function store(Request $request)
 {
     $validated = $request->validate([
@@ -87,6 +99,7 @@ public function update(Request $request, Product $product)
         'product_description' => 'nullable|string',
         'category_id' => 'required|exists:categories,category_id',
         'brand_id' => 'required|exists:brands,brand_id',
+        'images' => 'nullable',
         'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         'primary_image' => 'nullable|integer',
     ]);
@@ -101,8 +114,12 @@ public function update(Request $request, Product $product)
 
         // Handle new image uploads
         if ($request->hasFile('images')) {
-            $this->saveProductImages($product, $request->file('images'), $validated['primary_image'] ?? 0);
-        }
+    $this->saveProductImages(
+        $product,
+        $request->file('images'),
+        $validated['primary_image'] ?? 0
+    );
+}
 
         return redirect()
             ->route('admin.products.index')

@@ -410,9 +410,9 @@
         <div class="sidebar-divider"></div>
 
         <h3><i class="fas fa-chart-line fa-fw"></i> Analytics</h3>
-        <a href="#" data-tooltip="Reports"><i class="fas fa-file-alt"></i> <span>Reports</span></a>
-        <a href="#" data-tooltip="Sales"><i class="fas fa-chart-line"></i> <span>Sales</span></a>
-        <a href="#" data-tooltip="Inventory"><i class="fas fa-warehouse"></i> <span>Inventory</span></a>
+        <a href="{{ route('admin.reports.index') }}" data-tooltip="Reports"><i class="fas fa-file-alt"></i> <span>Reports</span></a>
+        <!-- <a href="#" data-tooltip="Sales"><i class="fas fa-chart-line"></i> <span>Sales</span></a> -->
+        <a href="{{ route('admin.inventory.index') }}" data-tooltip="Inventory"><i class="fas fa-warehouse"></i> <span>Inventory</span></a>
 
         <div class="sidebar-divider"></div>
 

@@ -1,47 +1,376 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">{{ __('Reset Password') }}</div>
+<!-- CINEMATIC FORGOT PASSWORD – SAME STYLE AS LOGIN/REGISTER -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
 
-                <div class="card-body">
-                    @if (session('status'))
-                        <div class="alert alert-success" role="alert">
-                            {{ session('status') }}
-                        </div>
-                    @endif
+<style>
+  /* ---------- CINEMATIC BACKGROUND ANIMATIONS (same as login) ---------- */
+  @keyframes cinematicZoom {
+    0% { transform: scale(1.08); filter: brightness(0.88) contrast(1.12); }
+    100% { transform: scale(1.22); filter: brightness(0.92) contrast(1.18); }
+  }
+  .animate-cinematic-zoom {
+    animation: cinematicZoom 22s infinite alternate ease-in-out;
+  }
 
-                    <form method="POST" action="{{ route('password.email') }}">
-                        @csrf
+  @keyframes sweepGlide {
+    0% { transform: rotate(35deg) translateX(-40%) translateY(-40%); opacity: 0.2; }
+    50% { transform: rotate(35deg) translateX(20%) translateY(20%); opacity: 0.5; }
+    100% { transform: rotate(35deg) translateX(-40%) translateY(-40%); opacity: 0.2; }
+  }
+  .animate-sweep-glide {
+    animation: sweepGlide 14s infinite cubic-bezier(0.45, 0.05, 0.2, 0.99);
+  }
 
-                        <div class="row mb-3">
-                            <label for="email" class="col-md-4 col-form-label text-md-end">{{ __('Email Address') }}</label>
+  @keyframes breatheRed {
+    0% { opacity: 0.1; transform: scale(1); }
+    100% { opacity: 0.4; transform: scale(1.1); }
+  }
+  .animate-breathe-red {
+    animation: breatheRed 9s infinite alternate;
+  }
 
-                            <div class="col-md-6">
-                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus>
+  @keyframes floatSlow {
+    0% { transform: translate(0,0) scale(1); opacity: 0.08; }
+    100% { transform: translate(20px, -25px) scale(1.3); opacity: 0.25; }
+  }
+  .particle-elegant {
+    position: absolute;
+    background: rgba(230,0,35,0.25);
+    border-radius: 50%;
+    filter: blur(3px);
+    pointer-events: none;
+    animation: floatSlow 15s infinite alternate;
+  }
 
-                                @error('email')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                        </div>
+  @keyframes gridDrift {
+    0% { transform: translate(0,0); }
+    100% { transform: translate(45px, 45px); }
+  }
+  .animate-grid-drift {
+    animation: gridDrift 24s infinite linear;
+  }
 
-                        <div class="row mb-0">
-                            <div class="col-md-6 offset-md-4">
-                                <button type="submit" class="btn btn-primary">
-                                    {{ __('Send Password Reset Link') }}
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
+  @keyframes gentleFloat {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-6px); }
+    100% { transform: translateY(0px); }
+  }
+  @keyframes entranceRise {
+    from { opacity: 0; transform: translateY(30px) scale(0.96); filter: blur(4px); }
+    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  }
+  .glass-card-clean {
+    animation: gentleFloat 5.5s infinite ease-in-out, entranceRise 0.8s ease-out 0.2s backwards;
+    transition: box-shadow 0.3s ease;
+  }
+
+  @keyframes softGlow {
+    0% { transform: scale(1); text-shadow: 0 0 0 rgba(230,0,35,0); }
+    100% { transform: scale(1.03); text-shadow: 0 0 10px rgba(230,0,35,0.3); }
+  }
+  .animate-soft-glow {
+    animation: softGlow 2.8s infinite alternate;
+  }
+
+  @keyframes gentleShake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-2px); }
+    80% { transform: translateX(2px); }
+  }
+
+  @keyframes rippleClean {
+    to { transform: scale(8); opacity: 0; }
+  }
+  .ripple-clean {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.6);
+    transform: scale(0);
+    animation: rippleClean 0.5s linear;
+    pointer-events: none;
+  }
+
+  @keyframes lensFlare {
+    0% { transform: translateX(-100%) rotate(25deg); opacity: 0; }
+    20% { opacity: 0.4; }
+    80% { opacity: 0.4; }
+    100% { transform: translateX(200%) rotate(25deg); opacity: 0; }
+  }
+  .animate-lens-flare {
+    animation: lensFlare 8s infinite ease-in-out;
+  }
+
+  @keyframes floatOrb {
+    0% { transform: translate(0, 0) scale(1); opacity: 0.1; }
+    50% { transform: translate(30px, -40px) scale(1.2); opacity: 0.3; }
+    100% { transform: translate(-20px, 20px) scale(0.9); opacity: 0.1; }
+  }
+  .floating-orb {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(230,0,35,0.3), rgba(230,0,35,0));
+    filter: blur(15px);
+    pointer-events: none;
+    animation: floatOrb 14s infinite alternate;
+  }
+
+  /* ---------- INPUT FIELDS (exactly as login) ---------- */
+  .input-group-float {
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+  .input-group-float input {
+    width: 100%;
+    padding: 1rem 1rem 0.5rem 1rem;
+    background-color: white;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 40px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #1a1a1a;
+    transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    outline: none;
+  }
+  .input-group-float input:focus {
+    border-color: #E60023;
+    box-shadow: 0 0 0 3px rgba(230,0,35,0.15), 0 0 0 6px rgba(230,0,35,0.05);
+    transform: scale(1.01);
+  }
+  .input-click-ripple {
+    position: absolute;
+    border-radius: 40px;
+    background: radial-gradient(circle, rgba(230,0,35,0.2), transparent);
+    pointer-events: none;
+    transform: scale(0);
+    transition: transform 0.4s ease-out, opacity 0.3s;
+    opacity: 1;
+  }
+  .input-group-float label {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.9rem;
+    color: #9a9fb0;
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    background: transparent;
+    padding: 0 2px;
+    font-weight: 500;
+  }
+  .input-group-float input:focus ~ label,
+  .input-group-float input:not(:placeholder-shown) ~ label {
+    top: 0.35rem;
+    transform: translateY(0);
+    font-size: 0.7rem;
+    color: #E60023;
+    font-weight: 700;
+  }
+  .input-spacer {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: #E60023;
+    transition: width 0.35s ease, left 0.35s ease;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .input-group-float input:focus ~ .input-spacer {
+    width: calc(100% - 2rem);
+    left: 1rem;
+  }
+  .input-group-float.error input {
+    border-color: #E60023;
+    background-color: #FFF8F8;
+    animation: gentleShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+  .error-message {
+    font-size: 0.68rem;
+    color: #E60023;
+    margin-top: 0.35rem;
+    margin-left: 1rem;
+    font-weight: 600;
+  }
+
+  /* Alert success message styling */
+  .alert-success {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border: none;
+    border-left: 4px solid #10b981;
+    border-radius: 60px;
+    color: #065f46;
+    font-weight: 500;
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    font-size: 0.85rem;
+  }
+
+  /* Utilities */
+  .backdrop-blur-16 { backdrop-filter: blur(16px); }
+  .bg-gradient-radial { background-image: radial-gradient(circle, var(--tw-gradient-stops)); }
+  .animation-delay-2000 { animation-delay: 2s; }
+  .animation-delay-5000 { animation-delay: 5s; }
+</style>
+
+<body class="relative bg-black font-['Inter',sans-serif] overflow-x-hidden">
+  <div class="absolute inset-0 z-0 overflow-hidden">
+    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=2000&auto=format')] bg-cover bg-center bg-no-repeat animate-cinematic-zoom" style="background-position: center 35%;"></div>
+    <div class="absolute inset-0 bg-gradient-radial from-black/30 via-black/50 to-black/70"></div>
+    <div class="absolute -top-[30%] -left-[30%] w-[160%] h-[160%] bg-gradient-to-br from-[#E60023]/8 via-transparent to-transparent rotate-[35deg] animate-sweep-glide pointer-events-none"></div>
+    <div class="absolute inset-0 bg-gradient-radial from-[#E60023]/10 via-transparent to-transparent animate-breathe-red pointer-events-none" style="background-position: 40% 60%;"></div>
+    <div class="absolute inset-0 bg-[linear-gradient(rgba(230,0,35,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(230,0,35,0.015)_1px,transparent_1px)] bg-[length:45px_45px] pointer-events-none animate-grid-drift"></div>
+    <div class="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/60 pointer-events-none"></div>
+    <div class="absolute top-1/4 left-0 w-[150%] h-[200%] bg-gradient-to-r from-transparent via-white/8 to-transparent rotate-[25deg] animate-lens-flare pointer-events-none"></div>
+    <div class="floating-orb w-80 h-80 top-10 left-[10%]"></div>
+    <div class="floating-orb w-96 h-96 bottom-20 right-[5%] animation-delay-2000"></div>
+    <div class="floating-orb w-56 h-56 top-[40%] left-[80%] animation-delay-5000"></div>
+    <div id="elegantParticles" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+  </div>
+
+  <!-- FORGOT PASSWORD FORM – same card width as login -->
+  <div class="relative z-20 min-h-screen flex items-center justify-center p-4 md:p-8">
+    <div class="w-full max-w-[460px] bg-white/90 backdrop-blur-16 rounded-[48px] p-8 md:p-9 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.7),0_0_0_2px_rgba(230,0,35,0.1),inset_0_1px_0_rgba(255,255,255,0.9)] transition-shadow duration-300 hover:shadow-[0_30px_60px_-15px_rgba(230,0,35,0.2),0_0_0_1px_rgba(255,255,255,0.8),0_0_0_2px_rgba(230,0,35,0.15),inset_0_1px_0_rgba(255,255,255,1)] glass-card-clean relative before:content-[''] before:absolute before:inset-0 before:rounded-[48px] before:bg-gradient-to-br before:from-white/30 before:to-transparent before:pointer-events-none">
+      
+      <div class="text-center mb-7">
+        <div class="text-5xl text-[#E60023] mb-2 animate-soft-glow inline-block">
+          <i class="fas fa-key"></i>
         </div>
+        <h2 class="text-3xl md:text-4xl font-extrabold font-['Space_Grotesk',sans-serif] bg-gradient-to-r from-black via-black to-[#E60023] bg-clip-text text-transparent tracking-tight">
+          FORGOT PASSWORD?
+        </h2>
+        <p class="text-[#5a5a6e] font-medium text-sm tracking-wide">No worries. We'll send you reset instructions.</p>
+      </div>
+
+      @if (session('status'))
+        <div class="alert-success" role="alert">
+          <i class="fas fa-check-circle mr-2"></i> {{ session('status') }}
+        </div>
+      @endif
+
+      <form method="POST" action="{{ route('password.email') }}" id="premiumForgotForm">
+        @csrf
+
+        <!-- Email Field -->
+        <div class="input-group-float @error('email') error @enderror" id="emailGroup">
+          <input type="email" id="email" name="email" value="{{ old('email') }}" placeholder=" " required autofocus>
+          <label for="email">Email Address</label>
+          <span class="input-spacer"></span>
+          @error('email') <div class="error-message">{{ $message }}</div> @enderror
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="w-full bg-[#E60023] py-3.5 rounded-full font-extrabold text-sm text-white transition-all duration-200 hover:bg-[#C2001F] hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 shadow-[0_10px_22px_-10px_rgba(230,0,35,0.5)] relative overflow-hidden" id="premiumForgotBtn">
+          <span>SEND RESET LINK →</span>
+        </button>
+
+        <!-- Back to Login Link -->
+        <div class="text-center pt-4 mt-4 border-t border-black/5 text-sm font-medium">
+          <a href="{{ route('login') }}" class="text-[#E60023] font-extrabold hover:underline">← Back to Login</a>
+        </div>
+      </form>
     </div>
-</div>
+  </div>
+
+  <script>
+    (function() {
+      // ========== ELEGANT PARTICLES ==========
+      const particleField = document.getElementById('elegantParticles');
+      if(particleField) {
+        for(let i=0; i<120; i++) {
+          const p = document.createElement('div');
+          p.classList.add('particle-elegant');
+          const size = Math.random() * 5 + 2;
+          p.style.width = `${size}px`;
+          p.style.height = `${size}px`;
+          p.style.left = `${Math.random() * 100}%`;
+          p.style.top = `${Math.random() * 100}%`;
+          p.style.animationDuration = `${Math.random() * 18 + 12}s`;
+          p.style.animationDelay = `${Math.random() * 10}s`;
+          particleField.appendChild(p);
+        }
+      }
+
+      // ========== SMOOTH PARALLAX ==========
+      const bgShoe = document.querySelector('.animate-cinematic-zoom');
+      if(bgShoe) {
+        document.addEventListener('mousemove', (e) => {
+          const x = (e.clientX / window.innerWidth) * 20 - 10;
+          const y = (e.clientY / window.innerHeight) * 12 - 6;
+          bgShoe.style.transform = `translate(${x * -0.4}px, ${y * -0.3}px) scale(1.12)`;
+        });
+      }
+
+      // ========== INPUT CLICK RIPPLE EFFECT ==========
+      const inputs = document.querySelectorAll('.input-group-float input');
+      inputs.forEach(input => {
+        input.addEventListener('click', (e) => {
+          const ripple = document.createElement('div');
+          ripple.className = 'input-click-ripple';
+          ripple.style.position = 'absolute';
+          ripple.style.top = '0';
+          ripple.style.left = '0';
+          ripple.style.width = '100%';
+          ripple.style.height = '100%';
+          ripple.style.borderRadius = '40px';
+          ripple.style.background = 'radial-gradient(circle, rgba(230,0,35,0.2), transparent)';
+          ripple.style.pointerEvents = 'none';
+          ripple.style.transform = 'scale(0)';
+          ripple.style.transition = 'transform 0.4s ease-out, opacity 0.3s';
+          ripple.style.opacity = '1';
+          input.parentElement.style.position = 'relative';
+          input.parentElement.appendChild(ripple);
+          requestAnimationFrame(() => {
+            ripple.style.transform = 'scale(2.5)';
+            ripple.style.opacity = '0';
+          });
+          setTimeout(() => ripple.remove(), 400);
+        });
+      });
+
+      // ========== RIPPLE EFFECT ON BUTTON ==========
+      const forgotBtn = document.getElementById('premiumForgotBtn');
+      function addRipple(e, btn) {
+        const rect = btn.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const ripple = document.createElement('span');
+        ripple.className = 'ripple-clean';
+        ripple.style.width = ripple.style.height = `${size}px`;
+        ripple.style.left = `${e.clientX - rect.left - size/2}px`;
+        ripple.style.top = `${e.clientY - rect.top - size/2}px`;
+        btn.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 500);
+      }
+      if(forgotBtn) {
+        forgotBtn.addEventListener('click', (e) => {
+          if(!forgotBtn.disabled) addRipple(e, forgotBtn);
+        });
+      }
+
+      // ========== FORM SUBMISSION ==========
+      const form = document.getElementById('premiumForgotForm');
+      if(form) {
+        form.addEventListener('submit', function(e) {
+          const emailInput = document.getElementById('email');
+          if(!emailInput.value.trim()) {
+            e.preventDefault();
+            document.getElementById('emailGroup')?.classList.add('error');
+          } else {
+            forgotBtn.disabled = true;
+            forgotBtn.classList.add('opacity-70', 'cursor-not-allowed');
+            forgotBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i><span>SENDING...</span>`;
+          }
+        });
+      }
+    })();
+  </script>
+</body>
 @endsection

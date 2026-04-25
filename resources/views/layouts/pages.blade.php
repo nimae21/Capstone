@@ -594,9 +594,9 @@
             <div class="footer-col">
                 <a href="{{ route('home') }}" class="logo" style="display: inline-flex;">
                     <i class="fas fa-shoe-prints"></i>
-                    <span>STRIDE</span>
+                    <span>ACHILLES</span>
                 </a>
-                <p>White · Black · Red<br>Capstone Project 2025</p>
+                <p>Capstone Project 2026</p>
                 <div class="social-icons">
                     <i class="fab fa-instagram"></i>
                     <i class="fab fa-x-twitter"></i>
@@ -623,7 +623,7 @@
             </div>
         </div>
         <div class="copyright" style="text-align:center; padding-top:2rem;">
-            <i class="far fa-copyright"></i> 2025 STRIDE · built with <i class="fas fa-heart" style="color:#e53e3e;"></i> for capstone
+            <i class="far fa-copyright"></i> 2026 ACHILLES · built with <i class="fas fa-heart" style="color:#e53e3e;"></i> for capstone
         </div>
     </footer>
 

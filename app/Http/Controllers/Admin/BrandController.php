@@ -17,11 +17,23 @@ class BrandController extends Controller
 
     public function store(Request $request)
 {
-    Brand::create([
+    $request->validate([
+        'brand_name' => 'required|string|max:255|unique:brands,brand_name'
+    ]);
+
+    $brand = Brand::create([
         'brand_name' => $request->brand_name
     ]);
 
-    return redirect()->route('admin.brands.index');
+    if ($request->ajax()) {
+        return response()->json([
+            'success' => true,
+            'message' => 'Brand "' . $brand->brand_name . '" created successfully!',
+            'brand' => $brand
+        ]);
+    }
+
+    return redirect()->route('admin.brands.index')->with('success', 'Brand created successfully!');
 }
 
 
@@ -29,5 +41,25 @@ public function destroy(Brand $brand)
 {
     $brand->delete();
     return redirect()->route('admin.brands.index');
+}
+
+public function edit(Brand $brand)
+{
+    return view('admin.brands.edit', compact('brand'));
+}
+
+public function update(Request $request, Brand $brand)
+{
+    $request->validate([
+        'brand_name' => 'required|string|max:255',
+    ]);
+
+    $brand->update([
+        'brand_name' => $request->brand_name,
+    ]);
+
+    return redirect()
+        ->route('admin.brands.index')
+        ->with('success', 'Brand updated successfully!');
 }
 }

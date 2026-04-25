@@ -13,10 +13,13 @@ use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Admin\StockController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminOrderController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\InventoryController;
 
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\UserAddressController;
+
 
 
 /*
@@ -156,12 +159,16 @@ Route::middleware(['auth', 'admin'])
         Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
         Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+        Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
+        Route::put('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
 
 
         // Brands
         Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');
         Route::post('/brands', [BrandController::class, 'store'])->name('brands.store');
         Route::delete('/brands/{brand}', [BrandController::class, 'destroy'])->name('brands.destroy');
+        Route::get('/brands/{brand}/edit', [BrandController::class, 'edit'])->name('brands.edit');
+        Route::put('/brands/{brand}', [BrandController::class, 'update'])->name('brands.update');
 
 
         // Products
@@ -235,4 +242,10 @@ Route::middleware(['auth', 'admin'])
 
         Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])
             ->name('orders.update-status');
+        //reports
+        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+        
+        //inventory routes
+        Route::get('/inventory', [InventoryController::class, 'index'])
+        ->name('inventory.index');
     });

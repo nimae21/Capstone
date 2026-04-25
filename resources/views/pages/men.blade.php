@@ -18,63 +18,59 @@
     </div>
     <div class="sort-select">
         <i class="fas fa-arrow-down-wide-short"></i>
-        <select id="sortSelect" onchange="sortProducts(this.value)">
-            <option value="featured">Featured</option>
-            <option value="price-low-high">Price: Low to High</option>
-            <option value="price-high-low">Price: High to Low</option>
-        </select>
+        <select id="sortSelect" onchange="applySort(this.value)">
+    <option value="">Featured</option>
+    <option value="price-low-high">Price: Low to High</option>
+    <option value="price-high-low">Price: High to Low</option>
+</select>
     </div>
 </div>
 
 <div class="product-grid container" id="productGrid">
     @foreach($products as $product)
-        @php
-            // Get first variant + stock for preview price
-            $firstVariant = $product->variants->first();
-            $stock = $firstVariant ? $firstVariant->stocks->last() : null;
-            
-            // Determine badge text based on product category or random for demo
-            $badgeText = '';
-            if(isset($product->category) && $product->category == 'new') {
-                $badgeText = 'JUST IN';
-            } elseif(isset($product->category) && $product->category == 'sale') {
-                $badgeText = 'SALE';
-            } else {
-                // Fallback: random badge for visual variety (optional)
-                $badges = ['LIMITED', 'BESTSELLER', 'NEW', 'PREMIUM'];
-                $badgeText = $badges[array_rand($badges)];
-            }
-        @endphp
+    @php
+        $variant = $product->variants->first();
 
-        <div class="shoe-card" 
-             data-category="all" 
-             data-price="{{ $stock->price ?? 0 }}">
-            
-            {{-- BADGE (like New Drops "JUST IN" style) --}}
-            <span class="shoe-badge">{{ $badgeText }}</span>
-            
-            {{-- PRODUCT IMAGE: Uses the first variant image if available, else placeholder --}}
-            <img class="shoe-image" 
-                 src="{{ $firstVariant && $firstVariant->image ? asset('storage/' . $firstVariant->image) : 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=400' }}" 
-                 alt="{{ $product->product_name }}">
+        // Get latest stock safely
+        $stock = $variant?->stocks?->last();
 
-            <h3>{{ $product->product_name }}</h3>
-            
-            {{-- OPTIONAL: Show category badge like New Drops (men/women/kids) --}}
-            @if(isset($product->gender_category))
-            <div class="shoe-category" style="color:#e53e3e;">{{ $product->gender_category }}</div>
-            @endif
+        // Safe values
+        $price = $stock->price ?? 0;
+        $image = $variant->image ?? null;
+        $description = $product->description ?? 'No description available';
 
-            <p class="price">
-                ₱{{ number_format($stock->price ?? 0, 2) }}
-            </p>
+        // Badge
+        $badges = ['LIMITED', 'BESTSELLER', 'NEW', 'PREMIUM'];
+        $badgeText = $badges[array_rand($badges)];
+    @endphp
 
-            {{-- VIEW PRODUCT BUTTON --}}
-            <a href="{{ route('product.show', $product->product_id) }}" class="btn btn-card">
-                View Product
-            </a>
-        </div>
-    @endforeach
+    <div class="shoe-card" data-price="{{ $price }}">
+
+        <span class="shoe-badge">{{ $badgeText }}</span>
+
+        {{-- IMAGE --}}
+        <img class="shoe-image"
+             src="{{ $image ? asset('storage/' . $image) : 'https://via.placeholder.com/400' }}"
+             alt="{{ $product->product_name }}">
+
+        {{-- NAME --}}
+        <h3>{{ $product->product_name }}</h3>
+
+        {{-- DESCRIPTION (THIS WAS MISSING) --}}
+        <p style="font-size: 12px; color: gray;">
+            {{ Str::limit($description, 60) }}
+        </p>
+
+        {{-- PRICE --}}
+        <p class="price">
+            ₱{{ number_format($price, 2) }}
+        </p>
+
+        <a href="{{ route('product.show', $product->product_id) }}" class="btn btn-card">
+            View Product
+        </a>
+    </div>
+@endforeach
     <div style="margin-top: 20px;">
     {{ $products->links() }}
 </div>
@@ -82,26 +78,21 @@
 
 @push('scripts')
 <script>
-    // filterProducts function removed since no filters exist
     // All products are always shown
     
-    function sortProducts(sortValue) {
-        const grid = document.getElementById('productGrid');
-        const cards = Array.from(grid.children);
-        
-        if (sortValue === 'price-low-high') {
-            cards.sort((a, b) => parseFloat(a.dataset.price) - parseFloat(b.dataset.price));
-        } else if (sortValue === 'price-high-low') {
-            cards.sort((a, b) => parseFloat(b.dataset.price) - parseFloat(a.dataset.price));
-        } else if (sortValue === 'featured') {
-            // Optional: Reset to original order (featured)
-            // Since we don't have a featured flag, we just keep original DOM order
-            // You can implement custom logic here if needed
-            return;
-        }
-        
-        cards.forEach(card => grid.appendChild(card));
+    <script>
+function applySort(value) {
+    const url = new URL(window.location.href);
+    
+    if (value) {
+        url.searchParams.set('sort', value);
+    } else {
+        url.searchParams.delete('sort');
     }
+
+    window.location.href = url.toString();
+}
+</script>
 </script>
 @endpush
 @endsection

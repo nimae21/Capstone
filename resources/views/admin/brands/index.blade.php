@@ -86,6 +86,34 @@
             background: linear-gradient(135deg, #dc2626, #b91c1c);
         }
 
+        /* 3D Button - Blue (Edit) */
+        .btn-sm-blue {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            background: #3b82f6;
+            color: white;
+            font-weight: 500;
+            font-size: 0.75rem;
+            padding: 0.4rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #2563eb;
+            cursor: pointer;
+            transition: all 0.05s linear;
+            box-shadow: 0 3px 0 #1e40af;
+            transform: translateY(-1px);
+            text-decoration: none;
+        }
+        .btn-sm-blue:active {
+            transform: translateY(3px);
+            box-shadow: 0 0px 0 #1e40af;
+        }
+        .btn-sm-blue:hover {
+            background: #2563eb;
+        }
+
         /* Small 3D Button - Red (Delete) */
         .btn-sm-red {
             position: relative;
@@ -182,6 +210,21 @@
             transform: translateX(2px);
         }
 
+        /* Modal animations */
+        .modal-enter {
+            animation: modalFadeIn 0.3s ease-out;
+        }
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
         /* Scrollbar */
         .custom-scroll::-webkit-scrollbar {
             height: 5px;
@@ -201,12 +244,20 @@
 @section('content')
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 relative z-10">
         
-        <!-- Success Alert -->
+        <!-- Success Modal -->
         @if(session('success'))
-            <div class="bg-white/90 backdrop-blur-sm border-l-4 border-emerald-400 text-gray-700 p-4 rounded-xl shadow-md flex items-center justify-between transition-all hover:shadow-lg">
-                <div class="font-medium">{{ session('success') }}</div>
-                <button onclick="this.parentElement.style.display='none'" class="text-gray-400 hover:text-gray-600 transition">✕</button>
+        <div id="successModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div class="bg-white w-full max-w-sm p-6 rounded-2xl text-center shadow-2xl modal-enter">
+                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800">Success!</h2>
+                <p class="text-gray-600 mt-2">{{ session('success') }}</p>
+                <button onclick="closeSuccessModal()" class="mt-4 px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold hover:shadow-lg transition-all">OK</button>
             </div>
+        </div>
         @endif
 
         <!-- Stats Cards -->
@@ -215,7 +266,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Brands</p>
-                        <p class="text-4xl font-black text-gray-800 mt-2">{{ $brands->count() }}</p>
+                        <p class="text-4xl font-black text-gray-800 mt-2">{{ $brands->total() }}</p>
                     </div>
                     <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center text-red-600">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
@@ -246,14 +297,14 @@
                     <div class="w-1 h-5 bg-gradient-to-b from-red-600 to-black rounded-full"></div>
                     <h3 class="text-md font-bold gradient-title">Create New Brand</h3>
                 </div>
-                <form action="{{ route('admin.brands.store') }}" method="POST" class="space-y-5">
+                <form action="{{ route('admin.brands.store') }}" method="POST" id="createBrandForm">
                     @csrf
                     <div>
                         <label for="brand_name" class="block text-sm font-semibold text-gray-700 mb-1">Brand Name <span class="text-red-500">*</span></label>
                         <input type="text" name="brand_name" id="brand_name" placeholder="e.g., Nike, Adidas, Puma" required
                                class="input-premium">
                     </div>
-                    <button type="submit" class="btn-3d-red w-full">
+                    <button type="submit" class="btn-3d-red w-full mt-5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         Add Brand
                     </button>
@@ -276,7 +327,7 @@
                         <li class="tip-item pl-3 py-1">Well-organized brands improve the shopping experience.</li>
                     </ul>
                     <div class="mt-5 pt-4 border-t border-gray-100">
-                        <div class="tip-3d flex items-center gap-2 text-sm p-3 -mx-1 rounded-lg transition-all">
+                        <div class="flex items-center gap-2 text-sm p-3 -mx-1 rounded-lg transition-all">
                             <span class="font-medium text-gray-800">💡 Tip:</span>
                             <span class="text-gray-600">Add only active or relevant brands to keep the list clean.</span>
                         </div>
@@ -308,14 +359,16 @@
                                     <span class="font-medium text-gray-800">{{ $brand->brand_name }}</span>
                                 </td>
                                 <td class="px-6 py-3 text-right">
-                                    <form action="{{ route('admin.brands.destroy', $brand->brand_id) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete brand \"{{ addslashes($brand->brand_name) }}\"? This action cannot be undone.');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn-sm-red">
+                                    <div class="flex gap-2 justify-end">
+                                        <a href="{{ route('admin.brands.edit', $brand->brand_id) }}" class="btn-sm-blue">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                            Edit
+                                        </a>
+                                        <button type="button" onclick="openDeleteModal({{ $brand->brand_id }}, '{{ addslashes($brand->brand_name) }}')" class="btn-sm-red">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                             Delete
                                         </button>
-                                    </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
@@ -325,12 +378,119 @@
                                 </td>
                             </tr>
                         @endforelse
-                        <div style="margin-top: 20px;">
-    {{ $brands->links() }}
-</div>
                     </tbody>
                 </table>
+                @if($brands->hasPages())
+                    <div class="px-6 py-4 border-t border-gray-100">
+                        {{ $brands->links() }}
+                    </div>
+                @endif
             </div>
         </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl modal-enter">
+            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </div>
+            <h2 class="font-bold text-lg text-center">Delete Brand?</h2>
+            <p class="text-gray-500 text-sm text-center mt-2" id="deleteModalMessage">This action cannot be undone.</p>
+            <form id="deleteBrandForm" method="POST" class="mt-4">
+                @csrf
+                @method('DELETE')
+                <div class="flex justify-center gap-3">
+                    <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Brand Success Modal -->
+    <div id="addSuccessModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
+        <div class="bg-white w-full max-w-sm p-6 rounded-2xl text-center shadow-2xl modal-enter">
+            <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <h2 class="text-xl font-bold text-gray-800">Brand Added!</h2>
+            <p class="text-gray-600 mt-2" id="addSuccessMessage">Brand has been created successfully.</p>
+            <button onclick="closeAddSuccessModal()" class="mt-4 px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-semibold hover:shadow-lg transition-all">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // ========== DELETE MODAL ==========
+        function openDeleteModal(brandId, brandName) {
+            const modal = document.getElementById('deleteModal');
+            const form = document.getElementById('deleteBrandForm');
+            const messageEl = document.getElementById('deleteModalMessage');
+            
+            form.action = '/admin/brands/' + brandId;
+            messageEl.textContent = `Delete brand "${brandName}"? This action cannot be undone.`;
+            modal.classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('deleteModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeDeleteModal();
+        });
+
+        // ========== SUCCESS MODALS ==========
+        function closeSuccessModal() {
+            const modal = document.getElementById('successModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function closeAddSuccessModal() {
+            document.getElementById('addSuccessModal').classList.add('hidden');
+            window.location.reload();
+        }
+
+        // Auto-hide success modals after 3 seconds
+        window.addEventListener('DOMContentLoaded', () => {
+            const successModal = document.getElementById('successModal');
+            if (successModal) {
+                setTimeout(() => {
+                    successModal.style.display = 'none';
+                }, 3000);
+            }
+        });
+
+        // ========== ADD BRAND FORM SUBMIT (with modal) ==========
+        const createForm = document.getElementById('createBrandForm');
+        if (createForm) {
+            createForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(createForm);
+                const response = await fetch(createForm.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    document.getElementById('addSuccessMessage').textContent = result.message || 'Brand has been created successfully.';
+                    document.getElementById('addSuccessModal').classList.remove('hidden');
+                    createForm.reset();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || 'Something went wrong. Please try again.');
+                }
+            });
+        }
+    </script>
 @endsection

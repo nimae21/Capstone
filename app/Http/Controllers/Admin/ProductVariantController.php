@@ -10,32 +10,31 @@ class ProductVariantController extends Controller
 {
     // Show all variants of a product
     public function index(Product $product)
-    {
-        // Eager load variants for efficiency
-        $product->load('variants');
+{
+    $variants = ProductVariant::where('product_id', $product->product_id)
+        ->orderBy('size', 'asc')
+        ->get();
 
-        // Pass only the product, variants are accessed via $product->variants in blade
-        return view('admin.variants.index', compact('product'));
-    }
-
+    return view('admin.variants.index', compact('product', 'variants'));
+}
     // Store a new variant
     public function store(Request $request, Product $product)
-    {
-        // Validate form inputs
-        $request->validate([
-            'size' => 'required|string|max:10',
-            'color' => 'required|string|max:50',
-        ]);
+{
+    $request->validate([
+        'size' => 'required|string|max:10',
+        'color' => 'required|string|max:50',
+    ]);
 
-        // Create the variant using the relationship
-        $product->variants()->create([
-            'size' => $request->size,
-            'color' => $request->color,
-        ]);
+    $product->variants()->create([
+        'size' => $request->size,
+        'color' => $request->color,
+    ]);
 
-        return redirect()->route('admin.products.variants.index', $product->product_id)
-                         ->with('success', 'Variant added successfully!');
-    }
+    return redirect()
+        ->route('admin.products.variants.index', $product->product_id)
+        ->with('success', 'Variant added successfully!');
+        
+}
 
     // Show the edit form for a variant
 public function edit(ProductVariant $variant)

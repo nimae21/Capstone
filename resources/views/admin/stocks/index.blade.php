@@ -286,14 +286,9 @@
                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                                 Edit
                                             </a>
-                                            <form action="{{ route('admin.stocks.destroy', $stock->stock_id) }}" method="POST" onsubmit="return confirm('Delete this stock entry? This action cannot be undone.');" class="inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn-sm-3d btn-sm-red">
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                                    Delete
-                                                </button>
-                                            </form>
+                                            <button type="button"
+        onclick="openDeleteStock({{ $stock->stock_id }})"
+        class="btn-sm-3d btn-sm-red">
                                         </div>
                                     </td>
                                 </tr>
@@ -308,4 +303,85 @@
             </div>
         </div>
     </div>
+
+<div id="deleteStockModal"
+     class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+
+    <div class="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
+
+        <h2 class="font-bold text-lg text-gray-800">Delete Stock?</h2>
+
+        <p class="text-sm text-gray-500 mt-2">
+            This action cannot be undone.
+        </p>
+
+        <form id="deleteStockForm" method="POST" class="mt-4">
+            @csrf
+            @method('DELETE')
+
+            <div class="flex justify-center gap-3">
+                <button type="button"
+                        onclick="closeDeleteStock()"
+                        class="px-4 py-2 bg-gray-100 rounded-lg">
+                    Cancel
+                </button>
+
+                <button type="submit"
+                        class="px-4 py-2 bg-red-500 text-white rounded-lg">
+                    Delete
+                </button>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+@if(session('success'))
+<div id="successModal"
+     class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+
+    <div class="bg-white w-full max-w-sm p-6 rounded-2xl text-center shadow-xl">
+
+        <h2 class="text-green-600 font-bold text-lg">Success</h2>
+
+        <p class="text-gray-600 mt-2">
+            {{ session('success') }}
+        </p>
+
+        <button onclick="closeSuccessModal()"
+                class="mt-4 px-4 py-2 bg-green-500 text-white rounded-lg">
+            OK
+        </button>
+
+    </div>
+</div>
+@endif
+
 @endsection
+
+<script>
+function openDeleteStock(id) {
+    document.getElementById('deleteStockForm').action =
+        '/admin/stocks/' + id;
+
+    document.getElementById('deleteStockModal').classList.remove('hidden');
+}
+
+function closeDeleteStock() {
+    document.getElementById('deleteStockModal').classList.add('hidden');
+}
+
+function closeSuccessModal() {
+    document.getElementById('successModal').style.display = 'none';
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('successModal');
+
+    if (modal) {
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 2500);
+    }
+});
+</script>
