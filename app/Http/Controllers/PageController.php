@@ -15,7 +15,7 @@ class PageController extends Controller
 {
     $products = Product::with('variants.stocks')
         ->where('category_id', 1)
-        ->get();
+        ->paginate(5);
 
     return view('pages.men', compact('products'));
 }
@@ -24,7 +24,7 @@ class PageController extends Controller
     {
         $products = Product::with('variants.stocks')
         ->where('category_id', 2) 
-        ->get();
+        ->paginate(5);
 
     return view('pages.women', compact('products'));
     }
@@ -33,7 +33,7 @@ class PageController extends Controller
     {
         $products = Product::with('variants.stocks')
         ->where('category_id', 5) 
-        ->get();
+        ->paginate(5);
 
     return view('pages.kids', compact('products'));
     }
@@ -41,6 +41,7 @@ class PageController extends Controller
     public function sale()
     {
         return view('pages.sale');
+        
     }
 
     public function new()

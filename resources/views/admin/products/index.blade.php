@@ -443,7 +443,7 @@
                                             </tr>
                                         </thead>
                                         <tbody class="divide-y divide-gray-100">
-                                            @foreach($product->variants as $variant)
+                                            @foreach($product->variants->take(5) as $variant)
                                                 <tr class="table-row-3d">
                                                     <td class="px-3 py-2 font-medium text-gray-800">{{ $variant->size }}</td>
                                                     <td class="px-3 py-2 text-gray-600">{{ $variant->color }}</td>
@@ -471,6 +471,14 @@
                                             @endforeach
                                         </tbody>
                                     </table>
+                                    @if($product->variants->count() > 5)
+    <div class="text-xs text-gray-500 mt-2">
+        Showing 5 of {{ $product->variants->count() }} variants
+        <a href="{{ route('admin.products.edit', $product->product_id) }}" class="text-blue-500 underline">
+            View all
+        </a>
+    </div>
+@endif
                                 </div>
                             @else
                                 <div class="text-center py-4 bg-gray-50/50 rounded-lg text-gray-500 text-xs">

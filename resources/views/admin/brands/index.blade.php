@@ -325,6 +325,9 @@
                                 </td>
                             </tr>
                         @endforelse
+                        <div style="margin-top: 20px;">
+    {{ $brands->links() }}
+</div>
                     </tbody>
                 </table>
             </div>

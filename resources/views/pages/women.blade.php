@@ -77,6 +77,9 @@
             </a>
         </div>
     @endforeach
+    <div style="margin-top: 20px;">
+    {{ $products->links() }}
+</div>
 </div>
 
 @push('scripts')

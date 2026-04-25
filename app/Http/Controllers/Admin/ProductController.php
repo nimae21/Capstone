@@ -16,7 +16,8 @@ use Illuminate\Support\Facades\Storage;
 class ProductController extends Controller
 {
     public function index(){
- $products = Product::with(['category', 'brand'])->get();
+ $products = Product::with(['category', 'brand'])->paginate(5);
+
         $categories = Category::all();
         $brands = Brand::all();
         return view('admin.products.index', compact('products', 'categories', 'brands'));
