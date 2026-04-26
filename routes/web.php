@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\InventoryController;
+use App\Http\Controllers\Admin\AdminDashboardController;
 
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
@@ -51,7 +52,7 @@ Auth::routes(['verify' => true]);
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'isUser'])->group(function () {
 
     // Pages
     Route::get('/home', [PageController::class, 'home'])->name('home');
@@ -63,7 +64,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // All products listing (for back to shop button)
     Route::get('/products', [PageController::class, 'home'])->name('products.index');
-
+    Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
 
     /*
     |--------------------------------------------------------------------------
@@ -150,9 +151,10 @@ Route::middleware(['auth', 'admin'])
     ->name('admin.')
     ->group(function () {
 
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('dashboard');
+        
+
+Route::get('/dashboard', [AdminDashboardController::class, 'index'])
+    ->name('dashboard');
 
 
         // Categories

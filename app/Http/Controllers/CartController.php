@@ -141,4 +141,17 @@ public function remove($id)
         'success' => true
     ]);
 }
+
+public function count()
+{
+    $count = 0;
+
+    if (auth()->check()) {
+        $count = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
+    }
+
+    return response()->json([
+        'count' => $count
+    ]);
+}
 }
