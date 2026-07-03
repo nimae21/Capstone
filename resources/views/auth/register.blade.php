@@ -356,180 +356,300 @@
   </div>
 
   <script>
-    (function() {
-      // ========== PARTICLES (same as login) ==========
-      const particleField = document.getElementById('elegantParticles');
-      if(particleField) {
-        for(let i=0; i<120; i++) {
-          const p = document.createElement('div');
-          p.classList.add('particle-elegant');
-          const size = Math.random() * 5 + 2;
-          p.style.width = `${size}px`;
-          p.style.height = `${size}px`;
-          p.style.left = `${Math.random() * 100}%`;
-          p.style.top = `${Math.random() * 100}%`;
-          p.style.animationDuration = `${Math.random() * 18 + 12}s`;
-          p.style.animationDelay = `${Math.random() * 10}s`;
-          particleField.appendChild(p);
-        }
-      }
+(function () {
 
-      // ========== PARALLAX ==========
-      const bgShoe = document.querySelector('.animate-cinematic-zoom');
-      if(bgShoe) {
+    // =========================
+    // PARTICLES
+    // =========================
+    const particleField = document.getElementById('elegantParticles');
+
+    if (particleField) {
+        for (let i = 0; i < 120; i++) {
+            const p = document.createElement('div');
+
+            p.classList.add('particle-elegant');
+
+            const size = Math.random() * 5 + 2;
+
+            p.style.width = `${size}px`;
+            p.style.height = `${size}px`;
+            p.style.left = `${Math.random() * 100}%`;
+            p.style.top = `${Math.random() * 100}%`;
+            p.style.animationDuration = `${Math.random() * 18 + 12}s`;
+            p.style.animationDelay = `${Math.random() * 10}s`;
+
+            particleField.appendChild(p);
+        }
+    }
+
+    // =========================
+    // PARALLAX
+    // =========================
+    const bgShoe = document.querySelector('.animate-cinematic-zoom');
+
+    if (bgShoe) {
         document.addEventListener('mousemove', (e) => {
-          const x = (e.clientX / window.innerWidth) * 20 - 10;
-          const y = (e.clientY / window.innerHeight) * 12 - 6;
-          bgShoe.style.transform = `translate(${x * -0.4}px, ${y * -0.3}px) scale(1.12)`;
-        });
-      }
 
-      // ========== INPUT CLICK RIPPLE ==========
-      const inputs = document.querySelectorAll('.input-group-float input');
-      inputs.forEach(input => {
-        input.addEventListener('click', (e) => {
-          const ripple = document.createElement('div');
-          ripple.className = 'input-click-ripple';
-          ripple.style.position = 'absolute';
-          ripple.style.top = '0';
-          ripple.style.left = '0';
-          ripple.style.width = '100%';
-          ripple.style.height = '100%';
-          ripple.style.borderRadius = '40px';
-          ripple.style.background = 'radial-gradient(circle, rgba(230,0,35,0.2), transparent)';
-          ripple.style.pointerEvents = 'none';
-          ripple.style.transform = 'scale(0)';
-          ripple.style.transition = 'transform 0.4s ease-out, opacity 0.3s';
-          ripple.style.opacity = '1';
-          input.parentElement.style.position = 'relative';
-          input.parentElement.appendChild(ripple);
-          requestAnimationFrame(() => {
-            ripple.style.transform = 'scale(2.5)';
-            ripple.style.opacity = '0';
-          });
-          setTimeout(() => ripple.remove(), 400);
-        });
-      });
+            const x = (e.clientX / window.innerWidth) * 20 - 10;
+            const y = (e.clientY / window.innerHeight) * 12 - 6;
 
-      // ========== PASSWORD TOGGLE (only when field has value) ==========
-      function initPasswordToggle(toggleBtn, passwordInput) {
-        if(!toggleBtn || !passwordInput) return;
+            bgShoe.style.transform =
+                `translate(${x * -0.4}px, ${y * -0.3}px) scale(1.12)`;
+        });
+    }
+
+    // =========================
+    // INPUT RIPPLE
+    // =========================
+    const inputs = document.querySelectorAll('.input-group-float input');
+
+    inputs.forEach(input => {
+
+        input.addEventListener('click', () => {
+
+            const ripple = document.createElement('div');
+
+            ripple.className = 'input-click-ripple';
+
+            ripple.style.position = 'absolute';
+            ripple.style.top = '0';
+            ripple.style.left = '0';
+            ripple.style.width = '100%';
+            ripple.style.height = '100%';
+            ripple.style.borderRadius = '40px';
+            ripple.style.background =
+                'radial-gradient(circle, rgba(230,0,35,0.2), transparent)';
+            ripple.style.pointerEvents = 'none';
+            ripple.style.transform = 'scale(0)';
+            ripple.style.transition =
+                'transform 0.4s ease-out, opacity 0.3s';
+
+            input.parentElement.style.position = 'relative';
+            input.parentElement.appendChild(ripple);
+
+            requestAnimationFrame(() => {
+                ripple.style.transform = 'scale(2.5)';
+                ripple.style.opacity = '0';
+            });
+
+            setTimeout(() => ripple.remove(), 400);
+        });
+    });
+
+    // =========================
+    // PASSWORD TOGGLE
+    // =========================
+    function initPasswordToggle(toggleBtn, passwordInput) {
+
+        if (!toggleBtn || !passwordInput) return;
+
         function updateVisibility() {
-          const hasValue = passwordInput.value.trim().length > 0;
-          if(hasValue) {
-            toggleBtn.classList.add('visible');
-          } else {
-            toggleBtn.classList.remove('visible');
-          }
+
+            const hasValue = passwordInput.value.trim().length > 0;
+
+            if (hasValue) {
+                toggleBtn.classList.add('visible');
+            } else {
+                toggleBtn.classList.remove('visible');
+            }
         }
+
         updateVisibility();
+
         passwordInput.addEventListener('input', updateVisibility);
+
         toggleBtn.addEventListener('click', () => {
-          const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-          passwordInput.setAttribute('type', type);
-          const icon = toggleBtn.querySelector('i');
-          icon.classList.toggle('fa-eye-slash');
-          icon.classList.toggle('fa-eye');
+
+            const type =
+                passwordInput.getAttribute('type') === 'password'
+                    ? 'text'
+                    : 'password';
+
+            passwordInput.setAttribute('type', type);
+
+            const icon = toggleBtn.querySelector('i');
+
+            icon.classList.toggle('fa-eye-slash');
+            icon.classList.toggle('fa-eye');
         });
-      }
+    }
 
-      const togglePassword = document.getElementById('togglePassword');
-      const passwordInput = document.getElementById('password');
-      initPasswordToggle(togglePassword, passwordInput);
+    initPasswordToggle(
+        document.getElementById('togglePassword'),
+        document.getElementById('password')
+    );
 
-      const toggleConfirm = document.getElementById('toggleConfirmPassword');
-      const confirmInput = document.getElementById('password-confirm');
-      initPasswordToggle(toggleConfirm, confirmInput);
+    initPasswordToggle(
+        document.getElementById('toggleConfirmPassword'),
+        document.getElementById('password-confirm')
+    );
 
-      // ========== RIPPLE ON REGISTER BUTTON ==========
-      const registerBtn = document.getElementById('premiumRegisterBtn');
-      function addRipple(e, btn) {
+    // =========================
+    // BUTTON RIPPLE
+    // =========================
+    const registerBtn =
+        document.getElementById('premiumRegisterBtn');
+
+    function addRipple(e, btn) {
+
         const rect = btn.getBoundingClientRect();
+
         const size = Math.max(rect.width, rect.height);
+
         const ripple = document.createElement('span');
+
         ripple.className = 'ripple-clean';
+
         ripple.style.width = ripple.style.height = `${size}px`;
-        ripple.style.left = `${e.clientX - rect.left - size/2}px`;
-        ripple.style.top = `${e.clientY - rect.top - size/2}px`;
+
+        ripple.style.left =
+            `${e.clientX - rect.left - size / 2}px`;
+
+        ripple.style.top =
+            `${e.clientY - rect.top - size / 2}px`;
+
         btn.appendChild(ripple);
+
         setTimeout(() => ripple.remove(), 500);
-      }
-      if(registerBtn) {
+    }
+
+    if (registerBtn) {
         registerBtn.addEventListener('click', (e) => {
-          if(!registerBtn.disabled) addRipple(e, registerBtn);
+
+            if (!registerBtn.disabled) {
+                addRipple(e, registerBtn);
+            }
         });
-      }
+    }
 
-      // ========== CLIENT VALIDATION (email + password match) ==========
-      const form = document.getElementById('premiumRegisterForm');
-      const emailInput = document.getElementById('email');
-      const pwdInput = document.getElementById('password');
-      const confirmPwdInput = document.getElementById('password-confirm');
-      const emailGroup = document.getElementById('emailGroup');
-      const confirmGroup = document.getElementById('confirmPasswordGroup');
+    // =========================
+    // FORM VALIDATION
+    // =========================
+    const form =
+        document.getElementById('premiumRegisterForm');
 
-      function clearErrors() {
-        if(emailGroup) emailGroup.classList.remove('error');
-        if(confirmGroup) confirmGroup.classList.remove('error');
-        const existingCustomErrors = document.querySelectorAll('.error-message.custom-error');
-        existingCustomErrors.forEach(err => err.remove());
-      }
+    const emailInput =
+        document.getElementById('email');
 
-      function validate() {
+    const pwdInput =
+        document.getElementById('password');
+
+    const confirmPwdInput =
+        document.getElementById('password-confirm');
+
+    const emailGroup =
+        document.getElementById('emailGroup');
+
+    const passwordGroup =
+        document.getElementById('passwordGroup');
+
+    const confirmGroup =
+        document.getElementById('confirmPasswordGroup');
+
+    function clearErrors() {
+
+        document.querySelectorAll('.custom-error')
+            .forEach(el => el.remove());
+
+        emailGroup?.classList.remove('error');
+        passwordGroup?.classList.remove('error');
+        confirmGroup?.classList.remove('error');
+    }
+
+    function createError(group, message) {
+
+        group.classList.add('error');
+
+        const err = document.createElement('div');
+
+        err.className = 'error-message custom-error';
+
+        err.textContent = message;
+
+        group.appendChild(err);
+    }
+
+    function validate() {
+
         let isValid = true;
+
         clearErrors();
 
+        // EMAIL
         const emailVal = emailInput.value.trim();
-        if(!emailVal || !/^\S+@\S+\.\S+$/.test(emailVal)) {
-          if(emailGroup) emailGroup.classList.add('error');
-          let errDiv = emailGroup.querySelector('.error-message.custom-error');
-          if(!errDiv) {
-            errDiv = document.createElement('div');
-            errDiv.className = 'error-message custom-error';
-            emailGroup.appendChild(errDiv);
-          }
-          errDiv.textContent = 'Valid email required';
-          isValid = false;
+
+        if (!emailVal || !/^\S+@\S+\.\S+$/.test(emailVal)) {
+
+            createError(
+                emailGroup,
+                'Valid email required'
+            );
+
+            isValid = false;
         }
 
-        if(pwdInput.value !== confirmPwdInput.value) {
-          if(confirmGroup) confirmGroup.classList.add('error');
-          let errDiv = confirmGroup.querySelector('.error-message.custom-error');
-          if(!errDiv) {
-            errDiv = document.createElement('div');
-            errDiv.className = 'error-message custom-error';
-            confirmGroup.appendChild(errDiv);
-          }
-          errDiv.textContent = 'Passwords do not match';
-          isValid = false;
+        // PASSWORD STRENGTH
+        const password = pwdInput.value;
+
+        const strongPassword =
+            /[a-z]/.test(password) &&
+            /[A-Z]/.test(password) &&
+            /[0-9]/.test(password) &&
+            /[^A-Za-z0-9]/.test(password) &&
+            password.length >= 8;
+
+        if (!strongPassword) {
+
+            createError(
+                passwordGroup,
+                'Password must contain uppercase, lowercase, number, symbol, and 8+ chars'
+            );
+
+            isValid = false;
+        }
+
+        // PASSWORD MATCH
+        if (pwdInput.value !== confirmPwdInput.value) {
+
+            createError(
+                confirmGroup,
+                'Passwords do not match'
+            );
+
+            isValid = false;
         }
 
         return isValid;
-      }
+    }
 
-      if(form) {
-        form.addEventListener('submit', function(e) {
-          if(!validate()) {
-            e.preventDefault();
-            return;
-          }
-          registerBtn.disabled = true;
-          registerBtn.classList.add('opacity-70', 'cursor-not-allowed');
-          registerBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i><span>CREATING ACCOUNT...</span>`;
+    // =========================
+    // FORM SUBMIT
+    // =========================
+    if (form) {
+
+        form.addEventListener('submit', function (e) {
+
+            if (!validate()) {
+
+                e.preventDefault();
+
+                return;
+            }
+
+            registerBtn.disabled = true;
+
+            registerBtn.classList.add(
+                'opacity-70',
+                'cursor-not-allowed'
+            );
+
+            registerBtn.innerHTML =
+                `<i class="fas fa-circle-notch fa-spin"></i>
+                 <span>CREATING ACCOUNT...</span>`;
         });
-      }
+    }
 
-      // Show server-side errors
-      if(document.querySelector('#emailGroup .error-message:not(.custom-error)')) {
-        emailGroup?.classList.add('error');
-      }
-      if(document.querySelector('#passwordGroup .error-message')) {
-        document.getElementById('passwordGroup')?.classList.add('error');
-      }
-      if(document.querySelector('#confirmPasswordGroup .error-message:not(.custom-error)')) {
-        confirmGroup?.classList.add('error');
-      }
-    })();
-  </script>
+})();
+</script>
 </body>
 @endsection

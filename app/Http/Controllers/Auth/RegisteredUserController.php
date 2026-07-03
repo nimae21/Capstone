@@ -36,7 +36,15 @@ class RegisteredUserController extends Controller
             'last_name' => ['required', 'string', 'max:255'],
             'suffix' => ['nullable',    'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => [
+    'required',
+    'confirmed',
+    Rules\Password::min(8)
+        ->letters()
+        ->mixedCase()
+        ->numbers()
+        ->symbols()
+],
         ]);
 
         $user = User::create([

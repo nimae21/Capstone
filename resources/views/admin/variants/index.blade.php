@@ -197,7 +197,7 @@ body::before {
 
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">First Size</label>
-                    <input type="text" name="size" class="input-premium" placeholder="e.g., S, M, L, XL, 42" required>
+                    <input type="number" name="size" class="input-premium" placeholder="e.g., 42" min="1" required>
                     <p class="text-xs text-gray-400 mt-1">Add the initial size for this color</p>
                 </div>
 
@@ -230,7 +230,7 @@ body::before {
 
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">New Size</label>
-                    <input type="text" name="size" class="input-premium" placeholder="e.g., S, M, L, XL, 42" required>
+                    <input type="number" name="size" class="input-premium" placeholder="e.g., 42" min="1" required>
                 </div>
 
                 <button type="submit" class="w-full btn-add-variant py-2.5 flex items-center justify-center gap-2" style="background: linear-gradient(135deg, #2563eb, #1e40af);">

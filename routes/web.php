@@ -52,7 +52,7 @@ Auth::routes(['verify' => true]);
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified', 'isUser'])->group(function () {
+Route::middleware(['auth', 'verified' , 'isUser'])->group(function () {
 
     // Pages
     Route::get('/home', [PageController::class, 'home'])->name('home');
@@ -146,7 +146,7 @@ Route::middleware(['auth', 'verified', 'isUser'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'admin'])
+Route::middleware(['auth','admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {

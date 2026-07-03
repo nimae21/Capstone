@@ -21,9 +21,9 @@ class ProductVariantController extends Controller
     public function store(Request $request, Product $product)
 {
     $request->validate([
-        'size' => 'required|string|max:10',
-        'color' => 'required|string|max:50',
-    ]);
+    'size' => 'required|integer|min:1',
+    'color' => 'required|string|max:50',
+]);
 
     $product->variants()->create([
         'size' => $request->size,
@@ -47,7 +47,7 @@ public function update(Request $request, ProductVariant $variant)
 {
     // Validate the inputs
     $request->validate([
-        'size' => 'required|string|max:10',
+        'size' => 'required|integer|min:1',
         'color' => 'required|string|max:50',
     ]);
 
