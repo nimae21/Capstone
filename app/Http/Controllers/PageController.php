@@ -46,7 +46,10 @@ class PageController extends Controller
 
     public function new()
     {
-        return view('pages.new');
+        $products = Product::with('variants.stocks')
+        ->where('category_id', 7) 
+        ->paginate(5);
+        return view('pages.new', compact('products'));
     }
 
     public function showProduct($id)
