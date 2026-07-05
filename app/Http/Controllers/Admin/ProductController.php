@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Brand;
-use App\Models\ProductImage;
 use Illuminate\Support\Facades\Storage;
 use App\Models\ProductVariant;
 
@@ -54,9 +53,7 @@ class ProductController extends Controller
         ]);
 
         // Handle image uploads
-        if ($request->hasFile('images')) {
-            $this->saveProductImages($product, $request->file('images'), $validated['primary_image'] ?? 0);
-        }
+        // Image upload is now handled by ProductImageController.
 
         return redirect()
             ->route('admin.products.index')
@@ -113,13 +110,7 @@ public function update(Request $request, Product $product)
         ]);
 
         // Handle new image uploads
-        if ($request->hasFile('images')) {
-    $this->saveProductImages(
-        $product,
-        $request->file('images'),
-        $validated['primary_image'] ?? 0
-    );
-}
+        // Image upload is now handled by ProductImageController.
 
         return redirect()
             ->route('admin.products.index')
@@ -130,33 +121,4 @@ public function update(Request $request, Product $product)
             ->with('error', 'Failed to update product: ' . $e->getMessage());
     }
 }
-
-/**
- * Save product images
- * @param Product $product
- * @param array $images
- * @param int $primaryIndex Index of primary image
- */
-private function saveProductImages(Product $product, $images, $primaryIndex = 0)
-{
-    $displayOrder = $product->images->max('display_order') ?? 0;
-
-    foreach ($images as $index => $image) {
-        if ($image instanceof \Illuminate\Http\UploadedFile) {
-            // Store the image
-            $filename = uniqid() . '_' . time() . '.' . $image->getClientOriginalExtension();
-            $path = $image->storeAs('public/products', $filename);
-
-            // Create database record
-            ProductImage::create([
-                'product_id' => $product->product_id,
-                'image_path' => 'storage/products/' . $filename,
-                'is_primary' => ($index == $primaryIndex),
-                'display_order' => $displayOrder + $index + 1,
-            ]);
-        }
-    }
-}
-
-    
 }

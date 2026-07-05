@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Auth;
 
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\Guest\GuestController;
-
+use App\Http\Controllers\Admin\ProductImageController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\ProductController;
@@ -179,6 +179,14 @@ Route::get('/dashboard', [AdminDashboardController::class, 'index'])
         Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
         Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
         Route::delete('/products/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+       Route::post('/products/{product}/images', [ProductImageController::class, 'store'])
+    ->name('products.images.upload');
+
+Route::delete('/product-images/{image}', [ProductImageController::class, 'destroy'])
+    ->name('products.images.destroy');
+
+Route::patch('/product-images/{image}/primary', [ProductImageController::class, 'setPrimary'])
+    ->name('products.images.primary');
 
 
         // Product Variants

@@ -148,22 +148,75 @@
         Current Images
     </label>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        @forelse($product->images as $image)
-            <div class="relative">
-                <img src="{{ asset($image->image_path) }}"
-                     class="w-full h-28 object-cover rounded-xl border">
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
 
-                @if($image->is_primary)
-                    <span class="absolute top-2 left-2 text-xs bg-red-500 text-white px-2 py-1 rounded">
-                        Primary
-                    </span>
-                @endif
-            </div>
-        @empty
-            <p class="text-sm text-gray-400">No images available.</p>
-        @endforelse
-    </div>
+    @forelse($product->images as $image)
+
+        <div class="border rounded-xl p-3 bg-white shadow">
+
+            <img
+                src="{{ asset('storage/' . $image->image_path) }}"
+                class="w-full h-32 object-cover rounded-lg">
+
+            @if(!$image->is_primary)
+
+                <form
+                    action="{{ route('admin.products.images.primary', $image->image_id) }}"
+                    method="POST"
+                    class="mt-3">
+
+                    @csrf
+                    @method('PATCH')
+
+                    <button
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg">
+
+                        ⭐ Set as Primary
+
+                    </button>
+
+                </form>
+
+            @else
+
+                <div class="mt-3 bg-green-600 text-white text-center py-2 rounded-lg font-semibold">
+
+                    ✓ Primary Image
+
+                </div>
+
+            @endif
+
+            <form
+                action="{{ route('admin.products.images.destroy', $image->image_id) }}"
+                method="POST"
+                class="mt-2"
+                onsubmit="return confirm('Delete this image?')">
+
+                @csrf
+                @method('DELETE')
+
+                <button
+                    class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg">
+
+                    🗑 Delete Image
+
+                </button>
+
+            </form>
+
+        </div>
+
+    @empty
+
+        <p class="text-gray-400 col-span-full text-center">
+
+            No images uploaded.
+
+        </p>
+
+    @endforelse
+
 </div>
 
         <!-- Edit Product Form Card -->
@@ -173,6 +226,38 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                 </div>
                 <h3 class="text-2xl font-bold gradient-title">Edit Product</h3>
+                <div class="card-3d rounded-2xl p-6 md:p-8 mt-8">
+
+    <h3 class="text-2xl font-bold gradient-title mb-6">
+
+        Upload New Images
+
+    </h3>
+
+    <form
+        action="{{ route('admin.products.images.upload', $product->product_id) }}"
+        method="POST"
+        enctype="multipart/form-data">
+
+        @csrf
+
+        <input
+            type="file"
+            name="images[]"
+            multiple
+            class="input-premium">
+
+        <button
+            type="submit"
+            class="btn-3d-red w-full mt-4">
+
+            Upload Images
+
+        </button>
+
+    </form>
+
+</div>
             </div>
 
             <form action="{{ route('admin.products.update', $product->product_id) }}"
@@ -220,17 +305,6 @@
                     </select>
                 </div>
 
-                <!-- Upload New Images -->
-<div>
-    <label class="block text-sm font-semibold text-gray-700 mb-1">
-        Add New Images
-    </label>
-
-    <input type="file"
-           name="images[]"
-           multiple
-           class="input-premium">
-</div>
 
                 <!-- Submit Button -->
                 <div class="pt-2">
