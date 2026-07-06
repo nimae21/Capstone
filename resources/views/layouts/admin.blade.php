@@ -181,7 +181,7 @@
             transform: translateX(4px);
         }
 
-        /* Active link styling – with left red border + glow */
+        /* Active link styling – with left red border + glow (applies to ALL sections) */
         .sidebar a.active {
             background: rgba(230, 0, 35, 0.2);
             color: white;
@@ -336,7 +336,6 @@
         .text-red { color: #e60023; }
         
         /* ========== FLOATING TOOLTIP (appears above cursor on hover, hide mode only) ========== */
-        /* This tooltip will be dynamically created and positioned near the cursor */
         .floating-tooltip {
             position: fixed;
             background: #1e293b;
@@ -410,14 +409,22 @@
         <div class="sidebar-divider"></div>
 
         <h3><i class="fas fa-chart-line fa-fw"></i> Analytics</h3>
-        <a href="{{ route('admin.reports.index') }}" data-tooltip="Reports"><i class="fas fa-file-alt"></i> <span>Reports</span></a>
-        <!-- <a href="#" data-tooltip="Sales"><i class="fas fa-chart-line"></i> <span>Sales</span></a> -->
-        <a href="{{ route('admin.inventory.index') }}" data-tooltip="Inventory"><i class="fas fa-warehouse"></i> <span>Inventory</span></a>
+        <!-- Reports – now with active highlighting -->
+        <a href="{{ route('admin.reports.index') }}" data-tooltip="Reports" class="{{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
+            <i class="fas fa-file-alt"></i> <span>Reports</span>
+        </a>
+        <!-- Inventory – now with active highlighting -->
+        <a href="{{ route('admin.inventory.index') }}" data-tooltip="Inventory" class="{{ request()->routeIs('admin.inventory.*') ? 'active' : '' }}">
+            <i class="fas fa-warehouse"></i> <span>Inventory</span>
+        </a>
 
         <div class="sidebar-divider"></div>
 
         <h3><i class="fas fa-user-cog fa-fw"></i> Account</h3>
-        <a href="#" data-tooltip="Settings"><i class="fas fa-sliders-h"></i> <span>Settings</span></a>
+        <!-- Settings – active if route exists (optional) -->
+        <a href="#" data-tooltip="Settings" class="{{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
+            <i class="fas fa-sliders-h"></i> <span>Settings</span>
+        </a>
 
         <form method="POST" action="{{ route('logout') }}" style="margin-top: 1rem;">
             @csrf
@@ -426,6 +433,31 @@
             </button>
         </form>
     </div>
+
+    <!-- ===== IMMEDIATE SIDEBAR STATE RESTORATION ===== -->
+    <script>
+        (function() {
+            // This runs immediately after the sidebar element is parsed,
+            // before the rest of the page loads, to prevent flicker.
+            var sidebar = document.getElementById('adminSidebar');
+            if (sidebar) {
+                var stored = localStorage.getItem('achilles_sidebar_collapsed');
+                // Only apply on desktop (>=769px) – we'll also check on load,
+                // but we can safely set the class now; it will be overridden if on mobile.
+                var isDesktop = window.innerWidth >= 769;
+                if (stored === '1' && isDesktop) {
+                    sidebar.classList.add('collapsed');
+                    document.body.classList.add('sidebar-collapsed');
+                    // Fix toggle icon
+                    var toggleBtn = document.getElementById('sidebarToggle');
+                    if (toggleBtn) {
+                        var icon = toggleBtn.querySelector('i');
+                        if (icon) icon.className = 'fas fa-chevron-right';
+                    }
+                }
+            }
+        })();
+    </script>
 
     <!-- MAIN CONTENT -->
     <div class="main">
@@ -459,7 +491,6 @@
                 if (collapsed) {
                     sidebar.classList.add('collapsed');
                     body.classList.add('sidebar-collapsed');
-                    // Change toggle icon to chevron-right
                     const icon = toggleBtn?.querySelector('i');
                     if (icon) icon.className = 'fas fa-chevron-right';
                 } else {
@@ -468,20 +499,47 @@
                     const icon = toggleBtn?.querySelector('i');
                     if (icon) icon.className = 'fas fa-chevron-left';
                 }
-                // Save to localStorage
                 localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
             }
 
-            // Initialize from localStorage
+            // Initialize from localStorage – but we already set the class immediately,
+            // so we just need to sync the toggle icon and body class if not already set.
             function initSidebarState() {
                 const saved = localStorage.getItem(STORAGE_KEY);
                 const shouldCollapse = saved === '1';
-                setCollapsed(shouldCollapse);
+                // If the sidebar already has the class, make sure body class matches.
+                // But we trust the immediate script did it.
+                // However, if we are on mobile, we need to override.
+                if (!isDesktop()) {
+                    // Mobile: ensure collapsed class is removed
+                    sidebar.classList.remove('collapsed');
+                    body.classList.remove('sidebar-collapsed');
+                    // Restore toggle icon to left
+                    const icon = toggleBtn?.querySelector('i');
+                    if (icon) icon.className = 'fas fa-chevron-left';
+                } else {
+                    // Desktop: ensure state matches saved, but if the immediate script already set it,
+                    // we might not need to do anything. However, if the saved state changed since
+                    // the immediate script (e.g., user toggled in another tab), we should sync.
+                    // But we don't have a way to detect that easily, so we just enforce.
+                    // To avoid flicker, we only set if different.
+                    const currentlyCollapsed = sidebar.classList.contains('collapsed');
+                    if (shouldCollapse !== currentlyCollapsed) {
+                        setCollapsed(shouldCollapse);
+                    } else {
+                        // Ensure body class matches
+                        if (shouldCollapse) {
+                            body.classList.add('sidebar-collapsed');
+                        } else {
+                            body.classList.remove('sidebar-collapsed');
+                        }
+                    }
+                }
             }
 
             // Toggle function
             function toggleSidebar() {
-                if (!isDesktop()) return; // only desktop uses collapse
+                if (!isDesktop()) return;
                 const isCollapsed = sidebar.classList.contains('collapsed');
                 setCollapsed(!isCollapsed);
             }
@@ -501,20 +559,19 @@
                 }
             }
 
-            // Re‑evaluate on window resize (to switch between desktop/mobile modes)
+            // Re‑evaluate on window resize
             function handleResize() {
                 if (isDesktop()) {
-                    // Ensure mobile overlay is closed
                     sidebar.classList.remove('mobile-open');
                     // Re‑apply saved collapsed state for desktop
                     const saved = localStorage.getItem(STORAGE_KEY);
                     const shouldCollapse = saved === '1';
+                    // Use setCollapsed to ensure consistency
                     setCollapsed(shouldCollapse);
                 } else {
                     // On mobile: remove collapsed class and ensure full width
                     sidebar.classList.remove('collapsed');
                     body.classList.remove('sidebar-collapsed');
-                    // Restore toggle icon (just in case)
                     if (toggleBtn) {
                         const icon = toggleBtn.querySelector('i');
                         if (icon) icon.className = 'fas fa-chevron-left';
@@ -522,8 +579,7 @@
                 }
             }
 
-            // ========== ENHANCED FLOATING TOOLTIP (shows label above cursor on hover in collapsed mode) ==========
-            // Create a global floating tooltip element
+            // ========== FLOATING TOOLTIP ==========
             let tooltipElement = null;
             
             function createTooltipElement() {
@@ -535,38 +591,25 @@
                 return tooltipElement;
             }
             
-            // Update tooltip position near cursor but slightly above
             function updateTooltipPosition(event, tooltip) {
                 if (!tooltip) return;
-                // get cursor coordinates
                 let x = event.clientX;
                 let y = event.clientY;
-                
-                // measure tooltip dimensions
                 const rect = tooltip.getBoundingClientRect();
                 const width = rect.width;
                 const height = rect.height;
-                
-                // default position: slightly to the right and above the cursor (like top of cursor)
-                // But UX: "top of my cursor" — appears above the cursor with a small offset
-                let topPos = y - height - 12;  // 12px above cursor
-                let leftPos = x + 15;           // slightly to the right to avoid overlapping finger/cursor
-                
-                // Adjust if tooltip goes off-screen (left edge)
+                let topPos = y - height - 12;
+                let leftPos = x + 15;
                 if (leftPos + width > window.innerWidth - 10) {
                     leftPos = x - width - 15;
                 }
-                // if still off-screen, clamp
                 if (leftPos < 8) leftPos = 12;
                 if (leftPos + width > window.innerWidth - 8) {
                     leftPos = window.innerWidth - width - 12;
                 }
-                
-                // adjust vertical: if tooltip above cursor goes beyond top boundary, place below cursor instead
                 if (topPos < 8) {
-                    topPos = y + 20; // below cursor
+                    topPos = y + 20;
                 }
-                
                 tooltip.style.left = leftPos + 'px';
                 tooltip.style.top = topPos + 'px';
             }
@@ -576,10 +619,8 @@
             
             function showFloatingTooltip(target, event) {
                 if (!target) return;
-                // get the text from data-tooltip or span text (but in collapsed mode spans are hidden, use data-tooltip)
                 let label = target.getAttribute('data-tooltip');
                 if (!label) {
-                    // fallback: try to extract from inner text but only if it's not empty
                     const span = target.querySelector('span');
                     if (span && span.innerText.trim()) {
                         label = span.innerText.trim();
@@ -587,14 +628,10 @@
                         label = 'Link';
                     }
                 }
-                
                 const tooltip = createTooltipElement();
                 tooltip.innerText = label;
                 tooltip.classList.remove('visible');
-                
-                // force reflow then update position and show
                 updateTooltipPosition(event, tooltip);
-                // tiny delay for smoother transition
                 requestAnimationFrame(() => {
                     if (tooltip.innerText === label) {
                         tooltip.classList.add('visible');
@@ -610,37 +647,24 @@
                 activeTooltipTarget = null;
             }
             
-            // Setup hover listeners for sidebar nav items (only when sidebar is collapsed on desktop)
             function attachFloatingTooltips() {
-                // select all nav links and logout button within sidebar
                 const navItems = document.querySelectorAll('#adminSidebar a, #adminSidebar .logout-btn');
-                
-                // Remove any previous listeners to avoid duplicates (simple cleanup)
                 navItems.forEach(item => {
-                    // remove old listeners if any (using custom property or just remove all? we'll use named handlers)
-                    // but we can just re-attach after removing existing, simpler approach: removeEventListener by storing handlers.
-                    // For robustness, we'll store handlers on element to detach later.
                     if (item._floatingMouseEnter) {
                         item.removeEventListener('mouseenter', item._floatingMouseEnter);
                         item.removeEventListener('mouseleave', item._floatingMouseLeave);
                         item.removeEventListener('mousemove', item._floatingMouseMove);
                     }
-                    
-                    // create handlers
                     const mouseEnterHandler = function(e) {
-                        // Only show tooltip when sidebar is collapsed AND we are on desktop
                         if (!isDesktop()) return;
                         const sidebarElem = document.getElementById('adminSidebar');
                         if (!sidebarElem || !sidebarElem.classList.contains('collapsed')) return;
-                        
-                        // clear any pending hide timeout
                         if (tooltipTimeout) {
                             clearTimeout(tooltipTimeout);
                             tooltipTimeout = null;
                         }
                         showFloatingTooltip(this, e);
                     };
-                    
                     const mouseMoveHandler = function(e) {
                         if (!isDesktop()) return;
                         const sidebarElem = document.getElementById('adminSidebar');
@@ -649,109 +673,69 @@
                             updateTooltipPosition(e, tooltipElement);
                         }
                     };
-                    
                     const mouseLeaveHandler = function() {
                         if (!isDesktop()) return;
-                        // small delay to avoid flickering when moving between items
                         tooltipTimeout = setTimeout(() => {
                             hideFloatingTooltip();
                             tooltipTimeout = null;
                         }, 80);
                     };
-                    
                     item._floatingMouseEnter = mouseEnterHandler;
                     item._floatingMouseMove = mouseMoveHandler;
                     item._floatingMouseLeave = mouseLeaveHandler;
-                    
                     item.addEventListener('mouseenter', mouseEnterHandler);
                     item.addEventListener('mousemove', mouseMoveHandler);
                     item.addEventListener('mouseleave', mouseLeaveHandler);
                 });
             }
             
-            // Re-attach tooltips when sidebar collapse state changes (since user may collapse/expand)
             function refreshTooltipBinding() {
                 attachFloatingTooltips();
             }
             
-            // Monitor sidebar class changes to reattach (or just re-evaluate)
             const sidebarObserver = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
                     if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                        // When sidebar class changes (collapsed/expanded), we re-attach handlers (they already condition based on collapsed)
-                        // But also if expanded, hide any visible tooltip
                         if (!sidebar.classList.contains('collapsed')) {
                             hideFloatingTooltip();
                         }
-                        // no need to reattach fully, but ensure that dynamic behavior matches; handlers check collapsed state on fly
-                        // but reattach to sync any new elements? sidebar content static, fine.
                     }
                 });
             });
             sidebarObserver.observe(sidebar, { attributes: true });
             
-            // also observe window resize to hide tooltip if sidebar mode changes
             window.addEventListener('resize', function() {
                 if (!isDesktop()) {
                     hideFloatingTooltip();
                 } else {
-                    // if desktop but sidebar not collapsed, hide tooltip
                     if (sidebar && !sidebar.classList.contains('collapsed')) {
                         hideFloatingTooltip();
                     }
                 }
-                // refresh tooltip bindings just in case
                 refreshTooltipBinding();
             });
             
-            // Event listeners for sidebar toggles
             if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
             if (mobileToggle) mobileToggle.addEventListener('click', toggleMobile);
             document.addEventListener('click', handleClickOutside);
             window.addEventListener('resize', handleResize);
             
-            // Initialize tooltip system
             attachFloatingTooltips();
             
-            // Additional: when sidebar collapse changes via localStorage init, we need to re-check tooltip visibility.
-            // The mutation observer already handles hide when expanded.
-            // Also when manually toggling, we call refresh.
-            const originalSetCollapsed = setCollapsed;
-            window.setCollapsed = setCollapsed; // not needed, but we override via custom.
-            // Ensure after collapse/expand we also adjust any lingering tooltip.
-            function enhancedSetCollapsed(collapsed) {
-                const wasCollapsed = sidebar.classList.contains('collapsed');
-                originalSetCollapsed(collapsed);
-                if (!collapsed && wasCollapsed) {
-                    // just expanded: hide tooltip
-                    hideFloatingTooltip();
-                }
-                // rebind just in case
-                refreshTooltipBinding();
-            }
-            // replace setCollapsed reference internally to use enhanced version
-            window.setCollapsed = enhancedSetCollapsed;
-            // override the closure variable? safer: we override the function used by toggle
-            // But setCollapsed is used inside toggleSidebar and init. So we override the internal reference:
-            // Unfortunately the local variable setCollapsed cannot be overwritten from outside, but we can redefine toggleSidebar and initSidebarState.
-            // However easier: we re-declare the functions using enhanced version.
-            // Let's reassign after definition: but the original setCollapsed is captured. We'll just reinitialize binding after each collapse in observer.
-            // Already observer triggers refreshTooltipBinding and hide when needed. So it's safe.
-            
-            // Final call: ensure initial tooltip binding after page fully loads
+            // Final initialization – ensures state is correct after all content loads
             setTimeout(() => {
-                attachFloatingTooltips();
-                // double-check active sidebar state
-                if (sidebar.classList.contains('collapsed') && isDesktop()) {
-                    // good
+                initSidebarState();
+                refreshTooltipBinding();
+                // Also, if on desktop and sidebar is collapsed, ensure tooltips work
+                if (isDesktop() && sidebar.classList.contains('collapsed')) {
+                    // tooltips ready
                 } else {
                     hideFloatingTooltip();
                 }
-            }, 100);
+            }, 50);
             
-            // Initial setup
+            // Also call init immediately after this script to catch any edge cases
             initSidebarState();
-            handleResize(); // ensures correct mode on load
         })();
     </script>
     @stack('scripts')

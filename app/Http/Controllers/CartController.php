@@ -154,4 +154,5 @@ public function count()
         'count' => $count
     ]);
 }
+
 }

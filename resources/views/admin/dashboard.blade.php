@@ -6,87 +6,251 @@
 
 @section('styles')
     <!-- Tailwind CSS + Google Fonts -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <!-- Chart.js for real-time charts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js">
+    </script>
+
     <style>
-        * { font-family: 'Inter', sans-serif; }
+        * {
+            font-family: 'Inter', sans-serif;
+        }
 
         body {
             background: linear-gradient(145deg, #f1f5f9 0%, #eef2f6 100%);
+            min-height: 100vh;
         }
 
-        h1, h2, h3, h4, .title-bold, .page-title, .card-title, .stat-label {
+        h1,
+        h2,
+        h3,
+        h4,
+        .title-bold,
+        .page-title,
+        .card-title,
+        .stat-label {
             font-weight: 800 !important;
             letter-spacing: -0.01em;
         }
 
+        /* --- Enhanced 3D Card --- */
         .card-3d {
-            transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             transform: translateZ(0);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.03);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.04);
+            will-change: transform;
+            backface-visibility: hidden;
         }
         .card-3d:hover {
-            transform: translateY(-6px) translateZ(12px) scale(1.02);
-            box-shadow: 0 25px 35px -12px rgba(0, 0, 0, 0.15), 0 4px 8px -4px rgba(0, 0, 0, 0.05);
+            transform: translateY(-6px) translateZ(12px) scale(1.01);
+            box-shadow: 0 25px 35px -12px rgba(0, 0, 0, 0.13), 0 4px 8px -4px rgba(0, 0, 0, 0.04);
         }
 
-        .btn-3d-green {
+        /* --- Stat Card --- */
+        .stat-card {
+            position: relative;
+            border-radius: 1rem;
+            padding: 1.5rem 1.5rem 1.5rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            min-height: 120px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(2px);
+        }
+
+        /* --- More visible background icons --- */
+        .stat-card .stat-icon-bg {
+            position: absolute;
+            right: -10px;
+            bottom: -10px;
+            font-size: 6rem;
+            opacity: 0.18;
+            /* increased opacity */
+            pointer-events: none;
+            transform: rotate(8deg);
+            line-height: 1;
+            transition: opacity 0.3s ease;
+        }
+        .stat-card:hover .stat-icon-bg {
+            opacity: 0.25;
+            /* slightly brighter on hover */
+        }
+
+        .stat-card .stat-number {
+            font-weight: 900 !important;
+            font-size: 2.2rem !important;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            position: relative;
+            z-index: 2;
+        }
+
+        .stat-card .stat-label {
+            font-weight: 600 !important;
+            font-size: 0.78rem !important;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            opacity: 0.75;
+            position: relative;
+            z-index: 2;
+        }
+
+        .stat-card .stat-sub {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 0.25rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .stat-card .stat-accent-line {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-radius: 0 4px 4px 0;
+            z-index: 3;
+        }
+
+        /* Individual stat card color themes (keep backgrounds and accents) */
+        .stat-blue {
+            background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+            border-left: 4px solid #3b82f6;
+        }
+        .stat-blue .stat-number {
+            color: #1e40af;
+        }
+
+        .stat-green {
+            background: linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%);
+            border-left: 4px solid #10b981;
+        }
+        .stat-green .stat-number {
+            color: #065f46;
+        }
+
+        .stat-purple {
+            background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+            border-left: 4px solid #8b5cf6;
+        }
+        .stat-purple .stat-number {
+            color: #5b21b6;
+        }
+
+        .stat-red {
+            background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+            border-left: 4px solid #ef4444;
+        }
+        .stat-red .stat-number {
+            color: #991b1b;
+        }
+
+        .stat-amber {
+            background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
+            border-left: 4px solid #f59e0b;
+        }
+        .stat-amber .stat-number {
+            color: #92400e;
+        }
+
+        .stat-cyan {
+            background: linear-gradient(135deg, #ffffff 0%, #ecfeff 100%);
+            border-left: 4px solid #06b6d4;
+        }
+        .stat-cyan .stat-number {
+            color: #155e75;
+        }
+
+        .stat-indigo {
+            background: linear-gradient(135deg, #ffffff 0%, #eef2ff 100%);
+            border-left: 4px solid #6366f1;
+        }
+        .stat-indigo .stat-number {
+            color: #3730a3;
+        }
+
+        .stat-rose {
+            background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%);
+            border-left: 4px solid #f43f5e;
+        }
+        .stat-rose .stat-number {
+            color: #9f1239;
+        }
+
+        /* --- Quick Action Buttons (distinct colors) --- */
+        .btn-action {
             position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            background: #10b981;
-            color: white;
             font-weight: 700;
             padding: 0.75rem 1.25rem;
             border-radius: 0.5rem;
-            border: 1px solid #059669;
+            border: 1px solid transparent;
             cursor: pointer;
-            transition: all 0.05s linear;
-            box-shadow: 0 6px 0 #047857, 0 3px 8px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
+            transition: all 0.15s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transform: translateY(0);
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
             text-decoration: none;
+            color: white;
         }
-        .btn-3d-green:active {
+        .btn-action:active {
             transform: translateY(4px);
-            box-shadow: 0 1px 0 #047857, 0 3px 8px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
         }
-        .btn-3d-green:hover {
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px -6px rgba(0, 0, 0, 0.18);
+        }
+
+        /* Individual colors */
+        .btn-green {
+            background: #10b981;
+            border-color: #059669;
+            box-shadow: 0 4px 0 #047857, 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        .btn-green:hover {
             background: #059669;
             border-color: #047857;
         }
 
-        .btn-3d-blue {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
+        .btn-blue {
             background: #3b82f6;
-            color: white;
-            font-weight: 700;
-            padding: 0.75rem 1.25rem;
-            border-radius: 0.5rem;
-            border: 1px solid #2563eb;
-            cursor: pointer;
-            transition: all 0.05s linear;
-            box-shadow: 0 6px 0 #1d4ed8, 0 3px 8px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
-            text-decoration: none;
+            border-color: #2563eb;
+            box-shadow: 0 4px 0 #1d4ed8, 0 2px 8px rgba(0, 0, 0, 0.06);
         }
-        .btn-3d-blue:active {
-            transform: translateY(4px);
-            box-shadow: 0 1px 0 #1d4ed8, 0 3px 8px rgba(0,0,0,0.05);
-        }
-        .btn-3d-blue:hover {
+        .btn-blue:hover {
             background: #2563eb;
             border-color: #1d4ed8;
         }
 
+        .btn-amber {
+            background: #f59e0b;
+            border-color: #d97706;
+            box-shadow: 0 4px 0 #b45309, 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        .btn-amber:hover {
+            background: #d97706;
+            border-color: #b45309;
+        }
+
+        .btn-purple {
+            background: #8b5cf6;
+            border-color: #7c3aed;
+            box-shadow: 0 4px 0 #6d28d9, 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        .btn-purple:hover {
+            background: #7c3aed;
+            border-color: #6d28d9;
+        }
+
+        /* Logout button remains the same */
         .btn-3d-logout {
             position: relative;
             display: inline-flex;
@@ -103,7 +267,7 @@
             text-decoration: none;
             font-size: 0.813rem;
         }
-        
+
         .btn-3d-logout:hover {
             background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
             border-color: #f87171;
@@ -112,6 +276,7 @@
             box-shadow: 0 4px 12px -4px rgba(220, 38, 38, 0.2);
         }
 
+        /* --- Admin Badge --- */
         .admin-badge {
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             border: 1px solid #e2e8f0;
@@ -124,7 +289,7 @@
             font-size: 0.813rem;
             color: #1e293b;
         }
-        
+
         .admin-dot {
             width: 8px;
             height: 8px;
@@ -132,30 +297,46 @@
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
-        
+
         @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(1.1); }
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.6;
+                transform: scale(1.1);
+            }
         }
 
+        /* --- Table Row --- */
         .table-row-3d {
             transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
             transform: translateZ(0);
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .table-row-3d:last-child {
+            border-bottom: none;
         }
         .table-row-3d:hover {
             transform: translateX(4px) translateY(-2px) translateZ(8px) scale(1.01);
             background: #ffffff;
-            box-shadow: 0 8px 15px -6px rgba(0, 0, 0, 0.08), -3px 0 0 #cbd5e1;
+            box-shadow: 0 8px 15px -6px rgba(0, 0, 0, 0.07), -3px 0 0 #cbd5e1;
             z-index: 2;
             position: relative;
+            border-bottom-color: #94a3b8;
         }
 
+        /* --- Status Badges --- */
         .status {
             padding: 0.25rem 0.75rem;
             border-radius: 9999px;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 700;
             display: inline-block;
+            text-transform: capitalize;
+            letter-spacing: 0.02em;
         }
         .status.pending {
             background: #fef3c7;
@@ -173,7 +354,20 @@
             background: #fee2e2;
             color: #991b1b;
         }
+        .status.shipped {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+        .status.refunded {
+            background: #fce7f3;
+            color: #9d174d;
+        }
+        .status.paid {
+            background: #d1fae5;
+            color: #065f46;
+        }
 
+        /* --- Custom Scroll --- */
         .custom-scroll::-webkit-scrollbar {
             height: 4px;
             width: 4px;
@@ -187,6 +381,7 @@
             border-radius: 10px;
         }
 
+        /* --- Welcome Title --- */
         .welcome-title {
             font-weight: 900 !important;
             letter-spacing: -0.02em;
@@ -196,55 +391,128 @@
             color: transparent;
             font-size: 2rem;
         }
-        
+
+        /* --- Section Header --- */
         .section-header {
             font-weight: 800 !important;
-            font-size: 1.25rem !important;
+            font-size: 1.15rem !important;
             letter-spacing: -0.01em;
             position: relative;
             display: inline-block;
         }
-        
+
         .section-header::after {
             content: '';
             position: absolute;
             bottom: -8px;
             left: 0;
-            width: 40px;
+            width: 36px;
             height: 3px;
             background: linear-gradient(90deg, #dc2626, #ef4444);
             border-radius: 3px;
         }
-        
-        .stat-number {
-            font-weight: 900 !important;
-            font-size: 2.5rem !important;
+
+        /* --- Low Stock Alert Item --- */
+        .alert-item-3d {
+            transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            border-left: 4px solid #f87171;
+            background: #fef2f2;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
         }
-        
-        .admin-info-bar {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
+        .alert-item-3d:last-child {
+            margin-bottom: 0;
+        }
+        .alert-item-3d:hover {
+            transform: translateX(4px) translateY(-2px);
+            box-shadow: 0 4px 12px -4px rgba(239, 68, 68, 0.12);
+            background: #ffffff;
         }
 
-        /* Trend indicator */
-        .trend-up { color: #10b981; }
-        .trend-down { color: #ef4444; }
+        /* --- Low Stock container: remove max-height to show all items --- */
+        .low-stock-container {
+            max-height: none;
+            overflow-y: visible;
+        }
+
+        /* --- Responsive tweaks --- */
+        @media (max-width: 640px) {
+            .stat-card .stat-number {
+                font-size: 1.6rem !important;
+            }
+            .welcome-title {
+                font-size: 1.4rem !important;
+            }
+            .stat-card {
+                min-height: 100px;
+                padding: 1rem;
+            }
+            .stat-card .stat-icon-bg {
+                font-size: 4rem;
+                right: -5px;
+                bottom: -5px;
+            }
+        }
+
+        @media (min-width: 641px) and (max-width: 1024px) {
+            .stat-card .stat-number {
+                font-size: 1.9rem !important;
+            }
+        }
+
+        .stat-card-wrapper {
+            height: 100%;
+        }
+
+        /* --- Recent Orders table --- */
+        .orders-table th {
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            letter-spacing: 0.04em;
+            color: #64748b;
+            border-bottom: 2px solid #d1d5db;
+            padding: 0.75rem 1.5rem;
+        }
+
+        .orders-table td {
+            padding: 0.875rem 1.5rem;
+            vertical-align: middle;
+        }
+
+        .orders-table tbody tr {
+            border-bottom: 2px solid #e5e7eb;
+            transition: background 0.15s ease;
+        }
+        .orders-table tbody tr:last-child {
+            border-bottom: none;
+        }
+        .orders-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: auto;
+            min-height: 200px;
+        }
     </style>
 @endsection
 
 @section('content')
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        
-        <!-- Welcome Card -->
-        <div class="card-3d bg-white rounded-xl overflow-hidden shadow-md">
+    <div class="dashboard-grid max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-7">
+
+        <!-- ========== WELCOME CARD ========== -->
+        <div class="card-3d bg-white rounded-xl overflow-hidden shadow-sm">
             <div class="px-6 py-5 border-b border-gray-100">
                 <div class="flex justify-between items-center flex-wrap gap-4">
                     <div>
                         <h1 class="welcome-title">Welcome Back, {{ Auth::user()->name }}!</h1>
                         <p class="text-gray-500 mt-1 text-sm">Here's what's happening with your store today.</p>
                     </div>
-                    <div class="admin-info-bar">
+                    <div class="admin-info-bar flex items-center gap-3 flex-wrap">
                         <div class="admin-badge">
                             <span class="admin-dot"></span>
                             <span>Logged as Admin</span>
@@ -262,33 +530,32 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Stats Cards - Real Data -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Total Products -->
-            <div class="card-3d rounded-xl p-6" style="background: linear-gradient(115deg, #ffffff 0%, #eff6ff 100%); border-left: 5px solid #3b82f6;">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-blue-700 uppercase tracking-wide">Total Products</p>
-                        <p class="stat-number text-4xl text-gray-900 mt-2">{{ $totalProducts }}</p>
-                        <p class="text-xs text-gray-500 mt-1">+{{ $newProducts }} new this month</p>
-                    </div>
-                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                        </svg>
+
+        <!-- ========== STATS CARDS (8 cards) with larger, more visible background icons ========== -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+            <!-- 1. Total Products -->
+            <div class="stat-card-wrapper">
+                <div class="stat-card stat-blue card-3d">
+                    <div class="stat-accent-line" style="background:#3b82f6;"></div>
+                    <span class="stat-icon-bg">📦</span>
+                    <div class="flex-1">
+                        <p class="stat-label text-blue-700">Total Products</p>
+                        <p class="stat-number">{{ $totalProducts }}</p>
+                        <p class="stat-sub text-blue-600">+{{ $newProducts }} new this month</p>
                     </div>
                 </div>
-                <div class="mt-3 h-0.5 w-10 bg-blue-200 rounded-full"></div>
             </div>
 
-            <!-- Total Orders -->
-            <div class="card-3d rounded-xl p-6" style="background: linear-gradient(115deg, #ffffff 0%, #ecfdf5 100%); border-left: 5px solid #10b981;">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-green-700 uppercase tracking-wide">Total Orders</p>
-                        <p class="stat-number text-4xl text-gray-900 mt-2">{{ $totalOrders }}</p>
-                        <p class="text-xs text-gray-500 mt-1">
+            <!-- 2. Total Orders -->
+            <div class="stat-card-wrapper">
+                <div class="stat-card stat-green card-3d">
+                    <div class="stat-accent-line" style="background:#10b981;"></div>
+                    <span class="stat-icon-bg">🛒</span>
+                    <div class="flex-1">
+                        <p class="stat-label text-green-700">Total Orders</p>
+                        <p class="stat-number">{{ $totalOrders }}</p>
+                        <p class="stat-sub text-green-600">
                             @if($ordersGrowth >= 0)
                                 <span class="trend-up">↑ {{ number_format($ordersGrowth, 1) }}%</span>
                             @else
@@ -297,134 +564,177 @@
                             from last month
                         </p>
                     </div>
-                    <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-1.5 6h11L17 13M9 21h.01M15 21h.01"/>
-                        </svg>
-                    </div>
                 </div>
-                <div class="mt-3 h-0.5 w-10 bg-green-200 rounded-full"></div>
             </div>
 
-            <!-- Registered Users -->
-            <div class="card-3d rounded-xl p-6" style="background: linear-gradient(115deg, #ffffff 0%, #eff6ff 100%); border-left: 5px solid #3b82f6;">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-blue-700 uppercase tracking-wide">Registered Users</p>
-                        <p class="stat-number text-4xl text-gray-900 mt-2">{{ $totalUsers }}</p>
-                        <p class="text-xs text-gray-500 mt-1">{{ $newUsers }} new this month</p>
-                    </div>
-                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                        </svg>
+            <!-- 3. Registered Users -->
+            <div class="stat-card-wrapper">
+                <div class="stat-card stat-purple card-3d">
+                    <div class="stat-accent-line" style="background:#8b5cf6;"></div>
+                    <span class="stat-icon-bg">👤</span>
+                    <div class="flex-1">
+                        <p class="stat-label text-purple-700">Registered Users</p>
+                        <p class="stat-number">{{ $totalUsers }}</p>
+                        <p class="stat-sub text-purple-600">{{ $newUsers }} new this month</p>
                     </div>
                 </div>
-                <div class="mt-3 h-0.5 w-10 bg-blue-200 rounded-full"></div>
             </div>
 
-            <!-- Total Variants -->
-<div class="card-3d rounded-xl p-6">
-    <p class="text-sm font-medium">Total Variants</p>
-    <p class="stat-number">{{ $totalVariants }}</p>
-</div>
-
-<!-- Inventory -->
-<div class="card-3d rounded-xl p-6">
-    <p class="text-sm font-medium">Total Inventory</p>
-    <p class="stat-number">{{ number_format($totalInventory) }}</p>
-</div>
-
-<!-- Inventory Value -->
-<div class="card-3d rounded-xl p-6">
-    <p class="text-sm font-medium">Inventory Value</p>
-    <p class="stat-number">₱{{ number_format($inventoryValue,2) }}</p>
-</div>
-
-<!-- Out of Stock -->
-<div class="card-3d rounded-xl p-6">
-    <p class="text-sm font-medium">Out of Stock</p>
-    <p class="stat-number">{{ $outOfStock }}</p>
-</div>
-
-            <!-- Low Stock Items -->
-            <div class="card-3d rounded-xl p-6" style="background: linear-gradient(115deg, #ffffff 0%, #fef2f2 100%); border-left: 5px solid #ef4444;">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-red-700 uppercase tracking-wide">Low Stock Items</p>
-                        <p class="stat-number text-4xl text-gray-900 mt-2">{{ $lowStockItems }}</p>
-                        <p class="text-xs text-gray-500 mt-1">Need restock soon</p>
-                    </div>
-                    <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-500">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
+            <!-- 4. Low Stock Items -->
+            <div class="stat-card-wrapper">
+                <div class="stat-card stat-red card-3d">
+                    <div class="stat-accent-line" style="background:#ef4444;"></div>
+                    <span class="stat-icon-bg">⚠️</span>
+                    <div class="flex-1">
+                        <p class="stat-label text-red-700">Low Stock Items</p>
+                        <p class="stat-number">{{ $lowStockItems }}</p>
+                        <p class="stat-sub text-red-600">Need restock soon</p>
                     </div>
                 </div>
-                <div class="mt-3 h-0.5 w-10 bg-red-200 rounded-full"></div>
             </div>
+
+            <!-- 5. Total Variants -->
+            <div class="stat-card-wrapper">
+                <div class="stat-card stat-amber card-3d">
+                    <div class="stat-accent-line" style="background:#f59e0b;"></div>
+                    <span class="stat-icon-bg">🔶</span>
+                    <div class="flex-1">
+                        <p class="stat-label text-amber-700">Total Variants</p>
+                        <p class="stat-number">{{ $totalVariants }}</p>
+                        <p class="stat-sub text-amber-600">Product variations</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Total Inventory -->
+            <div class="stat-card-wrapper">
+                <div class="stat-card stat-cyan card-3d">
+                    <div class="stat-accent-line" style="background:#06b6d4;"></div>
+                    <span class="stat-icon-bg">📊</span>
+                    <div class="flex-1">
+                        <p class="stat-label text-cyan-700">Total Inventory</p>
+                        <p class="stat-number">{{ number_format($totalInventory) }}</p>
+                        <p class="stat-sub text-cyan-600">Units in stock</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Inventory Value -->
+            <div class="stat-card-wrapper">
+                <div class="stat-card stat-indigo card-3d">
+                    <div class="stat-accent-line" style="background:#6366f1;"></div>
+                    <span class="stat-icon-bg">💰</span>
+                    <div class="flex-1">
+                        <p class="stat-label text-indigo-700">Inventory Value</p>
+                        <p class="stat-number">₱{{ number_format($inventoryValue, 0) }}</p>
+                        <p class="stat-sub text-indigo-600">Total asset value</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. Out of Stock -->
+            <div class="stat-card-wrapper">
+                <div class="stat-card stat-rose card-3d">
+                    <div class="stat-accent-line" style="background:#f43f5e;"></div>
+                    <span class="stat-icon-bg">🚫</span>
+                    <div class="flex-1">
+                        <p class="stat-label text-rose-700">Out of Stock</p>
+                        <p class="stat-number">{{ $outOfStock }}</p>
+                        <p class="stat-sub text-rose-600">Unavailable items</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
+        <!-- ========== END STATS CARDS ========== -->
 
-        <!-- Revenue Chart & Order Status -->
+
+        <!-- ========== CHARTS ROW ========== -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
             <!-- Revenue Chart -->
-            <div class="card-3d bg-white rounded-xl overflow-hidden">
+            <div class="card-3d bg-white rounded-xl overflow-hidden shadow-sm">
                 <div class="px-6 py-4 border-b border-gray-100">
                     <h3 class="section-header text-gray-800">Revenue Overview</h3>
                     <p class="text-xs text-gray-500 mt-2">Last 7 days sales</p>
                 </div>
-                <div class="p-6">
-                    <canvas id="revenueChart" height="250"></canvas>
+                <div class="p-5 chart-container">
+                    <canvas id="revenueChart" height="220"></canvas>
                 </div>
             </div>
 
             <!-- Order Status Distribution -->
-            <div class="card-3d bg-white rounded-xl overflow-hidden">
+            <div class="card-3d bg-white rounded-xl overflow-hidden shadow-sm">
                 <div class="px-6 py-4 border-b border-gray-100">
                     <h3 class="section-header text-gray-800">Order Status</h3>
                     <p class="text-xs text-gray-500 mt-2">Current order distribution</p>
                 </div>
-                <div class="p-6">
-                    <canvas id="statusChart" height="250"></canvas>
+                <div class="p-5 chart-container">
+                    <canvas id="statusChart" height="220"></canvas>
                 </div>
             </div>
-        </div>
 
-        <!-- Quick Actions -->
+        </div>
+        <!-- ========== END CHARTS ========== -->
+
+
+        <!-- ========== QUICK ACTIONS (distinct colors) ========== -->
         <div>
             <h2 class="section-header text-gray-800 mb-4">Quick Actions</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <a href="{{ route('admin.products.index') }}" class="btn-3d-green text-center">+ Add Product</a>
-                <a href="{{ route('admin.categories.index') }}" class="btn-3d-green text-center">+ Add Category</a>
-                <a href="{{ route('admin.orders.index') }}" class="btn-3d-blue text-center">Manage Orders</a>
-                <a href="{{ route('admin.users.index') }}" class="btn-3d-blue text-center">Manage Users</a>
+                <a href="{{ route('admin.products.index') }}" class="btn-action btn-green text-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Product
+                </a>
+                <a href="{{ route('admin.categories.index') }}" class="btn-action btn-blue text-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    Add Category
+                </a>
+                <a href="{{ route('admin.orders.index') }}" class="btn-action btn-amber text-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    Manage Orders
+                </a>
+                <a href="{{ route('admin.users.index') }}" class="btn-action btn-purple text-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    Manage Users
+                </a>
             </div>
         </div>
 
-        <!-- Lower Grid: Recent Orders + Low Stock Alerts -->
+
+        <!-- ========== LOWER GRID: Recent Orders + Low Stock Alerts ========== -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Recent Orders Table -->
-            <div class="card-3d bg-white rounded-xl overflow-hidden">
+
+            <!-- Recent Orders Table (clearer separators) -->
+            <div class="card-3d bg-white rounded-xl overflow-hidden shadow-sm">
                 <div class="px-6 py-4 border-b border-gray-100">
                     <h3 class="section-header text-gray-800">Recent Orders</h3>
                 </div>
                 <div class="overflow-x-auto custom-scroll">
-                    <table class="w-full text-left">
-                        <thead class="bg-gray-50 text-gray-600 text-xs font-bold uppercase tracking-wider">
+                    <table class="orders-table w-full text-left">
+                        <thead class="bg-gray-50/60">
                             <tr>
-                                <th class="px-6 py-3">Order ID</th>
-                                <th class="px-6 py-3">Customer</th>
-                                <th class="px-6 py-3">Total</th>
-                                <th class="px-6 py-3">Status</th>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Total</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100">
+                        <tbody>
                             @forelse($recentOrders as $order)
                             <tr class="table-row-3d">
-                                <td class="px-6 py-3 text-sm font-semibold text-gray-900">#{{ $order->order_id }}</td>
-                                <td class="px-6 py-3 text-sm text-gray-600">{{ $order->user->name ?? 'Guest' }}</td>
-                                <td class="px-6 py-3 text-sm font-semibold text-gray-900">₱{{ number_format($order->total_amount, 2) }}</td>
-                                <td class="px-6 py-3">
+                                <td class="text-sm font-semibold text-gray-900">#{{ $order->order_id }}</td>
+                                <td class="text-sm text-gray-600">{{ $order->user->name ?? 'Guest' }}</td>
+                                <td class="text-sm font-semibold text-gray-900">₱{{ number_format($order->total_amount, 2) }}</td>
+                                <td>
                                     <span class="status {{ $order->status }}">
                                         {{ ucfirst($order->status) }}
                                     </span>
@@ -432,7 +742,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="4" class="px-6 py-8 text-center text-gray-500">No orders yet</td>
+                                <td colspan="4" class="px-6 py-8 text-center text-gray-400">No orders yet</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -440,38 +750,48 @@
                 </div>
             </div>
 
-            <!-- Low Stock Alerts -->
-            <div class="card-3d bg-white rounded-xl overflow-hidden">
+            <!-- Low Stock Alerts (no max-height, all items visible) -->
+            <div class="card-3d bg-white rounded-xl overflow-hidden shadow-sm">
                 <div class="px-6 py-4 border-b border-gray-100">
                     <h3 class="section-header text-gray-800">Low Stock Alerts</h3>
                 </div>
-                <div class="p-4 space-y-3">
+                <div class="p-4 space-y-2 low-stock-container">
                     @forelse($lowStockProducts as $product)
-                    <div class="alert-item-3d border-l-4 border-red-400 p-4 rounded-lg transition-all bg-red-50/30">
+                    <div class="alert-item-3d">
                         <div class="flex justify-between items-start">
                             <div>
                                 <strong class="block text-gray-800 font-bold">{{ $product->product_name }}</strong>
-                                <span class="text-sm text-gray-600">{{ $product->variant_size }} / {{ $product->variant_color }}</span>
+                                <span class="text-sm text-gray-500">{{ $product->variant_size }} / {{ $product->variant_color }}</span>
                             </div>
-                            <span class="text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded-full">
+                            <span class="text-xs font-bold text-red-600 bg-red-100 px-2.5 py-1 rounded-full whitespace-nowrap ml-2">
                                 Only {{ $product->available_stock }} left
                             </span>
                         </div>
                     </div>
                     @empty
-                    <div class="text-center py-8 text-gray-500">
-                        <i class="fas fa-check-circle text-green-500 text-2xl mb-2 block"></i>
-                        All stock levels are healthy!
+                    <div class="text-center py-8 text-gray-400">
+                        <svg class="w-10 h-10 mx-auto mb-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="font-medium text-gray-500">All stock levels are healthy!</p>
+                        <p class="text-sm text-gray-400">No items need restocking.</p>
                     </div>
                     @endforelse
                 </div>
             </div>
-        </div>
-    </div>
 
+        </div>
+        <!-- ========== END LOWER GRID ========== -->
+
+    </div>
+    <!-- ========== END DASHBOARD WRAPPER ========== -->
+
+
+    <!-- ========== CHARTS SCRIPT ========== -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Revenue Chart
+
+            // ---- Revenue Chart ----
             const revenueCtx = document.getElementById('revenueChart').getContext('2d');
             new Chart(revenueCtx, {
                 type: 'line',
@@ -481,15 +801,16 @@
                         label: 'Revenue (₱)',
                         data: @json($chartData),
                         borderColor: '#dc2626',
-                        backgroundColor: 'rgba(220, 38, 38, 0.05)',
-                        borderWidth: 2,
+                        backgroundColor: 'rgba(220, 38, 38, 0.06)',
+                        borderWidth: 2.5,
                         fill: true,
                         tension: 0.4,
                         pointBackgroundColor: '#dc2626',
                         pointBorderColor: '#ffffff',
                         pointBorderWidth: 2,
                         pointRadius: 4,
-                        pointHoverRadius: 6
+                        pointHoverRadius: 7,
+                        pointHoverBackgroundColor: '#b91c1c'
                     }]
                 },
                 options: {
@@ -508,17 +829,21 @@
                     scales: {
                         y: {
                             beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.04)' },
                             ticks: {
                                 callback: function(value) {
                                     return '₱' + value.toLocaleString();
                                 }
                             }
+                        },
+                        x: {
+                            grid: { display: false }
                         }
                     }
                 }
             });
 
-            // Status Chart
+            // ---- Status Chart ----
             const statusCtx = document.getElementById('statusChart').getContext('2d');
             new Chart(statusCtx, {
                 type: 'doughnut',
@@ -526,9 +851,9 @@
                     labels: @json($statusLabels),
                     datasets: [{
                         data: @json($statusCountsData),
-                        backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6'],
+                        backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899'],
                         borderWidth: 0,
-                        hoverOffset: 8
+                        hoverOffset: 10
                     }]
                 },
                 options: {
@@ -537,12 +862,18 @@
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { usePointStyle: true, pointStyle: 'circle' }
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 16,
+                                font: { size: 11, weight: '600' }
+                            }
                         }
                     },
-                    cutout: '60%'
+                    cutout: '62%'
                 }
             });
+
         });
     </script>
 @endsection
