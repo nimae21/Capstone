@@ -323,6 +323,30 @@
                 <div class="mt-3 h-0.5 w-10 bg-blue-200 rounded-full"></div>
             </div>
 
+            <!-- Total Variants -->
+<div class="card-3d rounded-xl p-6">
+    <p class="text-sm font-medium">Total Variants</p>
+    <p class="stat-number">{{ $totalVariants }}</p>
+</div>
+
+<!-- Inventory -->
+<div class="card-3d rounded-xl p-6">
+    <p class="text-sm font-medium">Total Inventory</p>
+    <p class="stat-number">{{ number_format($totalInventory) }}</p>
+</div>
+
+<!-- Inventory Value -->
+<div class="card-3d rounded-xl p-6">
+    <p class="text-sm font-medium">Inventory Value</p>
+    <p class="stat-number">₱{{ number_format($inventoryValue,2) }}</p>
+</div>
+
+<!-- Out of Stock -->
+<div class="card-3d rounded-xl p-6">
+    <p class="text-sm font-medium">Out of Stock</p>
+    <p class="stat-number">{{ $outOfStock }}</p>
+</div>
+
             <!-- Low Stock Items -->
             <div class="card-3d rounded-xl p-6" style="background: linear-gradient(115deg, #ffffff 0%, #fef2f2 100%); border-left: 5px solid #ef4444;">
                 <div class="flex items-center justify-between">
@@ -501,7 +525,7 @@
                 data: {
                     labels: @json($statusLabels),
                     datasets: [{
-                        data: @json($statusCounts),
+                        data: @json($statusCountsData),
                         backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6'],
                         borderWidth: 0,
                         hoverOffset: 8

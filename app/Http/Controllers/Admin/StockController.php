@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\ProductVariant;
 use App\Models\Stock;
+use App\Models\StockMovement;
     
 
 class StockController extends Controller
@@ -23,18 +24,26 @@ class StockController extends Controller
         'quantity' => 'required|integer|min:0',
         'price' => 'required|numeric|min:0',
         'deliver_date' => 'required|date',
-]);
+    ]);
 
-    Stock::create([
+    $stock = Stock::create([
         'product_variant_id' => $product_variant_id,
         'quantity' => $request->quantity,
         'price' => $request->price,
         'deliver_date' => $request->deliver_date,
     ]);
 
-    return redirect()->route('admin.stocks.index', $product_variant_id)
-                     ->with('success', 'Stock added successfully.');
-}   
+    // Record stock movement
+    StockMovement::create([
+        'stock_id' => $stock->stock_id,
+        'quantity' => $request->quantity,
+        'type' => 'in',
+    ]);
+
+    return redirect()
+        ->route('admin.stocks.index', $product_variant_id)
+        ->with('success', 'Stock added successfully.');
+}
     public function edit($stock_id)
     {
         $stock = Stock::findOrFail($stock_id);
@@ -44,26 +53,38 @@ class StockController extends Controller
     }
     public function update(Request $request, $stock_id)
 {
-    // Validate input
     $request->validate([
         'quantity' => 'required|integer|min:0',
         'price' => 'required|numeric|min:0',
         'deliver_date' => 'required|date',
     ]);
 
-    // Find the stock
     $stock = Stock::findOrFail($stock_id);
 
-    // Update fields
+    // Calculate the quantity difference
+    $difference = $request->quantity - $stock->quantity;
+
+    // Update stock
     $stock->update([
         'quantity' => $request->quantity,
         'price' => $request->price,
         'deliver_date' => $request->deliver_date,
     ]);
 
-    // Redirect back to the stock index page for this variant
-    return redirect()->route('admin.stocks.index', $stock->product_variant_id)
-                     ->with('success', 'Stock updated successfully.');
+    // Only record movement if quantity changed
+    if ($difference != 0) {
+
+        StockMovement::create([
+            'stock_id' => $stock->stock_id,
+            'quantity' => $difference,
+            'type' => 'adjustment',
+        ]);
+
+    }
+
+    return redirect()
+        ->route('admin.stocks.index', $stock->product_variant_id)
+        ->with('success', 'Stock updated successfully.');
 }
     // Delete a stock entry
     public function destroy($stock_id)

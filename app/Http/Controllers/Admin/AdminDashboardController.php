@@ -10,6 +10,7 @@ use App\Models\ProductVariant;
 use App\Models\Stock;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Models\StockMovement;
 
 class AdminDashboardController extends Controller
 {
@@ -19,6 +20,17 @@ class AdminDashboardController extends Controller
         $totalProducts = Product::count();
         $newProducts = Product::whereMonth('created_at', Carbon::now()->month)->count();
 
+        //Total Variants
+        $totalVariants = ProductVariant::count();
+
+        // Total Inventory
+        $totalInventory = Stock::sum('quantity');
+
+        //inventory Value
+        $inventoryValue = Stock::selectRaw('SUM(price * quantity) as total')
+    ->value('total');
+
+        $outOfStock = Stock::where('quantity',0)->count();
         // Total Orders
         $totalOrders = Order::count();
         $lastMonthOrders = Order::whereMonth('created_at', Carbon::now()->subMonth()->month)->count();
@@ -56,6 +68,14 @@ class AdminDashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // Recent Stock Movements
+        $recentMovements = StockMovement::with([
+            'stock.variant.product'
+        ])
+        ->latest()
+        ->take(10)
+        ->get();
+
         // Chart Data - Last 7 days revenue
         $chartLabels = [];
         $chartData = [];
@@ -81,21 +101,38 @@ class AdminDashboardController extends Controller
         });
         $statusCountsData = $statusCounts->pluck('total');
 
+        $recentStockMovements = StockMovement::with([
+            'stock.variant.product'
+        ])
+        ->latest()
+        ->take(5)
+        ->get();
+
         return view('admin.dashboard', compact(
-            'totalProducts',
-            'newProducts',
-            'totalOrders',
-            'ordersGrowth',
-            'totalUsers',
-            'newUsers',
-            'lowStockItems',
-            'lowStockProducts',
-            'recentOrders',
-            'chartLabels',
-            'chartData',
-            'statusLabels',
-            'statusCountsData',
-            'statusCounts'
-        ));
+    'totalProducts',
+    'newProducts',
+
+    'totalVariants',
+    'totalInventory',
+    'inventoryValue',
+    'outOfStock',
+
+    'totalOrders',
+    'ordersGrowth',
+
+    'totalUsers',
+    'newUsers',
+
+    'lowStockItems',
+    'lowStockProducts',
+
+    'recentOrders',
+
+    'chartLabels',
+    'chartData',
+
+    'statusLabels',
+    'statusCountsData'
+));
     }
 }

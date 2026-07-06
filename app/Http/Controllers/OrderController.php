@@ -44,9 +44,6 @@ public function store(Request $request)
                 throw new \Exception('Not enough stock for variant ID: ' . $variant->product_variant_id);
             }
 
-            // 4. Deduct stock
-            $stock->quantity -= $item['quantity'];
-            $stock->save();
 
             // 5. Create order item
             OrderItem::create([
