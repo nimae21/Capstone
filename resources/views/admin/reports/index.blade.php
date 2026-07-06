@@ -176,7 +176,9 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Average Order</p>
-                    <p class="text-3xl font-black text-gray-800 mt-2">₱{{ number_format($totalOrders > 0 ? $totalSales / $totalOrders : 0, 2) }}</p>
+                    <p class="text-3xl font-black text-gray-800 mt-2">
+    ₱{{ number_format($averageOrderValue, 2) }}
+</p>
                 </div>
                 <div class="stat-icon bg-gradient-to-br from-purple-50 to-purple-100 text-purple-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -352,6 +354,152 @@
             </table>
         </div>
     </div>
+</div>
+
+<!-- Inventory Analytics -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+    <div class="stat-card p-6 shadow-sm">
+        <p class="text-xs font-semibold text-gray-500 uppercase">Total Products</p>
+        <p class="text-3xl font-black mt-2">{{ $totalProducts }}</p>
+    </div>
+
+    <div class="stat-card p-6 shadow-sm">
+        <p class="text-xs font-semibold text-gray-500 uppercase">Total Variants</p>
+        <p class="text-3xl font-black mt-2">{{ $totalVariants }}</p>
+    </div>
+
+    <div class="stat-card p-6 shadow-sm">
+        <p class="text-xs font-semibold text-gray-500 uppercase">Inventory Quantity</p>
+        <p class="text-3xl font-black mt-2">{{ $totalInventory }}</p>
+    </div>
+
+    <div class="stat-card p-6 shadow-sm">
+        <p class="text-xs font-semibold text-gray-500 uppercase">Inventory Value</p>
+        <p class="text-3xl font-black mt-2">
+            ₱{{ number_format($inventoryValue,2) }}
+        </p>
+    </div>
+
+    <div class="stat-card p-6 shadow-sm">
+        <p class="text-xs font-semibold text-gray-500 uppercase">Low Stock</p>
+        <p class="text-3xl font-black text-yellow-600 mt-2">
+            {{ $lowStock }}
+        </p>
+    </div>
+
+    <div class="stat-card p-6 shadow-sm">
+        <p class="text-xs font-semibold text-gray-500 uppercase">Out of Stock</p>
+        <p class="text-3xl font-black text-red-600 mt-2">
+            {{ $outOfStock }}
+        </p>
+    </div>
+
+</div>
+
+<!-- Best Selling Products -->
+<div class="card-3d rounded-2xl overflow-hidden">
+
+    <div class="px-6 py-4 border-b border-gray-100">
+        <h3 class="text-lg font-bold gradient-title">
+            Best Selling Products
+        </h3>
+    </div>
+
+    <div class="overflow-x-auto custom-scroll">
+
+        <table class="w-full">
+
+            <thead class="bg-gray-50">
+
+                <tr>
+                    <th class="px-6 py-3 text-left">Rank</th>
+                    <th class="px-6 py-3 text-left">Product</th>
+                    <th class="px-6 py-3 text-left">Variant</th>
+                    <th class="px-6 py-3 text-right">Sold</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+    @forelse($bestSellingProducts as $index => $item)
+
+    <tr class="table-row">
+
+        <td class="px-6 py-4">
+            #{{ $index + 1 }}
+        </td>
+
+        <td class="px-6 py-4 font-semibold">
+            {{ $item->product_name }}
+        </td>
+
+        <td class="px-6 py-4">
+            {{ $item->color }} / {{ $item->size }}
+        </td>
+
+        <td class="px-6 py-4 text-right font-bold">
+            {{ $item->total_sold }}
+        </td>
+
+    </tr>
+
+    @empty
+
+    <tr>
+
+        <td colspan="4" class="text-center py-8 text-gray-500">
+            No sales yet.
+        </td>
+
+    </tr>
+
+    @endforelse
+
+</tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<!-- Business Overview -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+    <div class="stat-card p-6">
+        <p class="text-xs font-semibold uppercase text-gray-500">
+            Customers
+        </p>
+
+        <p class="text-3xl font-black mt-2">
+            {{ $totalCustomers }}
+        </p>
+    </div>
+
+    <div class="stat-card p-6">
+        <p class="text-xs font-semibold uppercase text-gray-500">
+            Monthly Sales
+        </p>
+
+        <p class="text-3xl font-black mt-2">
+            ₱{{ number_format($monthlySales,2) }}
+        </p>
+    </div>
+
+    <div class="stat-card p-6">
+        <p class="text-xs font-semibold uppercase text-gray-500">
+            Average Order
+        </p>
+
+        <p class="text-3xl font-black mt-2">
+            ₱{{ number_format($averageOrderValue,2) }}
+        </p>
+        
+    </div>
+
 </div>
 
 <script>

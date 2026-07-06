@@ -60,8 +60,8 @@
                                                     <input type="radio" name="address_id" value="{{ $address->address_id }}" class="mt-1" onchange="document.getElementById('addr-{{ $address->address_id }}').classList.add('border-red-500', 'bg-red-50')">
                                                     <div class="flex-1">
                                                         <p class="font-semibold text-gray-900">{{ $address->full_name }}</p>
-                                                        <p class="text-sm text-gray-600">{{ $address->street }}, {{ $address->barangay }}</p>
-                                                        <p class="text-sm text-gray-600">{{ $address->city }}, {{ $address->province }} {{ $address->postal_code }}</p>
+                                                        
+                                                        
                                                         <p class="text-sm text-gray-600">📞 {{ $address->phone_number }}</p>
                                                         @if($address->is_default)
                                                             <span class="inline-block mt-2 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">Default</span>
