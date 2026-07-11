@@ -15,9 +15,11 @@ class CheckoutController extends Controller
     public function checkout()
     {
         $cart = Cart::with('items.variant.product')
+        
             ->where('user_id', auth()->id())
             ->where('status', 0)
             ->first();
+            
 
         if (!$cart || $cart->items->isEmpty()) {
             return back()->with('error', 'Cart is empty');
@@ -39,6 +41,10 @@ class CheckoutController extends Controller
             'province' => 'required_without:address_id|string|max:255',
             'postal_code' => 'required_without:address_id|string|max:10',
             'payment_method' => 'required|in:credit_card,debit_card,gcash,paypal,cash_on_delivery',
+            'latitude' => 'nullable|numeric',
+'longitude' => 'nullable|numeric',
+            'save_address' => 'nullable|boolean',
+'is_default' => 'nullable|boolean',
         ]);
 
         $cart = Cart::with('items.variant.stocks')
@@ -70,25 +76,62 @@ class CheckoutController extends Controller
             if ($request->address_id) {
                 $address = auth()->user()->addresses()->findOrFail($request->address_id);
                 $addressData = [
-                    'full_name' => $address->full_name,
-                    'phone_number' => $address->phone_number,
-                    'street' => $address->street,
-                    'barangay' => $address->barangay,
-                    'city' => $address->city,
-                    'province' => $address->province,
-                    'postal_code' => $address->postal_code,
-                ];
+    'full_name' => $address->full_name,
+    'phone_number' => $address->phone_number,
+    'street' => $address->street,
+    'barangay' => $address->barangay,
+    'city' => $address->city,
+    'province' => $address->province,
+    'postal_code' => $address->postal_code,
+    'latitude' => $address->latitude,
+    'longitude' => $address->longitude,
+];
             } else {
-                $addressData = [
-                    'full_name' => $validated['full_name'],
-                    'phone_number' => $validated['phone_number'],
-                    'street' => $validated['street'],
-                    'barangay' => $validated['barangay'],
-                    'city' => $validated['city'],
-                    'province' => $validated['province'],
-                    'postal_code' => $validated['postal_code'],
-                ];
-            }
+
+    $addressData = [
+        'full_name' => $validated['full_name'],
+        'phone_number' => $validated['phone_number'],
+        'street' => $validated['street'],
+        'barangay' => $validated['barangay'],
+        'city' => $validated['city'],
+        'province' => $validated['province'],
+        'postal_code' => $validated['postal_code'],
+        'latitude' => $validated['latitude'] ?? null,
+        'longitude' => $validated['longitude'] ?? null,
+    ];
+
+    // Save new address if requested
+if (!$request->address_id && $request->boolean('save_address')) {
+
+    // If user wants this as default, remove existing defaults
+    if ($request->boolean('is_default')) {
+
+        auth()->user()
+            ->addresses()
+            ->update([
+                'is_default' => false
+            ]);
+
+    }
+
+    auth()->user()->addresses()->create([
+
+        'full_name' => $addressData['full_name'],
+        'phone_number' => $addressData['phone_number'],
+        'street' => $addressData['street'],
+        'barangay' => $addressData['barangay'],
+        'city' => $addressData['city'],
+        'province' => $addressData['province'],
+        'postal_code' => $addressData['postal_code'],
+        'latitude' => $addressData['latitude'],
+        'longitude' => $addressData['longitude'],
+        'is_default' => $request->boolean('is_default'),
+
+    ]);
+
+}
+
+}
 
             // Create Order
             $order = Order::create(array_merge([

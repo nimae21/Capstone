@@ -28,7 +28,9 @@ class UserAddressController extends Controller
             'city' => 'required|string|max:255',
             'province' => 'required|string|max:255',
             'postal_code' => 'required|string|max:10',
-            'is_default' => 'nullable|boolean',
+'latitude' => 'nullable|numeric',
+'longitude' => 'nullable|numeric',
+'is_default' => 'nullable|boolean',
         ]);
 
         try {
@@ -74,7 +76,9 @@ class UserAddressController extends Controller
             'city' => 'required|string|max:255',
             'province' => 'required|string|max:255',
             'postal_code' => 'required|string|max:10',
-            'is_default' => 'nullable|boolean',
+'latitude' => 'nullable|numeric',
+'longitude' => 'nullable|numeric',
+'is_default' => 'nullable|boolean',
         ]);
 
         try {

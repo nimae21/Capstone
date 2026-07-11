@@ -9,18 +9,20 @@ class Order extends Model
     protected $primaryKey = 'order_id';
 
     protected $fillable = [
-        'user_id',
-        'total_amount',
-        'status',
-        'full_name',
-        'phone_number',
-        'street',
-        'barangay',
-        'city',
-        'province',
-        'postal_code',
-        'payment_method',
-    ];
+    'user_id',
+    'total_amount',
+    'status',
+    'full_name',
+    'phone_number',
+    'street',
+    'barangay',
+    'city',
+    'province',
+    'postal_code',
+    'latitude',
+    'longitude',
+    'payment_method',
+];
 
     public function user()
     {

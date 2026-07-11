@@ -73,7 +73,14 @@
                         <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
                     @enderror
                 </div>
+<button
+    type="button"
+    id="locateMe"
+    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
 
+    📍 Use My Current Location
+
+</button>
 
                 <div>
     <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -94,6 +101,12 @@
     type="hidden"
     name="longitude"
     id="longitude">
+    <button
+    type="button"
+    id="findLocation"
+    class="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+    📍 Find Address on Map
+</button>
                 <!-- Barangay -->
                 <div>
                     <label for="barangay" class="block text-sm font-semibold text-gray-700 mb-2">Barangay <span class="text-red-500">*</span></label>
