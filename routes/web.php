@@ -108,6 +108,8 @@ Route::middleware(['auth', 'verified' , 'isUser'])->group(function () {
 
     Route::get('/orders/{id}', [CheckoutController::class, 'show'])
         ->name('orders.show');
+    Route::put('/orders/{order}/cancel', [CheckoutController::class, 'cancel'])
+    ->name('orders.cancel');
 
 
     /*

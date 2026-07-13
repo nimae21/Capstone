@@ -32,20 +32,9 @@ class CheckoutController extends Controller
     public function placeOrder(Request $request)
     {
         $validated = $request->validate([
-            'address_id' => 'nullable|exists:user_addresses,address_id',
-            'full_name' => 'required_without:address_id|string|max:255',
-            'phone_number' => 'required_without:address_id|string|max:20',
-            'street' => 'required_without:address_id|string|max:255',
-            'barangay' => 'required_without:address_id|string|max:255',
-            'city' => 'required_without:address_id|string|max:255',
-            'province' => 'required_without:address_id|string|max:255',
-            'postal_code' => 'required_without:address_id|string|max:10',
-            'payment_method' => 'required|in:credit_card,debit_card,gcash,paypal,cash_on_delivery',
-            'latitude' => 'nullable|numeric',
-'longitude' => 'nullable|numeric',
-            'save_address' => 'nullable|boolean',
-'is_default' => 'nullable|boolean',
-        ]);
+    'address_id' => 'required|exists:user_addresses,address_id',
+    'payment_method' => 'required|in:credit_card,debit_card,gcash,paypal,cash_on_delivery',
+]);
 
         $cart = Cart::with('items.variant.stocks')
             ->where('user_id', auth()->id())
@@ -72,10 +61,11 @@ class CheckoutController extends Controller
                 $total += $item->price * $item->quantity;
             }
 
-            // Get address details
-            if ($request->address_id) {
-                $address = auth()->user()->addresses()->findOrFail($request->address_id);
-                $addressData = [
+            $address = auth()->user()
+    ->addresses()
+    ->findOrFail($validated['address_id']);
+
+$addressData = [
     'full_name' => $address->full_name,
     'phone_number' => $address->phone_number,
     'street' => $address->street,
@@ -86,52 +76,9 @@ class CheckoutController extends Controller
     'latitude' => $address->latitude,
     'longitude' => $address->longitude,
 ];
-            } else {
 
-    $addressData = [
-        'full_name' => $validated['full_name'],
-        'phone_number' => $validated['phone_number'],
-        'street' => $validated['street'],
-        'barangay' => $validated['barangay'],
-        'city' => $validated['city'],
-        'province' => $validated['province'],
-        'postal_code' => $validated['postal_code'],
-        'latitude' => $validated['latitude'] ?? null,
-        'longitude' => $validated['longitude'] ?? null,
-    ];
 
-    // Save new address if requested
-if (!$request->address_id && $request->boolean('save_address')) {
 
-    // If user wants this as default, remove existing defaults
-    if ($request->boolean('is_default')) {
-
-        auth()->user()
-            ->addresses()
-            ->update([
-                'is_default' => false
-            ]);
-
-    }
-
-    auth()->user()->addresses()->create([
-
-        'full_name' => $addressData['full_name'],
-        'phone_number' => $addressData['phone_number'],
-        'street' => $addressData['street'],
-        'barangay' => $addressData['barangay'],
-        'city' => $addressData['city'],
-        'province' => $addressData['province'],
-        'postal_code' => $addressData['postal_code'],
-        'latitude' => $addressData['latitude'],
-        'longitude' => $addressData['longitude'],
-        'is_default' => $request->boolean('is_default'),
-
-    ]);
-
-}
-
-}
 
             // Create Order
             $order = Order::create(array_merge([
@@ -213,4 +160,23 @@ if (!$request->address_id && $request->boolean('save_address')) {
 
         return view('orders.show', compact('order'));
     }
+
+public function cancel(Order $order)
+{
+    // Make sure this order belongs to the logged in user
+    if ($order->user_id != auth()->id()) {
+        abort(403);
+    }
+
+    // Only pending orders can be cancelled
+    if ($order->status !== 'pending') {
+        return back()->with('error', 'This order can no longer be cancelled.');
+    }
+
+    $order->update([
+        'status' => 'cancelled'
+    ]);
+
+    return back()->with('success', 'Order cancelled successfully.');
+}
 }

@@ -37,8 +37,6 @@
 
             <form action="{{ route('checkout.place-order') }}" method="POST" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 @csrf
-            <input type="hidden" id="latitude" name="latitude">
-<input type="hidden" id="longitude" name="longitude">
                 <!-- Main Form Column -->
                 <div class="lg:col-span-2 space-y-6">
                     
@@ -58,27 +56,29 @@
                                         <label class="block cursor-pointer">
                                             <div class="border-2 border-gray-200 rounded-xl p-4 hover:border-red-500 hover:bg-red-50 transition-all" id="addr-{{ $address->address_id }}">
                                                 <div class="flex items-start gap-3">
-                                                    <input
-    type="radio"
-    name="address_id"
+                                                    
+    <input type="radio"
+name="address_id"
     value="{{ $address->address_id }}"
-    class="saved-address"
+    {{ $address->is_default ? 'checked' : '' }} class="saved-address"
 
-    data-full_name="{{ $address->full_name }}"
-    data-phone="{{ $address->phone_number }}"
-    data-street="{{ $address->street }}"
-    data-barangay="{{ $address->barangay }}"
-    data-city="{{ $address->city }}"
-    data-province="{{ $address->province }}"
-    data-postal="{{ $address->postal_code }}"
-    data-lat="{{ $address->latitude }}"
-    data-lng="{{ $address->longitude }}"
 >
                                                     <div class="flex-1">
-                                                        <p class="font-semibold text-gray-900">{{ $address->full_name }}</p>
-                                                        
-                                                        
-                                                        <p class="text-sm text-gray-600">📞 {{ $address->phone_number }}</p>
+                                                        <p class="font-semibold text-gray-900">
+    {{ $address->full_name }}
+</p>
+
+<p class="text-sm text-gray-600 mt-1">
+    📞 {{ $address->phone_number }}
+</p>
+
+<p class="text-sm text-gray-500 mt-2">
+    {{ $address->street }},
+    {{ $address->barangay }},
+    {{ $address->city }},
+    {{ $address->province }},
+    {{ $address->postal_code }}
+</p>
                                                         @if($address->is_default)
                                                             <span class="inline-block mt-2 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">Default</span>
                                                         @endif
@@ -87,86 +87,25 @@
                                             </div>
                                         </label>
                                     @endforeach
+
+                                    <a href="{{ route('addresses.create') }}"
+   class="block border-2 border-dashed border-red-400 rounded-xl p-5 hover:bg-red-50 hover:border-red-600 transition">
+
+    <div class="flex items-center justify-center gap-3">
+
+        <i class="fas fa-plus-circle text-red-600 text-xl"></i>
+
+        <span class="font-semibold text-red-600">
+            Add New Address
+        </span>
+
+    </div>
+
+</a>
                                 </div>
                                 <hr class="my-8">
                             </div>
                         @endif
-
-                        <!-- New Address -->
-                        <p class="text-sm font-bold text-gray-600 uppercase tracking-wide mb-4">Or Enter New Address</p>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
-                                <input type="text" id="full_name" name="full_name" value="{{ old('full_name') }}" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
-                                @error('full_name')<span class="text-red-600 text-xs mt-1">{{ $message }}</span>@enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
-                                <input type="tel" id="phone_number" name="phone_number" value="{{ old('phone_number') }}" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
-                                @error('phone_number')<span class="text-red-600 text-xs mt-1">{{ $message }}</span>@enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Postal Code</label>
-                                <input type="text" id="postal_code" name="postal_code" value="{{ old('postal_code') }}" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
-                                @error('postal_code')<span class="text-red-600 text-xs mt-1">{{ $message }}</span>@enderror
-                            </div>
-
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Street Address</label>
-                                <input type="text" id="street" name="street" value="{{ old('street') }}" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
-                                @error('street')<span class="text-red-600 text-xs mt-1">{{ $message }}</span>@enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Barangay</label>
-                                <input type="text" id="barangay" name="barangay" value="{{ old('barangay') }}" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
-                                @error('barangay')<span class="text-red-600 text-xs mt-1">{{ $message }}</span>@enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">City</label>
-                                <input type="text" id="city" name="city" value="{{ old('city') }}" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
-                                @error('city')<span class="text-red-600 text-xs mt-1">{{ $message }}</span>@enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Province</label>
-                                <input type="text" id="province" name="province" value="{{ old('province') }}" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
-                                @error('province')<span class="text-red-600 text-xs mt-1">{{ $message }}</span>@enderror
-                            </div>
-                        <div class="md:col-span-2 space-y-3 mt-4">
-
-    <label class="flex items-center gap-2 cursor-pointer">
-        <input
-            type="checkbox"
-            name="save_address"
-            value="1"
-            class="rounded border-gray-300 text-red-600 focus:ring-red-500">
-
-        <span class="text-sm font-medium text-gray-700">
-            Save this address for future orders
-        </span>
-    </label>
-
-    <label class="flex items-center gap-2 cursor-pointer">
-        <input
-            type="checkbox"
-            name="is_default"
-            value="1"
-            class="rounded border-gray-300 text-red-600 focus:ring-red-500">
-
-        <span class="text-sm font-medium text-gray-700">
-            Make this my default address
-        </span>
-    </label>
-
-</div>
-                            
-                        </div>
-                    </div>
 
                     <!-- Payment Method Section -->
                     <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
@@ -279,33 +218,3 @@
         </div>
     </div>
 @endsection
-
-@push('scripts')
-
-<script>
-
-$('.saved-address').on('change', function () {
-
-    $('#full_name').val($(this).data('full_name'));
-
-    $('#phone_number').val($(this).data('phone'));
-
-    $('#street').val($(this).data('street'));
-
-    $('#barangay').val($(this).data('barangay'));
-
-    $('#city').val($(this).data('city'));
-
-    $('#province').val($(this).data('province'));
-
-    $('#postal_code').val($(this).data('postal'));
-
-    $('#latitude').val($(this).data('lat'));
-
-    $('#longitude').val($(this).data('lng'));
-
-});
-
-</script>
-
-@endpush

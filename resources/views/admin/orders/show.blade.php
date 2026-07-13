@@ -126,23 +126,83 @@
                         Placed on {{ $order->created_at->format('F d, Y \a\t H:i A') }}
                     </p>
 
-                    <!-- Update Status Form -->
-                    <form action="{{ route('admin.orders.update-status', $order->order_id) }}" method="POST" class="mt-4">
-                        @csrf
-                        @method('PUT')
-                        <div class="flex gap-3">
-                            <select name="status" class="select-compact">
-                                <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>Pending</option>
-                                <option value="paid" {{ $order->status === 'paid' ? 'selected' : '' }}>Paid</option>
-                                <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>Shipped</option>
-                                <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>Completed</option>
-                                <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                            </select>
-                            <button type="submit" class="btn-update">
-                                <i class="fas fa-save mr-2"></i> Update
-                            </button>
-                        </div>
-                    </form>
+                    <div class="mt-6">
+
+    @if($order->status === 'pending')
+
+        <form action="{{ route('admin.orders.update-status', $order->order_id) }}"
+              method="POST"
+              onsubmit="return confirm('Approve payment for this order?');">
+
+            @csrf
+            @method('PUT')
+
+            <input type="hidden" name="status" value="paid">
+
+            <button class="btn-update w-full">
+                <i class="fas fa-check-circle mr-2"></i>
+                Approve Payment
+            </button>
+
+        </form>
+
+    @elseif($order->status === 'paid')
+
+        <form action="{{ route('admin.orders.update-status', $order->order_id) }}"
+              method="POST"
+              onsubmit="return confirm('Mark this order as shipped?');">
+
+            @csrf
+            @method('PUT')
+
+            <input type="hidden" name="status" value="shipped">
+
+            <button class="btn-update w-full bg-blue-600 hover:bg-blue-700">
+                <i class="fas fa-truck mr-2"></i>
+                Ship Order
+            </button>
+
+        </form>
+
+    @elseif($order->status === 'shipped')
+
+        <form action="{{ route('admin.orders.update-status', $order->order_id) }}"
+              method="POST"
+              onsubmit="return confirm('Mark this order as delivered?');">
+
+            @csrf
+            @method('PUT')
+
+            <input type="hidden" name="status" value="completed">
+
+            <button class="btn-update w-full bg-green-600 hover:bg-green-700">
+                <i class="fas fa-box-open mr-2"></i>
+                Mark as Delivered
+            </button>
+
+        </form>
+
+    @elseif($order->status === 'completed')
+
+        <div class="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+            <i class="fas fa-check-circle text-green-600 text-2xl mb-2"></i>
+            <p class="font-semibold text-green-700">
+                This order has been completed.
+            </p>
+        </div>
+
+    @elseif($order->status === 'cancelled')
+
+        <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+            <i class="fas fa-times-circle text-red-600 text-2xl mb-2"></i>
+            <p class="font-semibold text-red-700">
+                This order has been cancelled.
+            </p>
+        </div>
+
+    @endif
+
+</div>
                 </div>
 
                 <!-- Order Items -->
