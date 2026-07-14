@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\ShoeType;
 use App\Models\Brand;
 use Illuminate\Support\Facades\Storage;
 use App\Models\ProductVariant;
@@ -27,11 +28,22 @@ class ProductController extends Controller
         ->paginate(5)
         ->withQueryString();
 
-    $categories = Category::all();
-    $brands = Brand::all();
-    $totalVariants = ProductVariant::count();
+    $categories = Category::where('is_active', true)->get();
+$brands = Brand::where('is_active', true)->get();
+$shoeTypes = ShoeType::where('is_active', true)
+    ->orderBy('display_order')
+    ->get();
 
-    return view('admin.products.index', compact('products', 'categories', 'brands', 'search', 'totalVariants'));
+$totalVariants = ProductVariant::count();
+
+    return view('admin.products.index', compact(
+    'products',
+    'categories',
+    'brands',
+    'shoeTypes',
+    'search',
+    'totalVariants'
+));
 }
  public function store(Request $request)
 {
@@ -40,6 +52,7 @@ class ProductController extends Controller
         'product_description' => 'nullable|string',
         'category_id' => 'required|exists:categories,category_id',
         'brand_id' => 'required|exists:brands,brand_id',
+        'shoe_type_id' => 'required|exists:shoe_types,shoe_type_id',
         'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max per image
         'primary_image' => 'nullable|integer',
     ]);
@@ -50,6 +63,7 @@ class ProductController extends Controller
             'product_description' => $validated['product_description'],
             'category_id' => $validated['category_id'],
             'brand_id' => $validated['brand_id'],
+            'shoe_type_id' => $validated['shoe_type_id'],
         ]);
 
         // Handle image uploads
@@ -83,9 +97,18 @@ class ProductController extends Controller
  // Show the edit form
 public function edit(Product $product)
 {
-    $categories = Category::all();
-    $brands = Brand::all();
-    return view('admin.products.edit', compact('product', 'categories', 'brands'));
+    $categories = Category::where('is_active', true)->get();
+    $brands = Brand::where('is_active', true)->get();
+    $shoeTypes = ShoeType::where('is_active', true)
+        ->orderBy('display_order')
+        ->get();
+
+    return view('admin.products.edit', compact(
+        'product',
+        'categories',
+        'brands',
+        'shoeTypes'
+    ));
 }
 
 // Update the product
@@ -96,6 +119,7 @@ public function update(Request $request, Product $product)
         'product_description' => 'nullable|string',
         'category_id' => 'required|exists:categories,category_id',
         'brand_id' => 'required|exists:brands,brand_id',
+        'shoe_type_id' => 'required|exists:shoe_types,shoe_type_id',
         'images' => 'nullable',
         'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         'primary_image' => 'nullable|integer',
@@ -103,11 +127,12 @@ public function update(Request $request, Product $product)
 
     try {
         $product->update([
-            'product_name' => $validated['product_name'],
-            'product_description' => $validated['product_description'],
-            'category_id' => $validated['category_id'],
-            'brand_id' => $validated['brand_id'],
-        ]);
+    'product_name' => $validated['product_name'],
+    'product_description' => $validated['product_description'],
+    'category_id' => $validated['category_id'],
+    'brand_id' => $validated['brand_id'],
+    'shoe_type_id' => $validated['shoe_type_id'],
+]);
 
         // Handle new image uploads
         // Image upload is now handled by ProductImageController.

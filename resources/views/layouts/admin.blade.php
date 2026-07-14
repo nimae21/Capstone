@@ -399,6 +399,10 @@
         <a href="{{ route('admin.brands.index') }}" data-tooltip="Brands" class="{{ request()->routeIs('admin.brands.*') ? 'active' : '' }}">
             <i class="fas fa-building"></i> <span>Brands</span>
         </a>
+<a href="{{ route('admin.shoe-types.index') }}" data-tooltip="Shoe Types" class="{{ request()->routeIs('admin.shoe-types.*') ? 'active' : '' }}">
+            <i class="fas fa-shoe-prints"></i> <span>Shoe Types</span>
+        </a>
+
         <a href="{{ route('admin.users.index') }}" data-tooltip="Users" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
             <i class="fas fa-users"></i> <span>Users</span>
         </a>

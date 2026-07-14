@@ -174,6 +174,9 @@ Route::get('/dashboard', [AdminDashboardController::class, 'index'])
         Route::put('/brands/{brand}', [BrandController::class, 'update'])->name('brands.update');
 
 
+        Route::resource('shoe-types', ShoeTypeController::class);
+
+
         // Products
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');
         Route::post('/products', [ProductController::class, 'store'])->name('products.store');

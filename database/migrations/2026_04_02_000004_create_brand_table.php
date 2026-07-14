@@ -10,13 +10,19 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {
-        Schema::create('brands', function (Blueprint $table) {
-            $table->id('brand_id');
-            $table->string('brand_name'); //brand name
-            $table->timestamps();
-        });
-    }
+{
+    Schema::create('brands', function (Blueprint $table) {
+
+        $table->id('brand_id');
+
+        $table->string('brand_name')->unique();
+
+        $table->boolean('is_active')->default(true);
+
+        $table->timestamps();
+
+    });
+}
 
     /**
      * Reverse the migrations.

@@ -7,7 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Cart;
 use App\Models\Payment;
-use App\Models\StockMovement;
+
 use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
@@ -90,7 +90,7 @@ $addressData = [
 
             // Create Order Items & Stock Movements
             foreach ($cart->items as $item) {
-                $stock = $item->variant->stocks()->latest()->first();
+                
 
                 // Create order item
                 $orderItem = OrderItem::create([
@@ -100,16 +100,6 @@ $addressData = [
                     'price' => $item->price,
                 ]);
 
-                // Track stock movement
-                StockMovement::create([
-                    'stock_id' => $stock->stock_id,
-                    'order_item_id' => $orderItem->order_item_id,
-                    'quantity' => $item->quantity,
-                    'type' => 'out', // stock going out
-                ]);
-
-                // Deduct stock
-                $stock->decrement('quantity', $item->quantity);
             }
 
             // Create Payment Record (Mock)

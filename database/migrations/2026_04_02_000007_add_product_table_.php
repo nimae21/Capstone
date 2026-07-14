@@ -16,7 +16,10 @@ return new class extends Migration
 
             // Foreign key columns
             $table->unsignedBigInteger('category_id');
-            $table->unsignedBigInteger('brand_id');
+
+$table->unsignedBigInteger('brand_id');
+
+$table->unsignedBigInteger('shoe_type_id');
 
             $table->string('product_name');
             $table->text('product_description')->nullable();
@@ -24,14 +27,19 @@ return new class extends Migration
 
             // Explicit foreign keys with names
             $table->foreign('category_id', 'fk_products_category')
-                  ->references('category_id') // matches categories PK
-                  ->on('categories')
-                  ->onDelete('cascade');
+      ->references('category_id')
+      ->on('categories')
+      ->restrictOnDelete();
 
-            $table->foreign('brand_id', 'fk_products_brand')
-                  ->references('brand_id') // matches brands PK
-                  ->on('brands')
-                  ->onDelete('cascade');
+$table->foreign('brand_id', 'fk_products_brand')
+      ->references('brand_id')
+      ->on('brands')
+      ->restrictOnDelete();
+
+$table->foreign('shoe_type_id', 'fk_products_shoe_type')
+      ->references('shoe_type_id')
+      ->on('shoe_types')
+      ->restrictOnDelete();
         });
     }
 

@@ -50,7 +50,19 @@ public function update(Request $request, Category $category)
 
 public function destroy(Category $category)
 {
-    $category->delete();
-    return redirect()->route('admin.categories.index');
+    if ($category->products()->exists()) {
+        return back()->with(
+            'error',
+            'This category is being used by one or more products and cannot be deactivated.'
+        );
+    }
+
+    $category->update([
+        'is_active' => false
+    ]);
+
+    return redirect()
+        ->route('admin.categories.index')
+        ->with('success', 'Category deactivated successfully.');
 }
 }

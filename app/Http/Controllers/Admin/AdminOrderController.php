@@ -45,44 +45,52 @@ class AdminOrderController extends Controller
 
         DB::transaction(function () use ($validated, $order) {
 
-            $oldStatus = $order->status;
+    $oldStatus = $order->status;
 
-            $order->update([
-                'status' => $validated['status']
-            ]);
+    // Only deduct stock the first time the order becomes shipped
+    if (
+    $oldStatus === 'paid' &&
+    $validated['status'] === 'shipped'
+) {
 
-            // Deduct stock ONLY when first becoming completed
-            if ($oldStatus !== 'completed' && $validated['status'] === 'completed') {
+        foreach ($order->items as $item) {
 
-                foreach ($order->items as $item) {
+            $stock = $item->variant
+                ->stocks()
+                ->latest('stock_id')
+                ->first();
 
-                    $stock = $item->variant
-                        ->stocks()
-                        ->latest('stock_id')
-                        ->first();
-
-                    if (!$stock) {
-                        throw new \Exception("Stock not found.");
-                    }
-
-                    if ($stock->quantity < $item->quantity) {
-                        throw new \Exception(
-                            "Not enough stock for {$item->variant->product->product_name}"
-                        );
-                    }
-
-                    $stock->decrement('quantity', $item->quantity);
-
-                    StockMovement::create([
-                        'stock_id' => $stock->stock_id,
-                        'order_item_id' => $item->order_item_id,
-                        'quantity' => $item->quantity,
-                        'type' => 'out',
-                    ]);
-                }
+            if (!$stock) {
+                throw new \Exception("Stock not found.");
             }
 
-        });
+            if ($stock->quantity < $item->quantity) {
+                throw new \Exception(
+                    "Not enough stock for {$item->variant->product->product_name}"
+                );
+            }
+
+            // Deduct stock
+            $stock->decrement('quantity', $item->quantity);
+
+            // Record movement
+            StockMovement::create([
+                'stock_id' => $stock->stock_id,
+                'order_item_id' => $item->order_item_id,
+                'quantity' => $item->quantity,
+                'type' => 'out',
+            ]);
+        }
+    }
+
+    // Update order status AFTER inventory operations succeed
+    $order->update([
+        'status' => $validated['status']
+    ]);
+
+});
+            
+
 
         return back()->with('success', 'Order status updated.');
 

@@ -39,8 +39,20 @@ class BrandController extends Controller
 
 public function destroy(Brand $brand)
 {
-    $brand->delete();
-    return redirect()->route('admin.brands.index');
+    if ($brand->products()->exists()) {
+        return back()->with(
+            'error',
+            'This brand is being used by one or more products and cannot be deactivated.'
+        );
+    }
+
+    $brand->update([
+        'is_active' => false
+    ]);
+
+    return redirect()
+        ->route('admin.brands.index')
+        ->with('success', 'Brand deactivated successfully.');
 }
 
 public function edit(Brand $brand)

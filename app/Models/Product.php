@@ -11,6 +11,7 @@ class Product extends Model
     protected $fillable = [
         'category_id',
         'brand_id',
+         'shoe_type_id',
         'product_name',
         'product_description',
     ];
@@ -23,6 +24,11 @@ class Product extends Model
 public function brand()
 {
     return $this->belongsTo(Brand::class, 'brand_id', 'brand_id');
+}
+
+public function shoeType()
+{
+    return $this->belongsTo(ShoeType::class, 'shoe_type_id', 'shoe_type_id');
 }
 
 public function variants()
