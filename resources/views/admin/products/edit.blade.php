@@ -305,7 +305,32 @@
                     </select>
                 </div>
 
+                <!-- Shoe Type -->
 
+<div>
+    <label class="block text-sm font-semibold text-gray-700 mb-1">
+        Shoe Type
+    </label>
+
+    <select
+        name="shoe_type_id"
+        class="input-premium"
+        required>
+
+        @foreach($shoeTypes as $shoeType)
+
+            <option
+                value="{{ $shoeType->shoe_type_id }}"
+                {{ old('shoe_type_id', $product->shoe_type_id) == $shoeType->shoe_type_id ? 'selected' : '' }}>
+
+                {{ $shoeType->shoe_type_name }}
+
+            </option>
+
+        @endforeach
+
+    </select>
+</div>
                 <!-- Submit Button -->
                 <div class="pt-2">
                     <button type="submit" class="btn-3d-red w-full">

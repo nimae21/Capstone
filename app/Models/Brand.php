@@ -12,7 +12,9 @@ class Brand extends Model
     protected $primaryKey = 'brand_id';
 
     protected $fillable = [
-        'brand_name'];
+    'brand_name',
+    'is_active',
+];
 
     public function products()
     {

@@ -12,17 +12,27 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('product_variants', function (Blueprint $table) {
-            $table->id('product_variant_id');
-            $table->unsignedBigInteger('product_id');
-            $table->string('size');
-            $table->string('color');
-            $table->timestamps();
 
-            $table->foreign('product_id', 'fk_product_variants_product')
-                  ->references('product_id')
-                  ->on('products')
-                  ->onDelete('cascade');
-        });
+    $table->id('product_variant_id');
+
+    $table->unsignedBigInteger('product_id');
+
+    $table->string('size');
+    $table->string('color');
+
+    $table->timestamps();
+
+    $table->unique(
+        ['product_id', 'color', 'size'],
+        'unique_product_variant'
+    );
+
+    $table->foreign('product_id', 'fk_product_variants_product')
+          ->references('product_id')
+          ->on('products')
+          ->onDelete('cascade');
+
+});
     }
 
     /**

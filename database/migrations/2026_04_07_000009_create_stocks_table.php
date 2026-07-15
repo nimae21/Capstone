@@ -19,7 +19,9 @@ return new class extends Migration
               ->onUpdate('cascade')
               ->comment('FK to product_variants');
         $table->decimal('price', 10, 2);
-        $table->integer('quantity');
+        $table->unsignedInteger('received_quantity');
+
+        $table->unsignedInteger('remaining_quantity');  
         $table->date('deliver_date');
         $table->timestamps();
     });

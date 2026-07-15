@@ -473,6 +473,20 @@
                             @endforeach
                         </select>
                     </div>
+
+                    <div>
+    <select name="shoe_type_id" class="input-compact" required>
+        <option value="">Select Shoe Type</option>
+
+        @foreach($shoeTypes as $shoeType)
+            <option value="{{ $shoeType->shoe_type_id }}">
+                {{ $shoeType->shoe_type_name }}
+            </option>
+        @endforeach
+
+    </select>
+</div>
+
                     <div>
                         <div class="file-upload-wrapper">
                             <div class="relative flex-1">
@@ -533,8 +547,11 @@
                                 {{ $product->product_name }}
                             </h4>
                             <p class="text-xs text-gray-500 mt-0.5">
-                                {{ $product->category->category_name ?? 'Uncategorized' }} &bull;
-                                {{ $product->brand->brand_name ?? 'No Brand' }}
+                                {{ $product->category->category_name ?? 'Uncategorized' }}
+•
+{{ $product->brand->brand_name ?? 'No Brand' }}
+•
+{{ $product->shoeType->shoe_type_name ?? 'No Shoe Type' }}
                             </p>
                         </div>
                         <div class="product-actions">

@@ -14,6 +14,7 @@ class ProductVariant extends Model
         'product_id',
         'size',
         'color',
+        'is_active',
     ];
 
     public function product()
@@ -29,4 +30,8 @@ class ProductVariant extends Model
     return $this->hasMany(OrderItem::class, 'product_variant_id', 'product_variant_id');
 }
 
+public function getTotalQuantityAttribute()
+{
+    return $this->stocks()->sum('quantity');
+}
 }

@@ -20,7 +20,8 @@ class ProductController extends Controller
 {
     $search = $request->input('search');
 
-    $products = Product::with(['category', 'brand','variants'])
+    $products = Product::where('is_active', true)
+    ->with(['category','brand','shoeType','variants'])
         ->when($search, function ($query, $search) {
             $query->whereRaw('LOWER(product_name) LIKE ?', ['%' . strtolower($search) . '%'])
                   ->orWhereRaw('LOWER(product_description) LIKE ?', ['%' . strtolower($search) . '%']);
@@ -81,18 +82,13 @@ $totalVariants = ProductVariant::count();
 
  public function destroy(Product $product)
 {
-    // Delete all associated images
-    foreach ($product->images as $image) {
-        if (Storage::exists('public/products/' . basename($image->image_path))) {
-            Storage::delete('public/products/' . basename($image->image_path));
-        }
-        $image->delete();
-    }
+    $product->update([
+        'is_active' => false
+    ]);
 
-    $product->delete();
     return redirect()
         ->route('admin.products.index')
-        ->with('success', 'Product deleted successfully!');
+        ->with('success', 'Product archived successfully!');
 }
  // Show the edit form
 public function edit(Product $product)
@@ -126,7 +122,7 @@ public function update(Request $request, Product $product)
     ]);
 
     try {
-        $product->update([
+$product->update([
     'product_name' => $validated['product_name'],
     'product_description' => $validated['product_description'],
     'category_id' => $validated['category_id'],

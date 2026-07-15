@@ -21,22 +21,23 @@ class StockController extends Controller
     public function store(Request $request, $product_variant_id)
 {
     $request->validate([
-        'quantity' => 'required|integer|min:0',
-        'price' => 'required|numeric|min:0',
+        'received_quantity' => 'required|integer|min:1',
+        'price' => 'required|numeric|min:0.01',
         'deliver_date' => 'required|date',
     ]);
 
     $stock = Stock::create([
-        'product_variant_id' => $product_variant_id,
-        'quantity' => $request->quantity,
-        'price' => $request->price,
-        'deliver_date' => $request->deliver_date,
-    ]);
+    'product_variant_id' => $product_variant_id,
+    'received_quantity' => $request->received_quantity,
+    'remaining_quantity' => $request->received_quantity,
+    'price' => $request->price,
+    'deliver_date' => $request->deliver_date,
+]);
 
     // Record stock movement
     StockMovement::create([
         'stock_id' => $stock->stock_id,
-        'quantity' => $request->quantity,
+        'quantity' => $request->received_quantity,
         'type' => 'in',
     ]);
 
@@ -54,33 +55,16 @@ class StockController extends Controller
     public function update(Request $request, $stock_id)
 {
     $request->validate([
-        'quantity' => 'required|integer|min:0',
-        'price' => 'required|numeric|min:0',
+        'price' => 'required|numeric|min:0.01',
         'deliver_date' => 'required|date',
     ]);
 
     $stock = Stock::findOrFail($stock_id);
 
-    // Calculate the quantity difference
-    $difference = $request->quantity - $stock->quantity;
-
-    // Update stock
     $stock->update([
-        'quantity' => $request->quantity,
         'price' => $request->price,
         'deliver_date' => $request->deliver_date,
     ]);
-
-    // Only record movement if quantity changed
-    if ($difference != 0) {
-
-        StockMovement::create([
-            'stock_id' => $stock->stock_id,
-            'quantity' => $difference,
-            'type' => 'adjustment',
-        ]);
-
-    }
 
     return redirect()
         ->route('admin.stocks.index', $stock->product_variant_id)

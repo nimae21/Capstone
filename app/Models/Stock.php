@@ -12,11 +12,18 @@ class Stock extends Model
     protected $primaryKey = 'stock_id';
 
     protected $fillable = [
-        'product_variant_id',
-        'price',
-        'quantity',
-        'deliver_date',
-    ];
+
+    'product_variant_id',
+
+    'price',
+
+    'received_quantity',
+
+    'remaining_quantity',
+
+    'deliver_date',
+
+];
     public function variant()
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id', 'product_variant_id');

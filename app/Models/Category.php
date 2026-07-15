@@ -10,8 +10,11 @@ class Category extends Model
 
     protected $primaryKey = 'category_id';
 
-    protected $fillable = ['category_name', 'category_description'];
-
+protected $fillable = [
+    'category_name',
+    'category_description',
+    'is_active',
+];
         
     public function products()
     {

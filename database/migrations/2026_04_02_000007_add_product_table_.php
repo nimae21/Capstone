@@ -23,6 +23,7 @@ $table->unsignedBigInteger('shoe_type_id');
 
             $table->string('product_name');
             $table->text('product_description')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
 
             // Explicit foreign keys with names

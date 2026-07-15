@@ -9,12 +9,13 @@ class Product extends Model
     protected $primaryKey = 'product_id';
 
     protected $fillable = [
-        'category_id',
-        'brand_id',
-         'shoe_type_id',
-        'product_name',
-        'product_description',
-    ];
+    'category_id',
+    'brand_id',
+    'shoe_type_id',
+    'product_name',
+    'product_description',
+    'is_active',
+];
 
     public function category()
 {
