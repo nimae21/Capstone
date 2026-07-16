@@ -172,6 +172,10 @@ Route::get('/dashboard', [AdminDashboardController::class, 'index'])
         Route::delete('/brands/{brand}', [BrandController::class, 'destroy'])->name('brands.destroy');
         Route::get('/brands/{brand}/edit', [BrandController::class, 'edit'])->name('brands.edit');
         Route::put('/brands/{brand}', [BrandController::class, 'update'])->name('brands.update');
+        Route::patch(
+    '/brands/{brand}/restore',
+    [BrandController::class, 'restore']
+)->name('brands.restore');
 
 
         Route::resource('shoe-types', ShoeTypeController::class);

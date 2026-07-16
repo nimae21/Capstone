@@ -375,6 +375,12 @@
             </p>
         </div>
 
+        @if(session('error'))
+<div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-xl mb-6">
+    {{ session('error') }}
+</div>
+@endif
+
         <!-- ===== SUCCESS MESSAGE ===== -->
         @if(session('success'))
             <div class="bg-emerald-50 border-l-4 border-emerald-500 text-emerald-800 p-4 rounded-xl mb-6 flex items-center gap-3">
@@ -390,7 +396,7 @@
                 <span class="stat-icon-bg">🏷️</span>
                 <div class="flex-1">
                     <p class="stat-label">Total Brands</p>
-                    <p class="stat-number">{{ $brands->total() ?? $brands->count() ?? 0 }}</p>
+                    <p class="stat-number">{{ number_format($totalBrands) }}</p>
                     <p class="stat-sub">All brands in catalog</p>
                 </div>
             </div>
@@ -399,11 +405,23 @@
                 <span class="stat-icon-bg">✅</span>
                 <div class="flex-1">
                     <p class="stat-label">Active Brands</p>
-                    <p class="stat-number">{{ $brands->where('brand_name', '!=', null)->count() }}</p>
+                    <p class="stat-number">{{ number_format($activeBrands) }}</p>
                     <p class="stat-sub">Currently in use</p>
                 </div>
             </div>
         </div>
+
+        <div class="stat-card stat-green card-3d">
+                <div class="stat-accent-line" style="background:#10b981;"></div>
+                <span class="stat-icon-bg">✅</span>
+                <div class="flex-1">
+                    <p class="stat-label">Inactive Brands</p>
+                    <p class="stat-number">{{ number_format($inactiveBrands) }}</p>
+                    <p class="stat-sub">Currently inactive</p>
+                </div>
+            </div>
+        </div>
+
 
         <!-- ===== TWO-COLUMN: Create + Tips ===== -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -431,6 +449,40 @@
             </div>
         </div>
 
+        <form method="GET" class="flex gap-3 mb-5">
+
+    <input
+        type="text"
+        name="search"
+        value="{{ request('search') }}"
+        placeholder="Search brands..."
+        class="input-compact">
+
+    <select
+        name="status"
+        class="input-compact w-52">
+
+        <option value="">All</option>
+
+        <option value="active"
+            {{ request('status')=='active' ? 'selected' : '' }}>
+            Active
+        </option>
+
+        <option value="inactive"
+            {{ request('status')=='inactive' ? 'selected' : '' }}>
+            Inactive
+        </option>
+
+    </select>
+
+    <button
+        class="btn-create-3d">
+        Filter
+    </button>
+
+</form>
+
         <!-- ===== BRAND LIST ===== -->
         <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
             <div class="flex justify-between items-center mb-4">
@@ -456,15 +508,65 @@
                     <span class="brand-icon-bg">{{ $icon }}</span>
                     <div class="brand-info">
                         <span class="brand-dot"></span>
-                        <span class="brand-name">{{ $brand->brand_name }}</span>
+                        <div>
+
+    <div class="brand-name">
+        {{ $brand->brand_name }}
+    </div>
+
+    @if($brand->is_active)
+
+        <span class="text-xs text-green-600 font-semibold">
+            ● Active
+        </span>
+
+    @else
+
+        <span class="text-xs text-red-600 font-semibold">
+            ● Inactive
+        </span>
+
+    @endif
+
+</div>
                     </div>
                     <div class="brand-actions">
                         <a href="{{ route('admin.brands.edit', $brand->brand_id) }}" class="btn-sm-3d btn-sm-blue">
                             <i class="fas fa-edit"></i> Edit
                         </a>
-                        <button type="button" onclick="openDeleteModal({{ $brand->brand_id }}, '{{ addslashes($brand->brand_name) }}')" class="btn-sm-3d btn-sm-red">
-                            <i class="fas fa-trash-alt"></i> Delete
-                        </button>
+                        @if($brand->is_active)
+
+<button
+    type="button"
+    onclick="openDeleteModal({{ $brand->brand_id }}, '{{ addslashes($brand->brand_name) }}')"
+    class="btn-sm-3d btn-sm-red">
+
+    <i class="fas fa-ban"></i>
+    Deactivate
+
+</button>
+
+@else
+
+<form
+    action="{{ route('admin.brands.restore', $brand->brand_id) }}"
+    method="POST">
+
+    @csrf
+    @method('PATCH')
+
+    <button
+        class="btn-sm-3d"
+        style="background:#10b981;color:white;">
+
+        <i class="fas fa-rotate-left"></i>
+        Activate
+
+    </button>
+
+</form>
+
+@endif
                     </div>
                 </div>
             @empty
@@ -511,7 +613,8 @@
     <script>
         function openDeleteModal(brandId, brandName) {
             document.getElementById('deleteBrandForm').action = '/admin/brands/' + brandId;
-            document.getElementById('deleteModalMessage').textContent = `Delete brand "${brandName}"? This action cannot be undone.`;
+            document.getElementById('deleteModalMessage').textContent =
+`Deactivate brand "${brandName}"? You can activate it again later.`;
             document.getElementById('deleteModal').style.display = 'flex';
         }
 

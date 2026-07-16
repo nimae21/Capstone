@@ -8,23 +8,49 @@ use App\Models\Brand;
 
 class BrandController extends Controller
 {
-   public function index()
-        {
-            $brands = Brand::paginate(5);
-            return view('admin.brands.index',compact('brands'));
+   public function index(Request $request)
+{
+    $query = Brand::query();
+
+    // Search
+    if ($request->filled('search')) {
+        $query->where('brand_name', 'LIKE', '%' . trim($request->search) . '%');
     }
+
+    // Status Filter
+    if ($request->filled('status')) {
+        $query->where('is_active', $request->status === 'active');
+    }
+
+    $brands = $query
+        ->orderBy('brand_name')
+        ->paginate(10)
+        ->withQueryString();
+
+    return view('admin.brands.index', [
+        'brands' => $brands,
+
+        // Dashboard statistics
+        'totalBrands' => Brand::count(),
+        'activeBrands' => Brand::where('is_active', true)->count(),
+        'inactiveBrands' => Brand::where('is_active', false)->count(),
+    ]);
+}
 
 
     public function store(Request $request)
 {
     $request->validate([
-        'brand_name' => 'required|string|max:255|unique:brands,brand_name'
-    ]);
+    'brand_name' =>
+        'required|string|max:255|unique:brands,brand_name,' .
+        $brand->brand_id .
+        ',brand_id'
+]);
 
     $brand = Brand::create([
-        'brand_name' => $request->brand_name
-    ]);
-
+    'brand_name' => trim($request->brand_name),
+    'is_active' => true,
+]);
     if ($request->ajax()) {
         return response()->json([
             'success' => true,
@@ -63,8 +89,11 @@ public function edit(Brand $brand)
 public function update(Request $request, Brand $brand)
 {
     $request->validate([
-        'brand_name' => 'required|string|max:255',
-    ]);
+    'brand_name' =>
+        'required|string|max:255|unique:brands,brand_name,' .
+        $brand->brand_id .
+        ',brand_id'
+]);
 
     $brand->update([
         'brand_name' => $request->brand_name,
@@ -74,4 +103,16 @@ public function update(Request $request, Brand $brand)
         ->route('admin.brands.index')
         ->with('success', 'Brand updated successfully!');
 }
+public function restore($brand_id)
+{
+    $brand = Brand::findOrFail($brand_id);
+
+    $brand->update([
+        'is_active' => true
+    ]);
+
+    return redirect()
+        ->route('admin.brands.index')
+        ->with('success', 'Brand activated successfully.');
+}   
 }
