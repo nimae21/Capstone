@@ -381,6 +381,16 @@
 </div>
 @endif
 
+@if ($errors->any())
+<div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-xl mb-6">
+    <ul class="list-disc ml-5">
+        @foreach ($errors->all() as $error)
+            <li>{{ $error }}</li>
+        @endforeach
+    </ul>
+</div>
+@endif
+
         <!-- ===== SUCCESS MESSAGE ===== -->
         @if(session('success'))
             <div class="bg-emerald-50 border-l-4 border-emerald-500 text-emerald-800 p-4 rounded-xl mb-6 flex items-center gap-3">
@@ -390,7 +400,7 @@
         @endif
 
         <!-- ===== STAT CARDS ===== -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
             <div class="stat-card stat-blue card-3d">
                 <div class="stat-accent-line" style="background:#3b82f6;"></div>
                 <span class="stat-icon-bg">🏷️</span>
@@ -409,11 +419,11 @@
                     <p class="stat-sub">Currently in use</p>
                 </div>
             </div>
-        </div>
+        
 
         <div class="stat-card stat-green card-3d">
                 <div class="stat-accent-line" style="background:#10b981;"></div>
-                <span class="stat-icon-bg">✅</span>
+                <span class="stat-icon-bg">❌</span>
                 <div class="flex-1">
                     <p class="stat-label">Inactive Brands</p>
                     <p class="stat-number">{{ number_format($inactiveBrands) }}</p>
@@ -431,7 +441,14 @@
                 <form action="{{ route('admin.brands.store') }}" method="POST">
                     @csrf
                     <div>
-                        <input type="text" name="brand_name" placeholder="Brand Name (e.g., Nike, Adidas)" required class="input-compact">
+                        <input
+    type="text"
+    name="brand_name"
+    value="{{ old('brand_name') }}"
+    placeholder="Brand Name (e.g., Nike, Adidas)"
+    maxlength="255"
+    required
+    class="input-compact">
                     </div>
                     <button type="submit" class="btn-create-3d w-full mt-4 flex items-center justify-center gap-2">
                         <i class="fas fa-plus-circle"></i> Add Brand
@@ -477,9 +494,17 @@
     </select>
 
     <button
-        class="btn-create-3d">
-        Filter
-    </button>
+    type="submit"
+    class="btn-create-3d">
+    <i class="fas fa-filter"></i>
+    Filter
+</button>
+
+<a href="{{ route('admin.brands.index') }}"
+   class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 flex items-center gap-2">
+    <i class="fas fa-rotate-left"></i>
+    Reset
+</a>
 
 </form>
 
@@ -487,7 +512,7 @@
         <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="section-header text-gray-800">All Brands</h3>
-                <span class="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{{ $brands->count() }} total</span>
+                <span class="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{{ $brands->total() }} total brands  </span>
             </div>
 
             @forelse($brands as $brand)
@@ -516,15 +541,15 @@
 
     @if($brand->is_active)
 
-        <span class="text-xs text-green-600 font-semibold">
-            ● Active
-        </span>
+        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+    ● Active
+</span>
 
     @else
 
-        <span class="text-xs text-red-600 font-semibold">
-            ● Inactive
-        </span>
+        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+    ● Inactive
+</span>
 
     @endif
 
@@ -630,15 +655,22 @@
         });
 
         // Auto-close success message after 5 seconds
-        document.addEventListener('DOMContentLoaded', function() {
-            const successDiv = document.querySelector('.bg-emerald-50');
-            if (successDiv) {
-                setTimeout(() => {
-                    successDiv.style.transition = 'opacity 0.5s';
-                    successDiv.style.opacity = '0';
-                    setTimeout(() => successDiv.remove(), 500);
-                }, 5000);
-            }
-        });
+        document.addEventListener('DOMContentLoaded', function () {
+
+    document.querySelectorAll('.bg-emerald-50, .bg-red-50').forEach(alert => {
+
+        setTimeout(() => {
+
+            alert.style.transition = 'opacity .5s';
+
+            alert.style.opacity = '0';
+
+            setTimeout(() => alert.remove(), 500);
+
+        }, 5000);
+
+    });
+
+});
     </script>
 @endsection
