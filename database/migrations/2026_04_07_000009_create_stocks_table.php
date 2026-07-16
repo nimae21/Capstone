@@ -23,6 +23,7 @@ return new class extends Migration
 
         $table->unsignedInteger('remaining_quantity');  
         $table->date('deliver_date');
+        $table->boolean('is_archived')->default(false);
         $table->timestamps();
     });
     }

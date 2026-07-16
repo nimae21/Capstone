@@ -14,14 +14,11 @@ class Stock extends Model
     protected $fillable = [
 
     'product_variant_id',
-
     'price',
-
     'received_quantity',
-
     'remaining_quantity',
-
     'deliver_date',
+    'is_archived',
 
 ];
     public function variant()

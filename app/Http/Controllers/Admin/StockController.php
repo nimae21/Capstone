@@ -14,7 +14,9 @@ class StockController extends Controller
     public function index($product_variant_id)
 {
     $variant = ProductVariant::findOrFail($product_variant_id);
-    $stocks = $variant->stocks; // all stock entries for this variant
+    $stocks = $variant->stocks()
+    ->where('is_archived', false)
+    ->get(); // all stock entries for this variant
 
     return view('admin.stocks.index', compact('variant', 'stocks'));
 }
@@ -70,14 +72,26 @@ class StockController extends Controller
         ->route('admin.stocks.index', $stock->product_variant_id)
         ->with('success', 'Stock updated successfully.');
 }
-    // Delete a stock entry
     public function destroy($stock_id)
-    {
-        $stock = Stock::findOrFail($stock_id);
-        $product_variant_id = $stock->product_variant_id;
-        $stock->delete();
+{
+    $stock = Stock::findOrFail($stock_id);
 
-        return redirect()->route('admin.stocks.index', $product_variant_id)
-                         ->with('success', 'Stock deleted successfully!');
+    if ($stock->remaining_quantity > 0) {
+
+        return back()->with(
+            'error',
+            'You cannot archive a stock batch that still has remaining inventory.'
+        );
+
     }
+
+    $stock->update([
+        'is_archived' => true
+    ]);
+
+    return back()->with(
+        'success',
+        'Stock batch archived successfully.'
+    );
+}
     }
