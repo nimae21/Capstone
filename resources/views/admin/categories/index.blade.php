@@ -463,10 +463,21 @@
                 @csrf
                 <div class="flex flex-col sm:flex-row gap-4">
                     <div class="flex-1">
-                        <input type="text" name="category_name" placeholder="Category Name" required class="input-compact">
+                        <input
+type="text"
+name="category_name"
+value="{{ old('category_name') }}"
+placeholder="Category Name"
+required
+class="input-compact">
                     </div>
                     <div class="flex-1">
-                        <input type="text" name="category_description" placeholder="Description (optional)" class="input-compact">
+                        <input
+type="text"
+name="category_description"
+value="{{ old('category_description') }}"
+placeholder="Description (optional)"
+class="input-compact">
                     </div>
                     <button type="submit" class="btn-create-3d flex items-center gap-2 whitespace-nowrap">
                         <i class="fas fa-plus-circle"></i> Add Category
@@ -517,7 +528,17 @@
 
         <!-- ===== CATEGORY LIST ===== -->
         <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <h3 class="section-header text-gray-800 mb-4">All Categories</h3>
+            <div class="flex justify-between items-center mb-4">
+
+    <h3 class="section-header text-gray-800">
+        All Categories
+    </h3>
+
+    <span class="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+        {{ $categories->total() }} total categories
+    </span>
+
+</div>
 
             @forelse($categories as $category)
                 @php
@@ -554,24 +575,78 @@
                     <div class="category-info">
                         <span class="category-badge badge-{{ $type }}"></span>
                         <div>
-                            <div class="category-name">{{ $category->category_name }}</div>
-                            @if($category->category_description)
-                                <div class="category-desc">{{ $category->category_description }}</div>
-                            @endif
-                        </div>
+
+    <div class="category-name">
+        {{ $category->category_name }}
+    </div>
+
+    @if($category->is_active)
+
+        <span class="text-xs text-green-600 font-semibold">
+            ● Active
+        </span>
+
+    @else
+
+        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+            ● Inactive
+        </span>
+
+    @endif
+
+    @if($category->category_description)
+
+        <div class="category-desc">
+            {{ $category->category_description }}
+        </div>
+
+    @endif
+
+</div>
                     </div>
 
                     <div class="category-actions">
-                        <a href="{{ route('admin.categories.edit', $category->category_id) }}" 
-                           class="btn-sm-3d btn-sm-blue">
-                            <i class="fas fa-edit"></i> Edit
-                        </a>
-                        <button type="button" 
-                                onclick="openDeleteModal({{ $category->category_id }})"
-                                class="btn-sm-3d btn-sm-red">
-                            <i class="fas fa-trash-alt"></i> Delete
-                        </button>
-                    </div>
+
+    <a href="{{ route('admin.categories.edit', $category->category_id) }}"
+       class="btn-sm-3d btn-sm-blue">
+        <i class="fas fa-edit"></i> Edit
+    </a>
+
+    @if($category->is_active)
+
+        <button
+            type="button"
+            onclick="openDeleteModal({{ $category->category_id }}, '{{ addslashes($category->category_name) }}')"
+            class="btn-sm-3d btn-sm-red">
+
+            <i class="fas fa-ban"></i>
+            Deactivate
+
+        </button>
+
+    @else
+
+        <form
+            action="{{ route('admin.categories.restore', $category->category_id) }}"
+            method="POST">
+
+            @csrf
+            @method('PATCH')
+
+            <button
+                class="btn-sm-3d"
+                style="background:#10b981;color:white;">
+
+                <i class="fas fa-rotate-left"></i>
+                Activate
+
+            </button>
+
+        </form>
+
+    @endif
+
+</div>
                 </div>
             @empty
                 <div class="text-center py-10 text-gray-400">
@@ -598,10 +673,10 @@
                 <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500">
                     <i class="fas fa-exclamation-triangle text-xl"></i>
                 </div>
-                <h2 class="text-lg font-bold text-gray-800">Confirm Delete</h2>
+                <h2 class="text-lg font-bold text-gray-800">Confirm Deactivate</h2>
             </div>
             <p class="text-sm text-gray-600">
-                Are you sure you want to delete this category? This action cannot be undone.
+                Are you sure you want to deactivate this category? This action cannot be undone.
             </p>
             <form id="deleteForm" method="POST" class="mt-6 flex justify-end gap-3">
                 @csrf
@@ -610,18 +685,23 @@
                     Cancel
                 </button>
                 <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition flex items-center gap-2">
-                    <i class="fas fa-trash-alt"></i> Yes, Delete
+                    <i class="fas fa-trash-alt"></i> Yes, Deactivate
                 </button>
             </form>
         </div>
     </div>
 
     <script>
-        function openDeleteModal(id) {
-            document.getElementById('deleteForm').action = '/admin/categories/' + id;
-            document.getElementById('deleteModal').style.display = 'flex';
-        }
+        function openDeleteModal(categoryId, categoryName) {
 
+    document.getElementById('deleteForm').action =
+        '/admin/categories/' + categoryId;
+
+    document.getElementById('deleteModal').querySelector('p').textContent =
+        `Deactivate category "${categoryName}"? You can activate it again later.`;
+
+    document.getElementById('deleteModal').style.display = 'flex';
+}
         function closeDeleteModal() {
             document.getElementById('deleteModal').style.display = 'none';
         }
@@ -634,15 +714,21 @@
         });
 
         // Auto-close success message after 5 seconds
-        document.addEventListener('DOMContentLoaded', function() {
-            const successDiv = document.querySelector('.bg-emerald-50');
-            if (successDiv) {
-                setTimeout(() => {
-                    successDiv.style.transition = 'opacity 0.5s';
-                    successDiv.style.opacity = '0';
-                    setTimeout(() => successDiv.remove(), 500);
-                }, 5000);
-            }
-        });
+        document.addEventListener('DOMContentLoaded', function () {
+
+    document.querySelectorAll('.bg-emerald-50, .bg-red-50').forEach(alert => {
+
+        setTimeout(() => {
+
+            alert.style.transition = 'opacity .5s';
+            alert.style.opacity = '0';
+
+            setTimeout(() => alert.remove(), 500);
+
+        }, 5000);
+
+    });
+
+});
     </script>
 @endsection
