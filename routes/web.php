@@ -164,7 +164,8 @@ Route::get('/dashboard', [AdminDashboardController::class, 'index'])
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
         Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
         Route::put('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
-
+        Route::patch('/categories/{category}/restore', [CategoryController::class, 'restore'])
+    ->name('categories.restore');
 
         // Brands
         Route::get('/brands', [BrandController::class, 'index'])->name('brands.index');

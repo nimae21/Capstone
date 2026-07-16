@@ -395,6 +395,22 @@
             </p>
         </div>
 
+        @if(session('error'))
+<div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-xl mb-6">
+    {{ session('error') }}
+</div>
+@endif
+
+@if ($errors->any())
+<div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-xl mb-6">
+    <ul class="list-disc ml-5">
+        @foreach ($errors->all() as $error)
+            <li>{{ $error }}</li>
+        @endforeach
+    </ul>
+</div>
+@endif
+
         <!-- ===== SUCCESS MESSAGE ===== -->
         @if(session('success'))
             <div class="bg-emerald-50 border-l-4 border-emerald-500 text-emerald-800 p-4 rounded-xl mb-6 flex items-center gap-3">
@@ -404,27 +420,42 @@
         @endif
 
         <!-- ===== STAT CARDS ===== -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
-            <div class="stat-card stat-purple card-3d">
-                <div class="stat-accent-line" style="background:#8b5cf6;"></div>
-                <span class="stat-icon-bg">🏷️</span>
-                <div class="flex-1">
-                    <p class="stat-label">Total Categories</p>
-                    <p class="stat-number">{{ $categories->total() ?? $categories->count() ?? 0 }}</p>
-                    <p class="stat-sub">Organize your products</p>
-                </div>
-            </div>
-            <div class="stat-card stat-blue card-3d">
-                <div class="stat-accent-line" style="background:#3b82f6;"></div>
-                <span class="stat-icon-bg">📊</span>
-                <div class="flex-1">
-                    <p class="stat-label">Category Usage</p>
-                    <p class="stat-number">{{ $categories->count() > 0 ? round(\App\Models\Product::count() / $categories->count(), 1) : 0 }}</p>
-                    <p class="stat-sub">Avg. products per category</p>
-                </div>
-            </div>
-        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
 
+    <div class="stat-card stat-purple card-3d">
+        <div class="stat-accent-line" style="background:#8b5cf6;"></div>
+        <span class="stat-icon-bg">🏷️</span>
+
+        <div class="flex-1">
+            <p class="stat-label">Total Categories</p>
+            <p class="stat-number">{{ number_format($totalCategories) }}</p>
+            <p class="stat-sub">All categories</p>
+        </div>
+    </div>
+
+    <div class="stat-card stat-blue card-3d">
+        <div class="stat-accent-line" style="background:#3b82f6;"></div>
+        <span class="stat-icon-bg">✅</span>
+
+        <div class="flex-1">
+            <p class="stat-label">Active Categories</p>
+            <p class="stat-number">{{ number_format($activeCategories) }}</p>
+            <p class="stat-sub">Currently active</p>
+        </div>
+    </div>
+
+    <div class="stat-card stat-purple card-3d">
+        <div class="stat-accent-line" style="background:#ef4444;"></div>
+        <span class="stat-icon-bg">🚫</span>
+
+        <div class="flex-1">
+            <p class="stat-label">Inactive Categories</p>
+            <p class="stat-number">{{ number_format($inactiveCategories) }}</p>
+            <p class="stat-sub">Currently inactive</p>
+        </div>
+    </div>
+
+</div>
         <!-- ===== CREATE CATEGORY ===== -->
         <div class="create-card card-3d mb-8">
             <h3 class="section-header text-gray-800 mb-4">Create Category</h3>
@@ -443,6 +474,46 @@
                 </div>
             </form>
         </div>
+
+        <form method="GET" class="flex gap-3 mb-5">
+
+    <input
+        type="text"
+        name="search"
+        value="{{ request('search') }}"
+        placeholder="Search categories..."
+        class="input-compact">
+
+    <select
+        name="status"
+        class="input-compact w-52">
+
+        <option value="">All</option>
+
+        <option value="active"
+            {{ request('status')=='active' ? 'selected' : '' }}>
+            Active
+        </option>
+
+        <option value="inactive"
+            {{ request('status')=='inactive' ? 'selected' : '' }}>
+            Inactive
+        </option>
+
+    </select>
+
+    <button type="submit" class="btn-create-3d">
+        <i class="fas fa-filter"></i>
+        Filter
+    </button>
+
+    <a href="{{ route('admin.categories.index') }}"
+       class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 flex items-center gap-2">
+        <i class="fas fa-rotate-left"></i>
+        Reset
+    </a>
+
+</form>
 
         <!-- ===== CATEGORY LIST ===== -->
         <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
