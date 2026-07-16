@@ -36,28 +36,40 @@ class BrandController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-    'brand_name' => 'required|string|max:255|unique:brands,brand_name',
-]);
+{
+    // Normalize the brand name
+    $request->merge([
+        'brand_name' => ucwords(strtolower(trim($request->brand_name)))
+    ]);
 
-        $brand = Brand::create([
-            'brand_name' => trim($request->brand_name),
-            'is_active' => true,
-        ]);
+    // Basic validation
+    $request->validate([
+        'brand_name' => 'required|string|max:255',
+    ]);
 
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Brand "' . $brand->brand_name . '" created successfully!',
-                'brand' => $brand
-            ]);
-        }
+    // Check for duplicate (case-insensitive)
+    $exists = Brand::whereRaw('LOWER(brand_name) = ?', [
+        strtolower($request->brand_name)
+    ])->exists();
 
-        return redirect()
-            ->route('admin.brands.index')
-            ->with('success', 'Brand created successfully!');
+    if ($exists) {
+        return back()
+            ->withErrors([
+                'brand_name' => 'This brand already exists.'
+            ])
+            ->withInput();
     }
+
+    // Save
+    Brand::create([
+        'brand_name' => $request->brand_name,
+        'is_active' => true,
+    ]);
+
+    return redirect()
+        ->route('admin.brands.index')
+        ->with('success', 'Brand created successfully!');
+}
 
     public function edit(Brand $brand)
     {
@@ -65,19 +77,41 @@ class BrandController extends Controller
     }
 
     public function update(Request $request, Brand $brand)
-    {
-        $request->validate([
-            'brand_name' => 'unique:brands,brand_name,' . $brand->brand_id . ',brand_id',
-        ]);
+{
+    // Normalize the brand name
+    $request->merge([
+        'brand_name' => ucwords(strtolower(trim($request->brand_name)))
+    ]);
 
-        $brand->update([
-            'brand_name' => trim($request->brand_name),
-        ]);
+    // Basic validation
+    $request->validate([
+        'brand_name' => 'required|string|max:255',
+    ]);
 
-        return redirect()
-            ->route('admin.brands.index')
-            ->with('success', 'Brand updated successfully!');
+    // Check for duplicate (excluding the current brand)
+    $exists = Brand::whereRaw('LOWER(brand_name) = ?', [
+        strtolower($request->brand_name)
+    ])
+    ->where('brand_id', '!=', $brand->brand_id)
+    ->exists();
+
+    if ($exists) {
+        return back()
+            ->withErrors([
+                'brand_name' => 'This brand already exists.'
+            ])
+            ->withInput();
     }
+
+    // Update
+    $brand->update([
+        'brand_name' => $request->brand_name,
+    ]);
+
+    return redirect()
+        ->route('admin.brands.index')
+        ->with('success', 'Brand updated successfully!');
+}
 
     public function destroy(Brand $brand)
     {
