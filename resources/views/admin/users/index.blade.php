@@ -89,6 +89,16 @@
         .stat-card:hover .stat-icon-bg {
             opacity: 0.25;
         }
+        .btn-sm-green {
+    background: #10b981;
+    color: white;
+    box-shadow: 0 2px 0 #047857;
+}
+
+.btn-sm-green:hover {
+    background: #059669;
+    color: white;
+}
 
         .stat-card .stat-number {
             font-weight: 900 !important;
@@ -292,6 +302,8 @@
 @section('content')
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
 
+
+
         <!-- ===== HEADER ===== -->
         <div class="mb-6">
             <h1 class="gradient-title">Users</h1>
@@ -300,6 +312,24 @@
                 Manage all users and admin accounts.
             </p>
         </div>
+
+        @if(request('search'))
+    <div class="px-6 pt-4 text-sm text-gray-500">
+        Showing
+        <span class="font-semibold text-gray-700">
+            {{ $users->total() }}
+        </span>
+        result(s) for
+        <span class="font-semibold text-red-600">
+            "{{ request('search') }}"
+        </span>
+
+        <a href="{{ route('admin.users.index') }}"
+           class="ml-2 text-red-600 hover:underline">
+            Clear
+        </a>
+    </div>
+@endif
 
         <!-- ===== SUCCESS / ERROR ALERTS ===== -->
         @if(session('success'))
@@ -326,7 +356,7 @@
                 <span class="stat-icon-bg">👥</span>
                 <div class="flex-1">
                     <p class="stat-label">Total Users</p>
-                    <p class="stat-number">{{ $users->total() }}</p>
+                    <p class="stat-number">{{ $totalUsers }}</p>
                     <p class="stat-sub">All registered accounts</p>
                 </div>
             </div>
@@ -337,7 +367,7 @@
                 <span class="stat-icon-bg">👑</span>
                 <div class="flex-1">
                     <p class="stat-label">Admins</p>
-                    <p class="stat-number">{{ $users->pluck('role')->filter(fn($r) => $r === 'admin')->count() }}</p>
+                    <p class="stat-number">{{ $totalAdmins }}</p>
                     <p class="stat-sub">Administrators</p>
                 </div>
             </div>
@@ -348,7 +378,7 @@
                 <span class="stat-icon-bg">👤</span>
                 <div class="flex-1">
                     <p class="stat-label">Regular Users</p>
-                    <p class="stat-number">{{ $users->pluck('role')->filter(fn($r) => $r === 'user')->count() }}</p>
+                    <p class="stat-number">{{ $totalRegularUsers }}</p>
                     <p class="stat-sub">Standard accounts</p>
                 </div>
             </div>
@@ -356,12 +386,40 @@
 
         <!-- ===== USER TABLE ===== -->
         <div class="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
-            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center flex-wrap gap-3">
-                <h3 class="section-header text-gray-800">All Users</h3>
-                <a href="{{ route('admin.users.create-admin') }}" class="btn-create-3d text-sm">
-                    <i class="fas fa-user-plus"></i> Create Admin
-                </a>
-            </div>
+            <div class="px-6 py-4 border-b border-gray-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+
+    <h3 class="section-header text-gray-800">
+        All Users
+    </h3>
+
+    <div class="flex items-center gap-3">
+
+        <form method="GET"
+              action="{{ route('admin.users.index') }}"
+              class="relative">
+
+            <input
+                type="text"
+                name="search"
+                value="{{ request('search') }}"
+                placeholder="Search users..."
+                class="w-72 pl-10 pr-4 py-2.5 rounded-xl border border-gray-200
+                       focus:ring-2 focus:ring-red-500 focus:border-red-500
+                       outline-none transition bg-white shadow-sm">
+
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+
+        </form>
+
+        <a href="{{ route('admin.users.create-admin') }}"
+           class="btn-create-3d text-sm">
+            <i class="fas fa-user-plus"></i>
+            Create Admin
+        </a>
+
+    </div>
+
+</div>
 
             <div class="overflow-x-auto custom-scroll">
                 <table class="w-full text-sm">
@@ -371,14 +429,26 @@
                             <th class="px-6 py-3 text-left">Email</th>
                             <th class="px-6 py-3 text-left">Role</th>
                             <th class="px-6 py-3 text-left">Joined</th>
+                            <th class="px-6 py-3 text-left">
+    Status
+</th>   
                             <th class="px-6 py-3 text-right">Actions</th>
+
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @forelse($users as $user)
                             <tr class="table-row-3d">
                                 <td class="px-6 py-3 font-medium text-gray-800">
-                                    {{ $user->first_name }} {{ $user->last_name }}
+                                    <div class="flex items-center gap-2">
+    <span>{{ $user->first_name }} {{ $user->last_name }}</span>
+
+    @if($user->id === auth()->id())
+        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-semibold">
+            You
+        </span>
+    @endif
+</div>
                                 </td>
                                 <td class="px-6 py-3 text-gray-600">
                                     {{ $user->email }}
@@ -394,32 +464,86 @@
                                         </span>
                                     @endif
                                 </td>
+                                
                                 <td class="px-6 py-3 text-gray-600 text-xs">
                                     {{ $user->created_at->format('M d, Y') }}
                                 </td>
+                                <td class="px-6 py-3">
+    @if($user->is_active)
+        <span class="role-badge bg-green-100 text-green-700">
+            <i class="fas fa-check-circle"></i>
+            Active
+        </span>
+    @else
+        <span class="role-badge bg-red-100 text-red-700">
+            <i class="fas fa-ban"></i>
+            Suspended
+        </span>
+    @endif
+</td>
                                 <td class="px-6 py-3 text-right">
                                     <div class="flex gap-2 justify-end flex-wrap">
-                                        <a href="{{ route('admin.users.edit', $user->id) }}" class="btn-sm-3d btn-sm-blue">
-                                            <i class="fas fa-edit"></i> Edit
-                                        </a>
                                         @if($user->id !== auth()->id())
-                                            <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST" onsubmit="return confirm('Delete user {{ addslashes($user->first_name . ' ' . $user->last_name) }}?');" class="inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn-sm-3d btn-sm-red">
-                                                    <i class="fas fa-trash"></i> Delete
-                                                </button>
-                                            </form>
+    <a href="{{ route('admin.users.edit', $user->id) }}" class="btn-sm-3d btn-sm-blue">
+        <i class="fas fa-edit"></i> Edit
+    </a>
+@endif
+                                        @if($user->id !== auth()->id())
+                                                <form
+    action="{{ route('admin.users.toggle-status', $user) }}"
+    method="POST"
+    class="inline"
+>
+    @csrf
+    @method('PATCH')
+
+    @if($user->is_active)
+        <button
+            type="submit"
+            class="btn-sm-3d btn-sm-red"
+            onclick="return confirm('Suspend this user?')"
+        >
+            <i class="fas fa-ban"></i>
+            Suspend
+        </button>
+    @else
+        <button
+            type="submit"
+            class="btn-sm-3d btn-sm-green"
+            onclick="return confirm('Activate this user?')"
+        >
+            <i class="fas fa-check"></i>
+            Activate
+        </button>
+    @endif
+</form>
+                                            
                                         @endif
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-6 py-10 text-center text-gray-500 text-sm">
-                                    No users found.
-                                </td>
-                            </tr>
+    <td colspan="6" class="px-6 py-12 text-center">
+
+        <div class="flex flex-col items-center">
+
+            <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <i class="fas fa-users text-2xl text-gray-400"></i>
+            </div>
+
+            <h4 class="text-lg font-semibold text-gray-700">
+                No users found
+            </h4>
+
+            <p class="text-sm text-gray-500 mt-1">
+                Try another search or clear the current filter.
+            </p>
+
+        </div>
+
+    </td>
+</tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -428,7 +552,7 @@
             <!-- Pagination -->
             @if($users->hasPages())
                 <div class="px-6 py-4 border-t border-gray-100 flex justify-center">
-                    {{ $users->links() }}
+                    {{ $users->appends(request()->query())->links() }}
                 </div>
             @endif
         </div>

@@ -13,8 +13,31 @@ class AdminUserController extends Controller
     // List all users
     public function index()
     {
-        $users = User::paginate(15);
-        return view('admin.users.index', compact('users'));
+       $totalUsers = User::count();
+$totalAdmins = User::where('role', 'admin')->count();
+$totalRegularUsers = User::where('role', 'user')->count();
+
+$search = request('search');
+
+$users = User::query()
+    ->when($search, function ($query) use ($search) {
+        $query->where(function ($q) use ($search) {
+            $q->where('first_name', 'like', "%{$search}%")
+              ->orWhere('last_name', 'like', "%{$search}%")
+              ->orWhere('email', 'like', "%{$search}%")
+              ->orWhere('role', 'like', "%{$search}%");
+        });
+    })
+    ->latest()
+    ->paginate(10)
+    ->withQueryString();
+
+return view('admin.users.index', compact(
+    'users',
+    'totalUsers',
+    'totalAdmins',
+    'totalRegularUsers'
+));
     }
 
     // Show create admin form
@@ -60,12 +83,23 @@ class AdminUserController extends Controller
     // Show edit user form
     public function edit(User $user)
     {
+         if ($user->id === auth()->id()) {
+        return redirect()
+            ->route('admin.users.index')
+            ->with('error', 'You cannot edit your own account from the Users Management page.');
+    }
         return view('admin.users.edit', compact('user'));
     }
 
     // Update user
     public function update(Request $request, User $user)
+
     {
+         if ($user->id === auth()->id()) {
+        return redirect()
+            ->route('admin.users.index')
+            ->with('error', 'You cannot edit your own account from the Users Management page.');
+    }
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -88,24 +122,29 @@ class AdminUserController extends Controller
         }
     }
 
-    // Delete user
-    public function destroy(User $user)
-    {
-        // Prevent deleting the current user
-        if ($user->id === auth()->id()) {
-            return back()->with('error', 'Cannot delete your own account!');
-        }
-
-        try {
-            $name = $user->first_name . ' ' . $user->last_name;
-            $user->delete();
-
-            return redirect()
-                ->route('admin.users.index')
-                ->with('success', "User '{$name}' deleted successfully!");
-        } catch (\Exception $e) {
-            return back()
-                ->with('error', 'Failed to delete user: ' . $e->getMessage());
-        }
+    public function toggleStatus(User $user)
+{
+    if (
+        $user->role === 'admin' &&
+        $user->is_active &&
+        User::where('role', 'admin')
+            ->where('is_active', true)
+            ->count() <= 1
+    ) {
+        return back()->with(
+            'error',
+            'You cannot suspend the last active administrator.'
+        );
     }
+
+    $user->is_active = ! $user->is_active;
+    $user->save();
+
+    return back()->with(
+        'success',
+        $user->is_active
+            ? 'User activated successfully.'
+            : 'User suspended successfully.'
+    );
+}
 }

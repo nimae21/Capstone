@@ -248,8 +248,8 @@ Route::patch('/product-images/{image}/primary', [ProductImageController::class, 
         Route::put('/users/{user}', [AdminUserController::class, 'update'])
             ->name('users.update');
 
-        Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])
-            ->name('users.destroy');
+        Route::patch('/users/{user}/toggle-status', [AdminUserController::class, 'toggleStatus'])
+    ->name('users.toggle-status');
 
 
         // Orders Management

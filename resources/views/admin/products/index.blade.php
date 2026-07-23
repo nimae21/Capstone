@@ -431,7 +431,7 @@
                 <span class="stat-icon-bg">📦</span>
                 <div class="flex-1">
                     <p class="stat-label">Total Products</p>
-                    <p class="stat-number">{{ $products->total() }}</p>
+                    <p class="stat-number">{{ $totalProducts }}</p>
                     <p class="stat-sub">All products in catalog</p>
                 </div>
             </div>
@@ -515,24 +515,82 @@
         <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
             <!-- Search -->
             <div class="mb-6">
-                <form method="GET" action="{{ route('admin.products.index') }}" class="search-wrapper">
-                    <div class="relative flex-1">
-                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input type="text"
-                               name="search"
-                               value="{{ request('search') }}"
-                               placeholder="Search products by name, description..."
-                               class="input-compact pl-10">
-                    </div>
-                    <button type="submit" class="btn-create-3d px-6 flex items-center gap-2">
-                        <i class="fas fa-search"></i> Search
-                    </button>
-                    @if(request('search'))
-                        <a href="{{ route('admin.products.index') }}" class="px-4 py-2 bg-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300 transition">
-                            <i class="fas fa-times"></i> Clear
-                        </a>
-                    @endif
-                </form>
+                <form method="GET" action="{{ route('admin.products.index') }}">
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+        <div class="md:col-span-4">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+
+                <input
+                    type="text"
+                    name="search"
+                    value="{{ request('search') }}"
+                    placeholder="Search product, brand, category or shoe type..."
+                    class="input-compact pl-10">
+            </div>
+        </div>
+
+        <div>
+            <select name="category" class="input-compact">
+                <option value="">All Categories</option>
+
+                @foreach($categories as $category)
+                    <option
+                        value="{{ $category->category_id }}"
+                        {{ request('category') == $category->category_id ? 'selected' : '' }}>
+                        {{ $category->category_name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div>
+            <select name="brand" class="input-compact">
+                <option value="">All Brands</option>
+
+                @foreach($brands as $brand)
+                    <option
+                        value="{{ $brand->brand_id }}"
+                        {{ request('brand') == $brand->brand_id ? 'selected' : '' }}>
+                        {{ $brand->brand_name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div>
+            <select name="shoe_type" class="input-compact">
+                <option value="">All Shoe Types</option>
+
+                @foreach($shoeTypes as $shoeType)
+                    <option
+                        value="{{ $shoeType->shoe_type_id }}"
+                        {{ request('shoe_type') == $shoeType->shoe_type_id ? 'selected' : '' }}>
+                        {{ $shoeType->shoe_type_name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="flex gap-2">
+
+            <button type="submit" class="btn-create-3d flex-1">
+                <i class="fas fa-search mr-2"></i>
+                Search
+            </button>
+
+            <a href="{{ route('admin.products.index') }}"
+               class="px-5 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition flex items-center">
+                Clear
+            </a>
+
+        </div>
+
+    </div>
+
+</form>
             </div>
 
             <!-- Product List -->
