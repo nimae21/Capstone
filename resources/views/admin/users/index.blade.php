@@ -331,22 +331,8 @@
     </div>
 @endif
 
-        <!-- ===== SUCCESS / ERROR ALERTS ===== -->
-        @if(session('success'))
-            <div class="bg-emerald-50 border-l-4 border-emerald-500 text-emerald-800 p-4 rounded-xl mb-6 flex items-center gap-3">
-                <i class="fas fa-check-circle text-emerald-500 text-xl"></i>
-                <span>{{ session('success') }}</span>
-                <button onclick="this.parentElement.style.display='none'" class="ml-auto text-emerald-600 hover:text-emerald-800 transition">✕</button>
-            </div>
-        @endif
-
-        @if(session('error'))
-            <div class="bg-red-50 border-l-4 border-red-500 text-red-800 p-4 rounded-xl mb-6 flex items-center gap-3">
-                <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
-                <span>{{ session('error') }}</span>
-                <button onclick="this.parentElement.style.display='none'" class="ml-auto text-red-600 hover:text-red-800 transition">✕</button>
-            </div>
-        @endif
+        
+        
 
         <!-- ===== STAT CARDS ===== -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
@@ -403,9 +389,10 @@
                 name="search"
                 value="{{ request('search') }}"
                 placeholder="Search users..."
-                class="w-72 pl-10 pr-4 py-2.5 rounded-xl border border-gray-200
+                class="w-80 pl-10 pr-4 py-2.5 rounded-xl border border-gray-200
                        focus:ring-2 focus:ring-red-500 focus:border-red-500
                        outline-none transition bg-white shadow-sm">
+                       
 
             <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
 
@@ -440,19 +427,61 @@
                         @forelse($users as $user)
                             <tr class="table-row-3d">
                                 <td class="px-6 py-3 font-medium text-gray-800">
-                                    <div class="flex items-center gap-2">
-    <span>{{ $user->first_name }} {{ $user->last_name }}</span>
+                                    <div class="flex items-center gap-3">
 
-    @if($user->id === auth()->id())
-        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-semibold">
-            You
-        </span>
-    @endif
+    <div
+        class="w-11 h-11 rounded-full
+               bg-gradient-to-br
+               from-red-500
+               to-red-700
+               text-white
+               font-bold
+               flex
+               items-center
+               justify-center
+               shadow">
+
+        {{ strtoupper(substr($user->first_name,0,1)) }}{{ strtoupper(substr($user->last_name,0,1)) }}
+
+    </div>
+
+    <div>
+
+        <div class="flex items-center gap-2">
+
+            <span class="font-semibold text-gray-800">
+                {{ $user->first_name }} {{ $user->last_name }}
+            </span>
+
+            @if($user->id === auth()->id())
+
+                <span
+                    class="px-2 py-0.5
+                           rounded-full
+                           text-xs
+                           bg-blue-100
+                           text-blue-700
+                           font-semibold">
+
+                    You
+
+                </span>
+
+            @endif
+
+        </div>
+
+        <div class="text-xs text-gray-500">
+
+            {{ $user->email }}
+
+        </div>
+
+    </div>
+
 </div>
                                 </td>
-                                <td class="px-6 py-3 text-gray-600">
-                                    {{ $user->email }}
-                                </td>
+                                
                                 <td class="px-6 py-3">
                                     @if($user->role === 'admin')
                                         <span class="role-badge role-badge-admin">
@@ -466,7 +495,21 @@
                                 </td>
                                 
                                 <td class="px-6 py-3 text-gray-600 text-xs">
-                                    {{ $user->created_at->format('M d, Y') }}
+                                    <div>
+
+    <div class="font-medium text-gray-700">
+
+        {{ $user->created_at->format('M d, Y') }}
+
+    </div>
+
+    <div class="text-xs text-gray-500">
+
+        {{ $user->created_at->diffForHumans() }}
+
+    </div>
+
+</div>
                                 </td>
                                 <td class="px-6 py-3">
     @if($user->is_active)
@@ -499,18 +542,27 @@
 
     @if($user->is_active)
         <button
-            type="submit"
-            class="btn-sm-3d btn-sm-red"
-            onclick="return confirm('Suspend this user?')"
-        >
-            <i class="fas fa-ban"></i>
-            Suspend
-        </button>
+    type="button"
+    onclick="confirmAction(
+        this.form,
+        'suspend',
+        '{{ $user->first_name }} {{ $user->last_name }}'
+    )"
+    class="btn-sm-3d btn-sm-red">
+
+    <i class="fas fa-ban</i>
+    Suspend
+
+</button>
     @else
         <button
-            type="submit"
-            class="btn-sm-3d btn-sm-green"
-            onclick="return confirm('Activate this user?')"
+    type="button"
+    onclick="confirmAction(
+        this.form,
+        'activate',
+        '{{ $user->first_name }} {{ $user->last_name }}'
+    )"
+    class="btn-sm-3d btn-sm-green"
         >
             <i class="fas fa-check"></i>
             Activate
@@ -524,7 +576,7 @@
                             </tr>
                         @empty
                             <tr>
-    <td colspan="6" class="px-6 py-12 text-center">
+    <td colspan="5" class="px-6 py-12 text-center">
 
         <div class="flex flex-col items-center">
 
@@ -559,3 +611,224 @@
 
     </div>
 @endsection
+@if(session('success'))
+<div
+    id="toast"
+    class="fixed top-6 right-6 z-50 flex items-center gap-3
+           bg-white border border-green-200 rounded-xl shadow-xl
+           px-5 py-4 min-w-[340px]
+           translate-x-[420px] opacity-0
+           transition-all duration-500">
+
+    <div class="w-11 h-11 rounded-full bg-green-100 flex items-center justify-center">
+        <i class="fas fa-check text-green-600"></i>
+    </div>
+
+    <div class="flex-1">
+        <p class="font-semibold text-gray-800">
+            Success
+        </p>
+
+        <p class="text-sm text-gray-500">
+            {{ session('success') }}
+        </p>
+    </div>
+
+    <button
+        onclick="hideToast()"
+        class="text-gray-400 hover:text-gray-700">
+
+        <i class="fas fa-times"></i>
+
+    </button>
+
+</div>
+@endif
+
+@if(session('error'))
+<div
+    id="toast"
+    class="fixed top-6 right-6 z-50 flex items-center gap-3
+           bg-white border border-red-200 rounded-xl shadow-xl
+           px-5 py-4 min-w-[340px]
+           translate-x-[420px] opacity-0
+           transition-all duration-500">
+
+    <div class="w-11 h-11 rounded-full bg-red-100 flex items-center justify-center">
+        <i class="fas fa-exclamation"></i>
+    </div>
+
+    <div class="flex-1">
+
+        <p class="font-semibold">
+            Error
+        </p>
+
+        <p class="text-sm text-gray-500">
+            {{ session('error') }}
+        </p>
+
+    </div>
+
+    <button
+        onclick="hideToast()"
+        class="text-gray-400 hover:text-gray-700">
+
+        <i class="fas fa-times"></i>
+
+    </button>
+
+</div>
+@endif
+
+<!-- Confirmation Modal -->
+<div
+    id="confirmModal"
+    class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-50">
+
+    <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+
+        <div class="flex justify-center mb-4">
+            <div id="modalIcon"
+                class="w-16 h-16 rounded-full flex items-center justify-center text-2xl">
+            </div>
+        </div>
+
+        <h2
+            id="modalTitle"
+            class="text-xl font-bold text-center text-gray-800">
+        </h2>
+
+        <p
+            id="modalMessage"
+            class="text-gray-500 text-center mt-2">
+        </p>
+
+        <div class="flex justify-end gap-3 mt-8">
+
+            <button
+                onclick="closeModal()"
+                class="px-5 py-2 rounded-lg border border-gray-300 hover:bg-gray-100">
+
+                Cancel
+
+            </button>
+
+            <button
+                id="modalConfirmBtn"
+                class="px-5 py-2 rounded-lg text-white font-semibold">
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+let currentForm = null;
+
+function confirmAction(form, action, userName)
+{
+    currentForm = form;
+
+    const modal = document.getElementById('confirmModal');
+
+    const title = document.getElementById('modalTitle');
+
+    const message = document.getElementById('modalMessage');
+
+    const icon = document.getElementById('modalIcon');
+
+    const confirmBtn = document.getElementById('modalConfirmBtn');
+
+    if(action === 'suspend')
+    {
+        title.textContent = 'Suspend User?';
+
+        message.textContent =
+            `${userName} will no longer be able to log in.`;
+
+        icon.className =
+            'w-16 h-16 rounded-full flex items-center justify-center text-2xl bg-red-100 text-red-600';
+
+        icon.innerHTML =
+            '<i class="fas fa-ban"></i>';
+
+        confirmBtn.textContent = 'Suspend';
+
+        confirmBtn.className =
+            'px-5 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold';
+    }
+    else
+    {
+        title.textContent = 'Activate User?';
+
+        message.textContent =
+            `${userName} will be able to log in again.`;
+
+        icon.className =
+            'w-16 h-16 rounded-full flex items-center justify-center text-2xl bg-green-100 text-green-600';
+
+        icon.innerHTML =
+            '<i class="fas fa-check"></i>';
+
+        confirmBtn.textContent = 'Activate';
+
+        confirmBtn.className =
+            'px-5 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold';
+    }
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeModal()
+{
+    document.getElementById('confirmModal')
+        .classList.replace('flex', 'hidden');
+}
+
+document
+.getElementById('modalConfirmBtn')
+.addEventListener('click', function ()
+{
+    if(currentForm)
+    {
+        currentForm.submit();
+    }
+});
+
+
+
+const toast = document.getElementById('toast');
+
+if(toast)
+{
+    setTimeout(() => {
+
+        toast.classList.remove('translate-x-[420px]');
+        toast.classList.remove('opacity-0');
+
+    },100);
+
+    setTimeout(() => {
+
+        hideToast();
+
+    },3500);
+}
+
+function hideToast()
+{
+    if(!toast) return;
+
+    toast.classList.add('translate-x-[420px]');
+    toast.classList.add('opacity-0');
+}
+
+
+
+</script>
