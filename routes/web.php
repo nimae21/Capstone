@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\UserAddressController;
+use App\Http\Controllers\Admin\ShoeTypeController;
 
 
 

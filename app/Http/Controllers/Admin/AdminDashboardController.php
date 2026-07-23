@@ -24,13 +24,13 @@ class AdminDashboardController extends Controller
         $totalVariants = ProductVariant::count();
 
         // Total Inventory
-        $totalInventory = Stock::sum('quantity');
+        $totalInventory = Stock::sum('remaining_quantity');
 
         //inventory Value
-        $inventoryValue = Stock::selectRaw('SUM(price * quantity) as total')
+       $inventoryValue = Stock::selectRaw('SUM(price * remaining_quantity) as total')
     ->value('total');
 
-        $outOfStock = Stock::where('quantity',0)->count();
+        $outOfStock = Stock::where('remaining_quantity', 0)->count();
         // Total Orders
         $totalOrders = Order::count();
         $lastMonthOrders = Order::whereMonth('created_at', Carbon::now()->subMonth()->month)->count();
@@ -44,7 +44,7 @@ class AdminDashboardController extends Controller
         $lowStockItems = Stock::select('stocks.*', 'products.product_name', 'product_variants.size', 'product_variants.color')
             ->join('product_variants', 'product_variants.product_variant_id', '=', 'stocks.product_variant_id')
             ->join('products', 'products.product_id', '=', 'product_variants.product_id')
-            ->where('stocks.quantity', '<=', 5)
+            ->where('stocks.remaining_quantity', '<=', 5)
             ->count();
 
         // Low Stock Products for alerts
@@ -53,12 +53,12 @@ class AdminDashboardController extends Controller
                 'products.product_name',
                 'product_variants.size as variant_size',
                 'product_variants.color as variant_color',
-                DB::raw('stocks.quantity as available_stock')
+                DB::raw('stocks.remaining_quantity as available_stock')
             )
             ->join('product_variants', 'product_variants.product_variant_id', '=', 'stocks.product_variant_id')
             ->join('products', 'products.product_id', '=', 'product_variants.product_id')
-            ->where('stocks.quantity', '<=', 5)
-            ->orderBy('stocks.quantity', 'asc')
+            ->where('stocks.remaining_quantity', '<=', 5)
+->orderBy('stocks.remaining_quantity', 'asc')
             ->limit(5)
             ->get();
 
