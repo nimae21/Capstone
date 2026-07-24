@@ -16,6 +16,11 @@ class AdminDashboardController extends Controller
 {
     public function index()
     {
+        $stockTotals = Stock::select(
+    'product_variant_id',
+    DB::raw('SUM(remaining_quantity) as total_remaining')
+)
+->groupBy('product_variant_id');
         // Total Products
         $totalProducts = Product::count();
         $newProducts = Product::whereMonth('created_at', Carbon::now()->month)->count();
@@ -30,7 +35,10 @@ class AdminDashboardController extends Controller
        $inventoryValue = Stock::selectRaw('SUM(price * remaining_quantity) as total')
     ->value('total');
 
-        $outOfStock = Stock::where('remaining_quantity', 0)->count();
+        $outOfStock = DB::query()
+    ->fromSub($stockTotals, 'stock_totals')
+    ->where('total_remaining', '<=', 0)
+    ->count();
         // Total Orders
         $totalOrders = Order::count();
         $lastMonthOrders = Order::whereMonth('created_at', Carbon::now()->subMonth()->month)->count();
@@ -38,29 +46,52 @@ class AdminDashboardController extends Controller
 
         // Total Users
         $totalUsers = User::count();
+        
         $newUsers = User::whereMonth('created_at', Carbon::now()->month)->count();
 
         // Low Stock Items (variants with available stock <= 5)
-        $lowStockItems = Stock::select('stocks.*', 'products.product_name', 'product_variants.size', 'product_variants.color')
-            ->join('product_variants', 'product_variants.product_variant_id', '=', 'stocks.product_variant_id')
-            ->join('products', 'products.product_id', '=', 'product_variants.product_id')
-            ->where('stocks.remaining_quantity', '<=', 5)
-            ->count();
+        $lowStockItems = DB::table('product_variants')
+    ->leftJoinSub($stockTotals, 'stock_totals', function ($join) {
+        $join->on(
+            'stock_totals.product_variant_id',
+            '=',
+            'product_variants.product_variant_id'
+        );
+    })
+    ->whereBetween('stock_totals.total_remaining', [1, 5])
+    ->count();
 
         // Low Stock Products for alerts
-        $lowStockProducts = Stock::select(
-                'stocks.*',
-                'products.product_name',
-                'product_variants.size as variant_size',
-                'product_variants.color as variant_color',
-                DB::raw('stocks.remaining_quantity as available_stock')
-            )
-            ->join('product_variants', 'product_variants.product_variant_id', '=', 'stocks.product_variant_id')
-            ->join('products', 'products.product_id', '=', 'product_variants.product_id')
-            ->where('stocks.remaining_quantity', '<=', 5)
-->orderBy('stocks.remaining_quantity', 'asc')
-            ->limit(5)
-            ->get();
+        $lowStockProducts = DB::table('product_variants')
+    ->join(
+        'products',
+        'products.product_id',
+        '=',
+        'product_variants.product_id'
+    )
+
+    ->leftJoinSub($stockTotals, 'stock_totals', function ($join) {
+        $join->on(
+            'stock_totals.product_variant_id',
+            '=',
+            'product_variants.product_variant_id'
+        );
+    })
+
+    ->select(
+        'products.product_name',
+        'product_variants.size as variant_size',
+        'product_variants.color as variant_color',
+        DB::raw('COALESCE(stock_totals.total_remaining,0) as available_stock')
+    )
+
+    ->whereBetween('stock_totals.total_remaining', [1,5])
+
+    ->orderBy('available_stock')
+
+    ->limit(5)
+
+    ->get();
 
         // Recent Orders
         $recentOrders = Order::with('user')
@@ -68,13 +99,7 @@ class AdminDashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // Recent Stock Movements
-        $recentMovements = StockMovement::with([
-            'stock.variant.product'
-        ])
-        ->latest()
-        ->take(10)
-        ->get();
+        
 
         // Chart Data - Last 7 days revenue
         $chartLabels = [];

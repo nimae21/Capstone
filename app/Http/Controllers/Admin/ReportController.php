@@ -23,9 +23,9 @@ public function index()
 
     $totalCustomers = User::where('role', 'customer')->count();
 
-    $totalInventory = Stock::sum('quantity');
+    $totalInventory = Stock::sum('remaining_quantity');
 
-    $inventoryValue = Stock::selectRaw('SUM(price * quantity) as total')
+    $inventoryValue = Stock::selectRaw('SUM(price * remaining_quantity) as total')
     ->value('total');
 
     $totalSales = Order::where('status', 'completed')->sum('total_amount');
@@ -59,10 +59,10 @@ public function index()
 
     $totalVariants = ProductVariant::count();
 
-    $outOfStock = Stock::where('quantity', 0)->count();
+    $outOfStock = Stock::where('remaining_quantity', 0)->count();
 
-    $lowStock = Stock::where('quantity', '<=', 5)
-                 ->where('quantity', '>', 0)
+    $lowStock = Stock::where('remaining_quantity', '<=', 5)
+                 ->where('remaining_quantity', '>', 0)
                  ->count();
 
     $averageOrderValue = Order::where('status', 'completed')
@@ -75,6 +75,7 @@ public function index()
     $bestSellingProducts = OrderItem::select(
     'product_variant_id',
     DB::raw('SUM(quantity) as total_sold')
+
 )
 ->groupBy('product_variant_id')
 ->orderByDesc('total_sold')
