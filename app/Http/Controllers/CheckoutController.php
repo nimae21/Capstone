@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Cart;
 use App\Models\Payment;
+use App\Models\StockMovement;
 
 use Illuminate\Support\Facades\DB;
 
@@ -54,11 +55,13 @@ class CheckoutController extends Controller
             foreach ($cart->items as $item) {
                 $stock = $item->variant->stocks()->latest()->first();
 
-                if (!$stock || $item->quantity > $stock->quantity) {
-                    throw new \Exception('Insufficient stock for ' . $item->variant->product->product_name);
-                }
+                if (!$stock || $item->quantity > $stock->remaining_quantity) {
+    throw new \Exception(
+        'Insufficient stock for ' . $item->variant->product->product_name
+    );
+}
 
-                $total += $item->price * $item->quantity;
+                
             }
 
             $address = auth()->user()
@@ -93,12 +96,27 @@ $addressData = [
                 
 
                 // Create order item
-                $orderItem = OrderItem::create([
-                    'order_id' => $order->order_id,
-                    'product_variant_id' => $item->product_variant_id,
-                    'quantity' => $item->quantity,
-                    'price' => $item->price,
-                ]);
+                // Get latest stock
+$stock = $item->variant->stocks()->latest()->first();
+
+// Create order item
+$orderItem = OrderItem::create([
+    'order_id'           => $order->order_id,
+    'product_variant_id' => $item->product_variant_id,
+    'quantity'           => $item->quantity,
+    'price'              => $item->price,
+]);
+
+// Deduct stock
+$stock->decrement('remaining_quantity', $item->quantity);
+
+// Record stock movement
+StockMovement::create([
+    'stock_id'      => $stock->stock_id,
+    'order_item_id' => $orderItem->order_item_id,
+    'quantity'      => $item->quantity,
+    'type'          => 'out',
+]);
 
             }
 
@@ -111,7 +129,9 @@ $addressData = [
             ]);
 
             // Update order status to paid (since we mock payment)
-            $order->update(['status' => 'paid']);
+            $order->update([
+    'status' => 'processing'
+]);
 
             // Mark cart as completed
             $cart->update(['status' => 1]);

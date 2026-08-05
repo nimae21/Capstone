@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Brand;
+use Illuminate\Http\Request;
 
 class BrandController extends Controller
 {
@@ -12,12 +12,10 @@ class BrandController extends Controller
     {
         $query = Brand::query();
 
-        // Search
         if ($request->filled('search')) {
-            $query->where('brand_name', 'LIKE', '%' . trim($request->search) . '%');
+            $query->where('brand_name', 'like', '%' . trim($request->search) . '%');
         }
 
-        // Status Filter
         if ($request->filled('status')) {
             $query->where('is_active', $request->status === 'active');
         }
@@ -36,40 +34,18 @@ class BrandController extends Controller
     }
 
     public function store(Request $request)
-{
-    // Normalize the brand name
-    $request->merge([
-        'brand_name' => ucwords(strtolower(trim($request->brand_name)))
-    ]);
+    {
+        $brandName = $this->validateBrand($request);
 
-    // Basic validation
-    $request->validate([
-        'brand_name' => 'required|string|max:255',
-    ]);
+        Brand::create([
+            'brand_name' => $brandName,
+            'is_active' => true,
+        ]);
 
-    // Check for duplicate (case-insensitive)
-    $exists = Brand::whereRaw('LOWER(brand_name) = ?', [
-        strtolower($request->brand_name)
-    ])->exists();
-
-    if ($exists) {
-        return back()
-            ->withErrors([
-                'brand_name' => 'This brand already exists.'
-            ])
-            ->withInput();
+        return redirect()
+            ->route('admin.brands.index')
+            ->with('success', 'Brand created successfully!');
     }
-
-    // Save
-    Brand::create([
-        'brand_name' => $request->brand_name,
-        'is_active' => true,
-    ]);
-
-    return redirect()
-        ->route('admin.brands.index')
-        ->with('success', 'Brand created successfully!');
-}
 
     public function edit(Brand $brand)
     {
@@ -77,41 +53,17 @@ class BrandController extends Controller
     }
 
     public function update(Request $request, Brand $brand)
-{
-    // Normalize the brand name
-    $request->merge([
-        'brand_name' => ucwords(strtolower(trim($request->brand_name)))
-    ]);
+    {
+        $brandName = $this->validateBrand($request, $brand->brand_id);
 
-    // Basic validation
-    $request->validate([
-        'brand_name' => 'required|string|max:255',
-    ]);
+        $brand->update([
+            'brand_name' => $brandName,
+        ]);
 
-    // Check for duplicate (excluding the current brand)
-    $exists = Brand::whereRaw('LOWER(brand_name) = ?', [
-        strtolower($request->brand_name)
-    ])
-    ->where('brand_id', '!=', $brand->brand_id)
-    ->exists();
-
-    if ($exists) {
-        return back()
-            ->withErrors([
-                'brand_name' => 'This brand already exists.'
-            ])
-            ->withInput();
+        return redirect()
+            ->route('admin.brands.index')
+            ->with('success', 'Brand updated successfully!');
     }
-
-    // Update
-    $brand->update([
-        'brand_name' => $request->brand_name,
-    ]);
-
-    return redirect()
-        ->route('admin.brands.index')
-        ->with('success', 'Brand updated successfully!');
-}
 
     public function destroy(Brand $brand)
     {
@@ -142,5 +94,39 @@ class BrandController extends Controller
         return redirect()
             ->route('admin.brands.index')
             ->with('success', 'Brand activated successfully.');
+    }
+
+    /**
+     * Validate and normalize brand name.
+     */
+    private function validateBrand(Request $request, $ignoreId = null)
+    {
+        $request->merge([
+            'brand_name' => ucwords(strtolower(trim($request->brand_name)))
+        ]);
+
+        $request->validate([
+            'brand_name' => 'required|string|max:255',
+        ]);
+
+        $exists = Brand::whereRaw('LOWER(brand_name) = ?', [
+            strtolower($request->brand_name)
+        ]);
+
+        if ($ignoreId) {
+            $exists->where('brand_id', '!=', $ignoreId);
+        }
+
+        if ($exists->exists()) {
+            abort(
+                back()
+                    ->withErrors([
+                        'brand_name' => 'This brand already exists.'
+                    ])
+                    ->withInput()
+            );
+        }
+
+        return $request->brand_name;
     }
 }

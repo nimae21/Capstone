@@ -10,43 +10,55 @@ use Illuminate\Validation\Rules\Password;
 
 class AdminUserController extends Controller
 {
-    // List all users
+    /*
+    |--------------------------------------------------------------------------
+    | User List
+    |--------------------------------------------------------------------------
+    */
     public function index()
     {
-       $totalUsers = User::count();
-$totalAdmins = User::where('role', 'admin')->count();
-$totalRegularUsers = User::where('role', 'user')->count();
+        $totalUsers = User::count();
+        $totalAdmins = User::where('role', 'admin')->count();
+        $totalRegularUsers = User::where('role', 'user')->count();
 
-$search = request('search');
+        $search = request('search');
 
-$users = User::query()
-    ->when($search, function ($query) use ($search) {
-        $query->where(function ($q) use ($search) {
-            $q->where('first_name', 'like', "%{$search}%")
-              ->orWhere('last_name', 'like', "%{$search}%")
-              ->orWhere('email', 'like', "%{$search}%")
-              ->orWhere('role', 'like', "%{$search}%");
-        });
-    })
-    ->latest()
-    ->paginate(10)
-    ->withQueryString();
+        $users = User::query()
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('role', 'like', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
-return view('admin.users.index', compact(
-    'users',
-    'totalUsers',
-    'totalAdmins',
-    'totalRegularUsers'
-));
+        return view('admin.users.index', compact(
+            'users',
+            'totalUsers',
+            'totalAdmins',
+            'totalRegularUsers'
+        ));
     }
 
-    // Show create admin form
+    /*
+    |--------------------------------------------------------------------------
+    | Create Admin
+    |--------------------------------------------------------------------------
+    */
     public function createAdmin()
     {
         return view('admin.users.create-admin');
     }
 
-    // Store new admin
+    /*
+    |--------------------------------------------------------------------------
+    | Store Admin
+    |--------------------------------------------------------------------------
+    */
     public function storeAdmin(Request $request)
     {
         $validated = $request->validate([
@@ -54,11 +66,18 @@ return view('admin.users.index', compact(
             'last_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
             'suffix' => 'nullable|string|max:255',
-            'email' => 'required|email|unique:users,email|max:255',
-            'password' => ['required', Password::min(8)->letters()->numbers()->symbols()],
+            'email' => 'required|email|max:255|unique:users,email',
+            'password' => [
+                'required',
+                Password::min(8)
+                    ->letters()
+                    ->numbers()
+                    ->symbols(),
+            ],
         ]);
 
         try {
+
             $user = User::create([
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
@@ -67,84 +86,121 @@ return view('admin.users.index', compact(
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'role' => 'admin',
-                'email_verified_at' => now(), // Auto-verify admin accounts
+                'email_verified_at' => now(),
             ]);
 
             return redirect()
                 ->route('admin.users.index')
-                ->with('success', "Admin account '{$user->first_name} {$user->last_name}' created successfully!");
+                ->with(
+                    'success',
+                    "Admin account '{$user->first_name} {$user->last_name}' created successfully!"
+                );
+
         } catch (\Exception $e) {
+
             return back()
                 ->withInput()
-                ->with('error', 'Failed to create admin: ' . $e->getMessage());
+                ->with(
+                    'error',
+                    'Failed to create admin: ' . $e->getMessage()
+                );
+
         }
     }
 
-    // Show edit user form
+    /*
+    |--------------------------------------------------------------------------
+    | Edit User
+    |--------------------------------------------------------------------------
+    */
     public function edit(User $user)
     {
-         if ($user->id === auth()->id()) {
-        return redirect()
-            ->route('admin.users.index')
-            ->with('error', 'You cannot edit your own account from the Users Management page.');
-    }
+        if ($user->id === auth()->id()) {
+            return redirect()
+                ->route('admin.users.index')
+                ->with(
+                    'error',
+                    'You cannot edit your own account from the Users Management page.'
+                );
+        }
+
         return view('admin.users.edit', compact('user'));
     }
 
-    // Update user
+    /*
+    |--------------------------------------------------------------------------
+    | Update User
+    |--------------------------------------------------------------------------
+    */
     public function update(Request $request, User $user)
-
     {
-         if ($user->id === auth()->id()) {
-        return redirect()
-            ->route('admin.users.index')
-            ->with('error', 'You cannot edit your own account from the Users Management page.');
-    }
+        if ($user->id === auth()->id()) {
+            return redirect()
+                ->route('admin.users.index')
+                ->with(
+                    'error',
+                    'You cannot edit your own account from the Users Management page.'
+                );
+        }
+
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
             'suffix' => 'nullable|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id . ',id|max:255',
+            'email' => 'required|email|max:255|unique:users,email,' . $user->id . ',id',
             'role' => 'required|in:user,admin',
         ]);
 
         try {
+
             $user->update($validated);
 
             return redirect()
                 ->route('admin.users.index')
                 ->with('success', 'User updated successfully!');
+
         } catch (\Exception $e) {
+
             return back()
                 ->withInput()
-                ->with('error', 'Failed to update user: ' . $e->getMessage());
+                ->with(
+                    'error',
+                    'Failed to update user: ' . $e->getMessage()
+                );
+
         }
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Activate / Suspend User
+    |--------------------------------------------------------------------------
+    */
     public function toggleStatus(User $user)
-{
-    if (
-        $user->role === 'admin' &&
-        $user->is_active &&
-        User::where('role', 'admin')
-            ->where('is_active', true)
-            ->count() <= 1
-    ) {
+    {
+        if (
+            $user->role === 'admin' &&
+            $user->is_active &&
+            User::where('role', 'admin')
+                ->where('is_active', true)
+                ->count() <= 1
+        ) {
+            return back()->with(
+                'error',
+                'You cannot suspend the last active administrator.'
+            );
+        }
+
+        $user->update([
+            'is_active' => ! $user->is_active
+        ]);
+
         return back()->with(
-            'error',
-            'You cannot suspend the last active administrator.'
+            'success',
+            $user->is_active
+                ? 'User activated successfully.'
+                : 'User suspended successfully.'
         );
     }
-
-    $user->is_active = ! $user->is_active;
-    $user->save();
-
-    return back()->with(
-        'success',
-        $user->is_active
-            ? 'User activated successfully.'
-            : 'User suspended successfully.'
-    );
-}
 }

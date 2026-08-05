@@ -30,8 +30,8 @@ class ProductVariant extends Model
     return $this->hasMany(OrderItem::class, 'product_variant_id', 'product_variant_id');
 }
 
-public function getTotalQuantityAttribute()
+public function getTotalStockAttribute()
 {
-    return $this->stocks()->sum('quantity');
+    return $this->stocks()->sum('remaining_quantity');
 }
 }

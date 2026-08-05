@@ -275,11 +275,12 @@
                     <div class="flex gap-4 items-center mb-6">
                         <div class="flex-1">
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Quantity</label>
-                            <input type="number" 
-                                   name="quantity" 
-                                   min="1" 
-                                   value="1" 
-                                   class="quantity-input w-32 px-4 py-2.5 border border-gray-200 rounded-xl focus:border-red-500 transition-all">
+                            <input
+    type="number"
+    name="quantity"
+    id="quantityInput"
+    min="1"
+    value="1">
                         </div>
                     </div>
                     
@@ -291,15 +292,6 @@
                 </form>
                 
                 <!-- Benefits -->
-                <div class="grid grid-cols-3 gap-3 pt-4">
-                    <div class="text-center p-3 bg-gray-50 rounded-xl">
-                        <i class="fas fa-truck-fast text-red-600 text-xl mb-1 block"></i>
-                        <p class="text-xs font-semibold text-gray-700">Free Shipping</p>
-                    </div>
-                    <div class="text-center p-3 bg-gray-50 rounded-xl">
-                        <i class="fas fa-rotate-left text-red-600 text-xl mb-1 block"></i>
-                        <p class="text-xs font-semibold text-gray-700">60-Day Returns</p>
-                    </div>
                     <div class="text-center p-3 bg-gray-50 rounded-xl">
                         <i class="fas fa-shield-alt text-red-600 text-xl mb-1 block"></i>
                         <p class="text-xs font-semibold text-gray-700">Authentic Guarantee</p>
@@ -318,158 +310,279 @@
 <script>
 const variants = @json($product->variants);
 
+let selectedColor = null;
 let selectedVariant = null;
-let selectedSize = null;
 
-/* =========================
-   COLOR CLICK
-========================= */
+/*
+|--------------------------------------------------------------------------
+| COLOR BUTTONS
+|--------------------------------------------------------------------------
+*/
+
 document.querySelectorAll('.variant-btn').forEach(button => {
+
     button.addEventListener('click', function () {
-        // Remove active class from all color buttons
-        document.querySelectorAll('.variant-btn').forEach(btn => btn.classList.remove('active'));
-        
-        // Add active class to clicked button
+
+        document.querySelectorAll('.variant-btn')
+            .forEach(btn => btn.classList.remove('active'));
+
         this.classList.add('active');
-        
-        // Store selected variant ID
-        selectedVariant = this.dataset.id;
-        document.getElementById('selectedVariant').value = selectedVariant;
-        
-        // Reset size selection
-        selectedSize = null;
-        document.getElementById('selectedSize').value = '';
-        
-        // Render sizes for this variant
-        renderSizes(selectedVariant);
-        
-        // Reset price and stock display
-        document.getElementById('priceDisplay').innerText = '0';
-        const stockSpan = document.getElementById('stockDisplay');
-        stockSpan.innerText = 'Select size';
-        stockSpan.className = 'stock-badge';
+
+        selectedColor = this.dataset.color;
+
+        renderSizes(selectedColor);
+
     });
+
 });
 
-/* =========================
-   RENDER SIZES (FROM VARIANT)
-========================= */
-function renderSizes(variantId) {
-    const sizeContainer = document.getElementById('size-container');
-    sizeContainer.innerHTML = '';
-    
-    const variant = variants.find(v => v.product_variant_id == variantId);
-    
-    if (!variant) {
-        console.error("Variant not found");
-        sizeContainer.innerHTML = '<div class="text-red-500 italic py-3">Size not available</div>';
+
+/*
+|--------------------------------------------------------------------------
+| RENDER AVAILABLE SIZES
+|--------------------------------------------------------------------------
+*/
+function renderSizes(color)
+{
+    const container = document.getElementById('size-container');
+
+    container.innerHTML = '';
+
+    selectedVariant = null;
+
+    document.getElementById('selectedVariant').value = '';
+
+    document.getElementById('selectedSize').value = '';
+
+    document.getElementById('priceDisplay').innerText = '0';
+
+    updateStockDisplay(null);
+
+
+    const colorVariants = variants.filter(v => v.color === color);
+
+    if(colorVariants.length === 0)
+    {
+        container.innerHTML =
+            '<p class="text-gray-500 italic">No sizes available.</p>';
+
         return;
     }
-    
-    // Create size button
-    const button = document.createElement('button');
-    button.classList.add('size-btn', 'px-5', 'py-2.5', 'bg-white', 'border-2', 'border-gray-200', 'rounded-full', 'font-medium', 'text-gray-700', 'hover:border-red-500', 'transition-all', 'shadow-sm');
-    button.dataset.size = variant.size;
-    button.innerText = variant.size;
-    
-    sizeContainer.appendChild(button);
-    
+
+    colorVariants.forEach(variant => {
+
+        const stock = variant.stocks.length
+            ? variant.stocks[0]
+            : null;
+
+        const quantity = stock
+            ? Number(stock.remaining_quantity)
+            : 0;
+
+        const price = stock
+            ? stock.price
+            : 0;
+
+        const button = document.createElement('button');
+
+        button.type = "button";
+
+        button.className =
+            'size-btn px-5 py-2.5 rounded-full border-2 transition-all shadow-sm';
+
+        button.dataset.variant = variant.product_variant_id;
+
+        button.dataset.size = variant.size;
+
+        button.dataset.price = price;
+
+        button.dataset.stock = quantity;
+
+        button.innerText = variant.size;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | OUT OF STOCK
+        |--------------------------------------------------------------------------
+        */
+
+        if(quantity <= 0)
+        {
+            button.disabled = true;
+
+            button.classList.add(
+                'bg-gray-200',
+                'border-gray-300',
+                'text-gray-400',
+                'cursor-not-allowed',
+                'opacity-60'
+            );
+
+            button.innerHTML =
+                variant.size +
+                ' <span class="text-xs">(Out)</span>';
+        }
+        else
+        {
+            button.classList.add(
+                'bg-white',
+                'border-gray-200',
+                'hover:border-red-500'
+            );
+        }
+
+        container.appendChild(button);
+
+    });
+
     attachSizeEvents();
-    
-    // Get stock info from stock table
-    const stock = variant.stocks?.[0];
-    if (stock) {
-        document.getElementById('priceDisplay').innerText = stock.price;
-        updateStockDisplay(stock.quantity);
-    }
 }
 
-/* =========================
-   SIZE CLICK
-========================= */
-function attachSizeEvents() {
+
+/*
+|--------------------------------------------------------------------------
+| SIZE BUTTON CLICK
+|--------------------------------------------------------------------------
+*/
+function attachSizeEvents()
+{
     document.querySelectorAll('.size-btn').forEach(button => {
-        button.addEventListener('click', function () {
-            // Remove active class from all size buttons
-            document.querySelectorAll('.size-btn').forEach(btn => btn.classList.remove('active'));
-            
-            // Add active class to clicked button
+
+        if(button.disabled) return;
+
+        button.addEventListener('click', function(){
+
+            document.querySelectorAll('.size-btn')
+                .forEach(btn => btn.classList.remove('active'));
+
             this.classList.add('active');
-            
-            // Store selected size
-            selectedSize = this.dataset.size;
-            document.getElementById('selectedSize').value = selectedSize;
-            
-            // Update stock info based on selected variant
-            const variant = variants.find(v => v.product_variant_id == selectedVariant);
-            const stock = variant.stocks?.[0];
-            
-            if (stock) {
-                document.getElementById('priceDisplay').innerText = stock.price;
-                updateStockDisplay(stock.quantity);
-            }
+
+            selectedVariant = this.dataset.variant;
+
+            document.getElementById('selectedVariant').value =
+                selectedVariant;
+
+            document.getElementById('selectedSize').value =
+                this.dataset.size;
+
+            document.getElementById('priceDisplay').innerText =
+                Number(this.dataset.price).toLocaleString();
+
+            const quantityInput = document.getElementById('quantityInput');
+
+quantityInput.max = Number(this.dataset.stock);
+quantityInput.value = 1;
+
+            updateStockDisplay(Number(this.dataset.stock));
+
         });
+
     });
 }
 
-/* =========================
-   UPDATE STOCK DISPLAY
-========================= */
-function updateStockDisplay(quantity) {
-    const stockSpan = document.getElementById('stockDisplay');
-    
-    if (quantity <= 0) {
-        stockSpan.innerText = 'Out of Stock';
-        stockSpan.className = 'stock-badge out';
-    } else if (quantity <= 5) {
-        stockSpan.innerText = 'Low Stock (' + quantity + ' left)';
-        stockSpan.className = 'stock-badge low';
-    } else {
-        stockSpan.innerText = 'In Stock (' + quantity + ' available)';
-        stockSpan.className = 'stock-badge';
+
+/*
+|--------------------------------------------------------------------------
+| STOCK BADGE
+|--------------------------------------------------------------------------
+*/
+function updateStockDisplay(stock)
+{
+    const badge = document.getElementById('stockDisplay');
+
+    if(stock === null)
+    {
+        badge.innerText = "Select Size";
+        badge.className = "stock-badge";
+        return;
+    }
+
+    if(stock <= 0)
+    {
+        badge.innerText = "Out of Stock";
+        badge.className = "stock-badge out";
+    }
+    else if(stock <= 5)
+    {
+        badge.innerText = "Low Stock (" + stock + ")";
+        badge.className = "stock-badge low";
+    }
+    else
+    {
+        badge.innerText = stock + " Available";
+        badge.className = "stock-badge";
     }
 }
 
-/* =========================
-   VALIDATION
-========================= */
-function validateSelection() {
-    if (!selectedVariant) {
-        alert('Please select a color first');
+
+/*
+|--------------------------------------------------------------------------
+| VALIDATION
+|--------------------------------------------------------------------------
+*/
+function validateSelection()
+{
+    if(selectedColor === null)
+    {
+        alert("Please select a color.");
         return false;
     }
-    if (!selectedSize) {
-        alert('Please select a size');
+
+    if(selectedVariant === null)
+    {
+        alert("Please select a size.");
         return false;
     }
-    
-    // Show loading overlay
-    const overlay = document.getElementById('loadingOverlay');
-    overlay.style.display = 'flex';
-    
+
+    document.getElementById('loadingOverlay').style.display = 'flex';
+
     return true;
 }
 
-// Hide loading overlay after form submission (if validation passes)
-document.getElementById('addToCartForm')?.addEventListener('submit', function() {
-    if (validateSelection()) {
-        const overlay = document.getElementById('loadingOverlay');
-        overlay.style.display = 'flex';
+
+/*
+|--------------------------------------------------------------------------
+| FORM SUBMIT
+|--------------------------------------------------------------------------
+*/
+document.getElementById('addToCartForm')
+.addEventListener('submit', function(e){
+
+    if(!validateSelection())
+    {
+        e.preventDefault();
     }
+
 });
 
-// Auto-hide loading overlay if there's an error
-window.addEventListener('pageshow', function() {
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) overlay.style.display = 'none';
+
+/*
+|--------------------------------------------------------------------------
+| PAGE RESTORE
+|--------------------------------------------------------------------------
+*/
+window.addEventListener('pageshow', () => {
+
+    document.getElementById('loadingOverlay').style.display = 'none';
+
 });
 
-// Pre-select if there's only one variant
-document.addEventListener('DOMContentLoaded', function() {
-    const colorButtons = document.querySelectorAll('.variant-btn');
-    if (colorButtons.length === 1) {
-        colorButtons[0].click();
+
+/*
+|--------------------------------------------------------------------------
+| AUTO SELECT FIRST COLOR
+|--------------------------------------------------------------------------
+*/
+document.addEventListener('DOMContentLoaded', () => {
+
+    const first = document.querySelector('.variant-btn');
+
+    if(first)
+    {
+        first.click();
     }
+
 });
 </script>
 @endsection

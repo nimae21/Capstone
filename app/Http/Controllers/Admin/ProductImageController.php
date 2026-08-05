@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\ProductImage;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ProductImageController extends Controller
 {
     /**
-     * Upload new images.
+     * Upload product images.
      */
     public function store(Request $request, Product $product)
     {
@@ -20,6 +20,7 @@ class ProductImageController extends Controller
         ]);
 
         $displayOrder = $product->images()->max('display_order') ?? 0;
+        $hasPrimary = $product->images()->where('is_primary', true)->exists();
 
         foreach ($request->file('images') as $index => $image) {
 
@@ -29,11 +30,7 @@ class ProductImageController extends Controller
                 'product_id'    => $product->product_id,
                 'image_path'    => $path,
                 'display_order' => ++$displayOrder,
-
-                // Only the first image ever uploaded becomes primary
-                'is_primary' => !$product->images()
-                    ->where('is_primary', true)
-                    ->exists() && $index == 0,
+                'is_primary'    => !$hasPrimary && $index === 0,
             ]);
         }
 
@@ -44,55 +41,50 @@ class ProductImageController extends Controller
     }
 
     /**
-     * Delete image.
+     * Delete a product image.
      */
     public function destroy(ProductImage $image)
     {
         Storage::disk('public')->delete($image->image_path);
 
         $product = $image->product;
-
         $wasPrimary = $image->is_primary;
 
         $image->delete();
 
         if ($wasPrimary) {
+            $nextImage = $product->images()->first();
 
-            $next = $product->images()->first();
-
-            if ($next) {
-
-                $next->update([
-                    'is_primary' => true
+            if ($nextImage) {
+                $nextImage->update([
+                    'is_primary' => true,
                 ]);
             }
         }
 
         return back()->with(
             'success',
-            'Image deleted.'
+            'Image deleted successfully.'
         );
     }
 
     /**
-     * Set primary image.
+     * Set an image as the primary image.
      */
     public function setPrimary(ProductImage $image)
     {
-        ProductImage::where(
-            'product_id',
-            $image->product_id
-        )->update([
-            'is_primary' => false
-        ]);
+        ProductImage::where('product_id', $image->product_id)
+            ->update([
+                'is_primary' => false,
+            ]);
 
         $image->update([
-            'is_primary' => true
+            'is_primary' => true,
         ]);
 
         return back()->with(
             'success',
-            'Primary image updated.'
+            'Primary image updated successfully.'
         );
     }
 }

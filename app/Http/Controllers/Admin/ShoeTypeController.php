@@ -11,23 +11,46 @@ class ShoeTypeController extends Controller
     public function index()
     {
         $shoeTypes = ShoeType::orderBy('display_order')
-            ->paginate(5);
+            ->paginate(10);
 
-        return view('admin.shoe-types.index', compact('shoeTypes'));
+        return view('admin.shoe-types.index', [
+            'shoeTypes'      => $shoeTypes,
+            'totalTypes'     => ShoeType::count(),
+            'activeTypes'    => ShoeType::where('is_active', true)->count(),
+            'inactiveTypes'  => ShoeType::where('is_active', false)->count(),
+        ]);
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'shoe_type_name' => 'required|string|max:255|unique:shoe_types,shoe_type_name',
-            'description' => 'nullable|string',
+        $request->merge([
+            'shoe_type_name' => ucwords(strtolower(trim($request->shoe_type_name))),
+            'description'    => trim($request->description),
         ]);
+
+        $request->validate([
+            'shoe_type_name' => 'required|string|max:255',
+            'description'    => 'nullable|string',
+        ]);
+
+        $exists = ShoeType::whereRaw(
+            'LOWER(shoe_type_name) = ?',
+            [strtolower($request->shoe_type_name)]
+        )->exists();
+
+        if ($exists) {
+            return back()
+                ->withErrors([
+                    'shoe_type_name' => 'This shoe type already exists.'
+                ])
+                ->withInput();
+        }
 
         ShoeType::create([
             'shoe_type_name' => $request->shoe_type_name,
-            'description' => $request->description,
-            'display_order' => 0,
-            'is_active' => true,
+            'description'    => $request->description,
+            'display_order'  => 0,
+            'is_active'      => true,
         ]);
 
         return redirect()
@@ -42,19 +65,39 @@ class ShoeTypeController extends Controller
 
     public function update(Request $request, ShoeType $shoeType)
     {
-        $request->validate([
-            'shoe_type_name' => 'required|string|max:255|unique:shoe_types,shoe_type_name,' . $shoeType->shoe_type_id . ',shoe_type_id',
-            'description' => 'nullable|string',
-            'display_order' => 'required|integer|min:0',
-            'is_active' => 'required|boolean',
+        $request->merge([
+            'shoe_type_name' => ucwords(strtolower(trim($request->shoe_type_name))),
+            'description'    => trim($request->description),
         ]);
 
-        $shoeType->update($request->only([
-            'shoe_type_name',
-            'description',
-            'display_order',
-            'is_active',
-        ]));
+        $request->validate([
+            'shoe_type_name' => 'required|string|max:255',
+            'description'    => 'nullable|string',
+            'display_order'  => 'required|integer|min:0',
+            'is_active'      => 'required|boolean',
+        ]);
+
+        $exists = ShoeType::whereRaw(
+            'LOWER(shoe_type_name) = ?',
+            [strtolower($request->shoe_type_name)]
+        )
+        ->where('shoe_type_id', '!=', $shoeType->shoe_type_id)
+        ->exists();
+
+        if ($exists) {
+            return back()
+                ->withErrors([
+                    'shoe_type_name' => 'This shoe type already exists.'
+                ])
+                ->withInput();
+        }
+
+        $shoeType->update([
+            'shoe_type_name' => $request->shoe_type_name,
+            'description'    => $request->description,
+            'display_order'  => $request->display_order,
+            'is_active'      => $request->is_active,
+        ]);
 
         return redirect()
             ->route('admin.shoe-types.index')
@@ -63,10 +106,25 @@ class ShoeTypeController extends Controller
 
     public function destroy(ShoeType $shoeType)
     {
-        $shoeType->delete();
+        $shoeType->update([
+            'is_active' => false,
+        ]);
 
         return redirect()
             ->route('admin.shoe-types.index')
-            ->with('success', 'Shoe type deleted successfully.');
+            ->with('success', 'Shoe type deactivated successfully.');
+    }
+
+    public function restore($shoe_type_id)
+    {
+        $shoeType = ShoeType::findOrFail($shoe_type_id);
+
+        $shoeType->update([
+            'is_active' => true,
+        ]);
+
+        return redirect()
+            ->route('admin.shoe-types.index')
+            ->with('success', 'Shoe type activated successfully.');
     }
 }

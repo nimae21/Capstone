@@ -10,21 +10,21 @@ class GuestController extends Controller
 {
     public function index()
     {
-        // 🔥 Redirect if already logged in
         if (Auth::check()) {
+            $user = auth()->user();
 
-            // If admin → go to admin dashboard
-            if (Auth::user()->is_admin) {
-                return redirect()->route('admin.dashboard');
-            }
-
-            // If normal user → go to home
-            return redirect()->route('home');
+            return $user->is_admin
+                ? redirect()->route('admin.dashboard')
+                : redirect()->route('home');
         }
 
-        // 👇 Only guests reach here
-        $products = Product::with(['category', 'brand', 'images'])
-            ->latest()
+        $products = Product::with([
+                'category',
+                'brand',
+                'images',
+            ])
+            ->where('is_active', true)
+            ->orderBy('product_name')
             ->paginate(6);
 
         return view('guest.index', compact('products'));

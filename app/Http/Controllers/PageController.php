@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\Http\Request;
+
 use App\Models\Product;
 
 class PageController extends Controller
@@ -11,55 +11,70 @@ class PageController extends Controller
         return view('pages.home');
     }
 
-    public function men()
-{
-    $products = Product::with('variants.stocks')
-        ->where('category_id', 1)
-        ->paginate(5);
+    /**
+     * Reusable product query for category pages
+     */
+    private function getProductsByCategory(int $categoryId)
+    {
+        return Product::with('variants.stocks')
+            ->where('is_active', true)
+            ->where('category_id', $categoryId)
+            ->orderBy('product_name')
+            ->paginate(5);
+    }
 
-    return view('pages.men', compact('products'));
-}
+    public function men()
+    {
+        return view('pages.men', [
+            'products' => $this->getProductsByCategory(1),
+        ]);
+    }
 
     public function women()
     {
-        $products = Product::with('variants.stocks')
-        ->where('category_id', 2) 
-        ->paginate(5);
-
-    return view('pages.women', compact('products'));
+        return view('pages.women', [
+            'products' => $this->getProductsByCategory(2),
+        ]);
     }
 
     public function kids()
     {
-        $products = Product::with('variants.stocks')
-        ->where('category_id', 5) 
-        ->paginate(5);
-
-    return view('pages.kids', compact('products'));
+        return view('pages.kids', [
+            'products' => $this->getProductsByCategory(5),
+        ]);
     }
 
     public function sale()
     {
         return view('pages.sale');
-        
     }
 
     public function new()
     {
-        $products = Product::with('variants.stocks')
-        ->where('category_id', 7) 
-        ->paginate(5);
-        return view('pages.new', compact('products'));
+        return view('pages.new', [
+            'products' => $this->getProductsByCategory(7),
+        ]);
     }
 
     public function showProduct($id)
-{
-    $product = Product::with('variants.stocks')
-        ->findOrFail($id);
+    {
+        $product = Product::with([
+            'images',
+            'category',
+            'brand',
+            'variants.stocks',
+        ])->findOrFail($id);
 
-    return view('product.show', compact('product'));
-}
+        foreach ($product->variants as $variant) {
+            $variant->available_stock = $variant->stocks->sum('remaining_quantity');
 
-    
+            $latestStock = $variant->stocks()
+                ->latest('deliver_date')
+                ->first();
+
+            $variant->current_price = $latestStock?->price ?? 0;
+        }
+
+        return view('product.show', compact('product'));
+    }
 }
-    

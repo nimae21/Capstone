@@ -3,100 +3,105 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Order;
-use Illuminate\Support\Facades\DB;
-use App\Models\Product;
-use App\Models\User;
-use App\Models\Stock;
-use App\Models\ProductVariant;
 use App\Models\OrderItem;
+use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\Stock;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+    public function index()
+    {
+        // Dashboard Statistics
+        $totalProducts = Product::count();
+        $totalVariants = ProductVariant::count();
+        $totalOrders = Order::count();
 
+        $totalCustomers = User::where('role', 'customer')->count();
 
-public function index()
-{
+        $totalInventory = Stock::sum('remaining_quantity');
 
-    $totalProducts = Product::count();
+        $inventoryValue = Stock::selectRaw('SUM(price * remaining_quantity) as total')
+            ->value('total');
 
-    $totalCustomers = User::where('role', 'customer')->count();
+        $totalSales = Order::where('status', 'completed')
+            ->sum('total_amount');
 
-    $totalInventory = Stock::sum('remaining_quantity');
+        $averageOrderValue = Order::where('status', 'completed')
+            ->avg('total_amount');
 
-    $inventoryValue = Stock::selectRaw('SUM(price * remaining_quantity) as total')
-    ->value('total');
+        $monthlySales = Order::where('status', 'completed')
+            ->whereMonth('created_at', now()->month)
+            ->sum('total_amount');
 
-    $totalSales = Order::where('status', 'completed')->sum('total_amount');
+        $outOfStock = Stock::where('remaining_quantity', 0)
+            ->count();
 
-    $totalOrders = Order::count();
+        $lowStock = Stock::where('remaining_quantity', '>', 0)
+            ->where('remaining_quantity', '<=', 5)
+            ->count();
 
-    $ordersByStatus = Order::select('status', DB::raw('count(*) as total'))
-        ->groupBy('status')
-        ->get();
+        // Orders by Status
+        $ordersByStatus = Order::select(
+                'status',
+                DB::raw('COUNT(*) as total')
+            )
+            ->groupBy('status')
+            ->get();
 
-    $salesByDate = Order::select(
-            DB::raw('DATE(created_at) as date'),
-            DB::raw('SUM(total_amount) as total_sales')
-        )
-        ->where('status', 'completed')
-        ->groupBy('date')
-        ->orderBy('date')
-        ->get();
+        // Sales by Date
+        $salesByDate = Order::select(
+                DB::raw('DATE(created_at) as date'),
+                DB::raw('SUM(total_amount) as total_sales')
+            )
+            ->where('status', 'completed')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
 
-    $topCustomers = Order::select(
-            'user_id',
-            DB::raw('SUM(total_amount) as total_spent')
-        )
-        ->where('status', 'completed')
-        ->groupBy('user_id')
-        ->with('user')
-        ->orderByDesc('total_spent')
-        ->take(5)
-        ->get();
+        // Top Customers
+        $topCustomers = Order::select(
+                'user_id',
+                DB::raw('SUM(total_amount) as total_spent')
+            )
+            ->where('status', 'completed')
+            ->groupBy('user_id')
+            ->with('user')
+            ->orderByDesc('total_spent')
+            ->take(5)
+            ->get();
 
+        // Best Selling Products
+        $bestSellingProducts = OrderItem::select(
+                'product_variant_id',
+                DB::raw('SUM(quantity) as total_sold')
+            )
+            ->groupBy('product_variant_id')
+            ->orderByDesc('total_sold')
+            ->get();
 
-    $totalVariants = ProductVariant::count();
+        return view('admin.reports.index', compact(
+            'totalProducts',
+            'totalVariants',
+            'totalCustomers',
+            'totalInventory',
+            'inventoryValue',
 
-    $outOfStock = Stock::where('remaining_quantity', 0)->count();
+            'totalSales',
+            'totalOrders',
+            'averageOrderValue',
+            'monthlySales',
 
-    $lowStock = Stock::where('remaining_quantity', '<=', 5)
-                 ->where('remaining_quantity', '>', 0)
-                 ->count();
+            'outOfStock',
+            'lowStock',
 
-    $averageOrderValue = Order::where('status', 'completed')
-                          ->avg('total_amount');
-
-    $monthlySales = Order::where('status', 'completed')
-                     ->whereMonth('created_at', now()->month)
-                     ->sum('total_amount');
-
-    $bestSellingProducts = OrderItem::select(
-    'product_variant_id',
-    DB::raw('SUM(quantity) as total_sold')
-
-)
-->groupBy('product_variant_id')
-->orderByDesc('total_sold')
-->get();
-
-    return view('admin.reports.index', compact(
-    'totalSales',
-    'totalOrders',
-    'ordersByStatus',
-    'salesByDate',
-    'topCustomers',
-    'averageOrderValue',
-    'monthlySales',
-    'bestSellingProducts',
-    'totalInventory',
-    'lowStock',
-    'outOfStock',
-    'totalVariants',
-    'inventoryValue',
-    'totalCustomers',
-    'totalProducts'
-));
-}
+            'ordersByStatus',
+            'salesByDate',
+            'topCustomers',
+            'bestSellingProducts'
+        ));
+    }
 }
