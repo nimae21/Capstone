@@ -250,8 +250,7 @@
                                         <i class="fas fa-truck"></i> FREE
                                     </span>
                                 </div>
-                                <div class="flex justify-between text-gray-600">
-                                    <span>Tax (12% VAT):</span>
+                                
                                     <span class="font-semibold">₱{{ number_format($total * 0.12, 2) }}</span>
                                 </div>
                                 <div class="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-2"></div>

@@ -20,8 +20,7 @@
     use App\Http\Controllers\CheckoutController;
     use App\Http\Controllers\UserAddressController;
     use App\Http\Controllers\Admin\ShoeTypeController;
-
-
+    use App\Http\Controllers\ProfileController;
 
     /*
     |--------------------------------------------------------------------------
@@ -139,6 +138,21 @@
 
         Route::post('/addresses/{address}/set-default', [UserAddressController::class, 'setDefault'])
             ->name('addresses.set-default');
+
+        /*
+        |--------------------------------------------------------------------------
+        | PROFILE
+        |--------------------------------------------------------------------------
+        */  
+
+        Route::get('/profile', [ProfileController::class, 'index'])
+        ->name('profile.index');
+
+    Route::put('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
+
+    Route::put('/profile/password', [ProfileController::class, 'password'])
+        ->name('profile.password');
     });
 
 

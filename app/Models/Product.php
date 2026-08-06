@@ -41,4 +41,9 @@ public function images()
 {
     return $this->hasMany(ProductImage::class, 'product_id', 'product_id')->orderBy('display_order');
 }
+public function primaryImage()
+{
+    return $this->hasOne(ProductImage::class, 'product_id', 'product_id')
+        ->where('is_primary', true);
+}
 }

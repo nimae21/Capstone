@@ -32,6 +32,6 @@ class ProductVariant extends Model
 
 public function getTotalStockAttribute()
 {
-    return $this->stocks()->sum('remaining_quantity');
+    return $this->stocks->sum('remaining_quantity');
 }
 }

@@ -2,59 +2,76 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProfileUpdateRequest;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\View\View;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile form.
+     * Display profile page.
      */
-    public function edit(Request $request): View
+    public function index()
     {
-        return view('profile.edit', [
-            'user' => $request->user(),
+        return view('profile.index', [
+            'user' => Auth::user(),
         ]);
     }
 
     /**
-     * Update the user's profile information.
+     * Update profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(Request $request)
     {
-        $request->user()->fill($request->validated());
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'suffix' => 'nullable|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,' . Auth::id(),
+        ]);
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
-        }
+        $user = Auth::user();
 
-        $request->user()->save();
+        $user->update($validated);
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        return back()->with(
+            'success',
+            'Profile updated successfully.'
+        );
     }
 
     /**
-     * Delete the user's account.
+     * Change password.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function password(Request $request)
     {
-        $request->validateWithBag('userDeletion', [
-            'password' => ['required', 'current_password'],
+        $request->validate([
+            'current_password' => [
+                'required',
+                'current_password',
+            ],
+
+            'password' => [
+                'required',
+                'confirmed',
+                Password::min(8)
+                    ->letters()
+                    ->numbers()
+                    ->symbols(),
+            ],
         ]);
 
-        $user = $request->user();
+        $user = Auth::user();
 
-        Auth::logout();
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
 
-        $user->delete();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return Redirect::to('/');
+        return back()->with(
+            'success',
+            'Password updated successfully.'
+        );
     }
 }

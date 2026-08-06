@@ -552,7 +552,9 @@
             <i class="fas fa-user-circle"></i>
             <span>{{ Auth::user()->first_name }}</span>
             <div class="user-dropdown">
-                <a href="#">My Profile</a>
+                <a href="{{ route('profile.index') }}">
+    My Profile
+</a>
                 <a href="#">My Orders</a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
