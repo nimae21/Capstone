@@ -74,4 +74,4 @@ class ProfileController extends Controller
             'Password updated successfully.'
         );
     }
-}
+}   

@@ -166,8 +166,8 @@
                             <tr class="table-row-3d">
                                 <td class="px-6 py-3 font-bold text-gray-900">#{{ $order->order_id }}</td>
                                 <td class="px-6 py-3 text-gray-700">
-                                    <div class="font-medium">{{ $order->user->first_name }} {{ $order->user->last_name }}</div>
-                                    <div class="text-xs text-gray-500">{{ $order->user->email }}</div>
+                                    <div class="font-medium">{{ $order->user->full_name }}</div>
+<div class="text-xs text-gray-500">{{ $order->user->email }}</div>
                                 </td>
                                 <td class="px-6 py-3 text-gray-700">
                                     {{ $order->items->count() }} item(s)
@@ -176,9 +176,9 @@
                                     ₱{{ number_format($order->total_amount, 2) }}
                                 </td>
                                 <td class="px-6 py-3">
-                                    <span class="status-badge status-{{ $order->status }}">
-                                        {{ ucfirst($order->status) }}
-                                    </span>
+                                    <span class="status-badge status-{{ $order->status->value }}">
+    {{ $order->status->label() }}
+</span>
                                 </td>
                                 <td class="px-6 py-3 text-gray-600 text-xs">
                                     {{ $order->created_at->format('M d, Y H:i') }}

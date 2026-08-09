@@ -12,6 +12,9 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    public function __construct(
+        protected ProductImageService $imageService
+    ) {}
     public function index(Request $request)
     {
         $search = trim($request->search);
@@ -70,7 +73,6 @@ class ProductController extends Controller
             'brand_id'            => 'required|exists:brands,brand_id',
             'shoe_type_id'        => 'required|exists:shoe_types,shoe_type_id',
             'images.*'            => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-            'primary_image'       => 'nullable|integer',
         ]);
 
         $exists = Product::whereRaw(
@@ -80,14 +82,23 @@ class ProductController extends Controller
 
         if ($exists) {
             return back()
-                ->withErrors([
-                    'product_name' => 'This product already exists.'
-                ])
+                ->withErrors(['product_name' => 'This product already exists.'])
                 ->withInput();
         }
 
         try {
-            $product = Product::create($validated);
+            // Only pass the columns that actually belong to the products table
+            $product = Product::create([
+                'product_name'        => $validated['product_name'],
+                'product_description' => $validated['product_description'] ?? null,
+                'category_id'         => $validated['category_id'],
+                'brand_id'            => $validated['brand_id'],
+                'shoe_type_id'        => $validated['shoe_type_id'],
+            ]);
+
+            if ($request->hasFile('images')) {
+                $this->imageService->storeMany($product, $request->file('images'));
+            }
 
             return redirect()
                 ->route('admin.products.index')

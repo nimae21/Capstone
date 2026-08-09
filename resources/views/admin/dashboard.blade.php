@@ -509,7 +509,7 @@
             <div class="px-6 py-5 border-b border-gray-100">
                 <div class="flex justify-between items-center flex-wrap gap-4">
                     <div>
-                        <h1 class="welcome-title">Welcome Back, {{ Auth::user()->name }}!</h1>
+                        <h1 class="welcome-title">Welcome Back, {{ Auth::user()->first_name }}!</h1>
                         <p class="text-gray-500 mt-1 text-sm">Here's what's happening with your store today.</p>
                     </div>
                     <div class="admin-info-bar flex items-center gap-3 flex-wrap">
@@ -732,12 +732,14 @@
                             @forelse($recentOrders as $order)
                             <tr class="table-row-3d">
                                 <td class="text-sm font-semibold text-gray-900">#{{ $order->order_id }}</td>
-                                <td class="text-sm text-gray-600">{{ $order->user->name ?? 'Guest' }}</td>
+                                <td class="text-sm text-gray-600">
+    {{ $order->user->full_name ?? 'Guest' }}
+</td>
                                 <td class="text-sm font-semibold text-gray-900">₱{{ number_format($order->total_amount, 2) }}</td>
                                 <td>
-                                    <span class="status {{ $order->status }}">
-                                        {{ ucfirst($order->status) }}
-                                    </span>
+                                    <span class="status {{ $order->status->value }}">
+    {{ $order->status->label() }}
+</span>
                                 </td>
                             </tr>
                             @empty

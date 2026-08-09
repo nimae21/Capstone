@@ -178,29 +178,27 @@ class AdminUserController extends Controller
     |--------------------------------------------------------------------------
     */
     public function toggleStatus(User $user)
-    {
-        if (
-            $user->role === 'admin' &&
-            $user->is_active &&
-            User::where('role', 'admin')
-                ->where('is_active', true)
-                ->count() <= 1
-        ) {
-            return back()->with(
-                'error',
-                'You cannot suspend the last active administrator.'
-            );
-        }
-
-        $user->update([
-            'is_active' => ! $user->is_active
-        ]);
-
+{
+    if (
+        $user->isAdmin() &&
+        $user->is_active &&
+        User::where('role', 'admin')->where('is_active', true)->count() <= 1
+    ) {
         return back()->with(
-            'success',
-            $user->is_active
-                ? 'User activated successfully.'
-                : 'User suspended successfully.'
+            'error',
+            'You cannot suspend the last active administrator.'
         );
     }
+
+    $user->update([
+        'is_active' => ! $user->is_active
+    ]);
+
+    return back()->with(
+        'success',
+        $user->is_active
+            ? 'User activated successfully.'
+            : 'User suspended successfully.'
+    );
+}
 }

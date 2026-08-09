@@ -1,3 +1,4 @@
+@php use App\Enums\OrderStatus; @endphp
 @extends('layouts.app')
 
 @section('title', 'Order #' . $order->order_id . ' - ACHILLES')
@@ -40,9 +41,9 @@
                                 'cancelled' => 'bg-red-100 text-red-700',
                             ];
                         @endphp
-                        <span class="inline-block px-4 py-2 rounded-full text-sm font-bold {{ $statusColors[$order->status] ?? 'bg-gray-100 text-gray-700' }}">
-                            {{ ucfirst($order->status) }}
-                        </span>
+                        <span class="... {{ $statusColors[$order->status->value] ?? '...' }}">
+    {{ $order->status->label() }}
+</span>
                     </div>
                 </div>
             </div>
@@ -187,7 +188,7 @@
                     </div>
 
                    <!-- Order Progress -->
-@if($order->status === 'cancelled')
+@if($order->status === OrderStatus::Cancelled)
 
 <div class="bg-white rounded-2xl p-6 shadow-sm border border-red-200">
 
@@ -220,12 +221,12 @@
         ];
 
         $current = match($order->status) {
-            'pending' => 0,
-            'paid' => 1,
-            'shipped' => 2,
-            'completed' => 3,
-            default => 0,
-        };
+    OrderStatus::Pending => 0,
+    OrderStatus::Paid => 1,
+    OrderStatus::Shipped => 2,
+    OrderStatus::Completed => 3,
+    default => 0,
+};
     @endphp
 
     <div class="flex items-center justify-between">
@@ -291,7 +292,7 @@
 
 @endif
 
-@if($order->status === 'shipped')
+@if($order->status === OrderStatus::Shipped)
 
 <div class="flex gap-3">
     <div class="flex-shrink-0 w-3 h-3 bg-blue-600 rounded-full mt-1.5"></div>
@@ -301,7 +302,7 @@
     </div>
 </div>
 
-@elseif($order->status === 'completed')
+@elseif($order->status === OrderStatus::Completed)
 
 <div class="flex gap-3">
     <div class="flex-shrink-0 w-3 h-3 bg-purple-600 rounded-full mt-1.5"></div>
@@ -317,25 +318,11 @@
                     <!-- Action Buttons -->
                     <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
 
-    @if($order->status === 'pending')
-
-        <form action="{{ route('orders.cancel', $order->order_id) }}"
-              method="POST"
-              onsubmit="return confirm('Are you sure you want to cancel this order?');">
-
-            @csrf
-            @method('PUT')
-
-            <button
-                class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg mb-4">
-
-                Cancel Order
-
-            </button>
-
-        </form>
-
-    @endif
+   @if($order->status->isCancellable())
+    <form action="{{ route('orders.cancel', $order->order_id) }}" ...>
+        <button ...>Cancel Order</button>
+    </form>
+@endif
 
     <a href="{{ route('orders.index') }}"
        class="block w-full bg-gray-900 hover:bg-black text-white font-bold py-3 rounded-lg text-center mb-3">

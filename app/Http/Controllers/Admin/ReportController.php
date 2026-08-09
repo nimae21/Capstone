@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Enums\OrderStatus;
 use App\Models\Stock;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,9 @@ class ReportController extends Controller
 {
     public function index()
     {
+        $completedCount = $ordersByStatus->first(
+    fn ($row) => $row->status === OrderStatus::Completed
+)?->total ?? 0;
         // Dashboard Statistics
         $totalProducts = Product::count();
         $totalVariants = ProductVariant::count();
@@ -101,7 +105,9 @@ class ReportController extends Controller
             'ordersByStatus',
             'salesByDate',
             'topCustomers',
-            'bestSellingProducts'
+            'bestSellingProducts',
+            'completedCount'
+
         ));
     }
 }

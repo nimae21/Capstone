@@ -450,8 +450,8 @@
         <div class="flex items-center gap-2">
 
             <span class="font-semibold text-gray-800">
-                {{ $user->first_name }} {{ $user->last_name }}
-            </span>
+    {{ $user->full_name }}
+</span>
 
             @if($user->id === auth()->id())
 
@@ -543,11 +543,7 @@
     @if($user->is_active)
         <button
     type="button"
-    onclick="confirmAction(
-        this.form,
-        'suspend',
-        '{{ $user->first_name }} {{ $user->last_name }}'
-    )"
+    onclick="confirmAction(this.form, 'suspend', '{{ $user->full_name }}')"
     class="btn-sm-3d btn-sm-red">
 
     <i class="fas fa-ban</i>
@@ -557,11 +553,7 @@
     @else
         <button
     type="button"
-    onclick="confirmAction(
-        this.form,
-        'activate',
-        '{{ $user->first_name }} {{ $user->last_name }}'
-    )"
+    onclick="confirmAction(this.form, 'Activate', '{{ $user->full_name }}')"
     class="btn-sm-3d btn-sm-green"
         >
             <i class="fas fa-check"></i>

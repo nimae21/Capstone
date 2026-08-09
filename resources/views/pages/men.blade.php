@@ -301,10 +301,10 @@
     <div class="product-grid" id="productGrid">
         @foreach($products as $product)
         @php
-            $variant = $product->variants->first();
-            $stock = $variant?->stocks?->last();
-            $price = $stock->price ?? 0;
-            $image = $variant->image ?? null;
+           $variant = $product->variants->first();
+$stock = $variant?->stocks?->sortByDesc('deliver_date')->first();
+$price = $stock->price ?? 0;
+$image = $product->images->first()->image_path ?? null;
             $description = $product->product_description ?? 'Premium performance footwear engineered for the relentless athlete.';
             
             $badges = ['LIMITED EDITION', 'BESTSELLER', 'NEW DROP', 'PREMIUM'];

@@ -54,10 +54,7 @@
                 <div class="grid grid-cols-1 gap-6">
                     @foreach($orders as $order)
 
-<div
-class="order-card"
-data-status="{{ strtolower($order->status) }}"
-data-id="{{ $order->order_id }}">
+<div class="order-card" data-status="{{ $order->status->value }}" data-id="{{ $order->order_id }}">
                         <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                             <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
                                 <!-- Order Number -->
@@ -77,18 +74,9 @@ data-id="{{ $order->order_id }}">
                                 <!-- Status -->
                                 <div>
                                     <p class="text-sm font-semibold text-gray-500 uppercase">Status</p>
-                                    @php
-                                        $statusColors = [
-                                            'pending' => 'bg-yellow-100 text-yellow-700',
-                                            'paid' => 'bg-blue-100 text-blue-700',
-                                            'shipped' => 'bg-purple-100 text-purple-700',
-                                            'completed' => 'bg-green-100 text-green-700',
-                                            'cancelled' => 'bg-red-100 text-red-700',
-                                        ];
-                                    @endphp
-                                    <span class="inline-block px-3 py-1 rounded-full text-xs font-bold {{ $statusColors[$order->status] ?? 'bg-gray-100 text-gray-700' }}">
-                                        {{ ucfirst($order->status) }}
-                                    </span>
+                                    <span class="... {{ $statusColors[$order->status->value] ?? 'bg-gray-100 text-gray-700' }}">
+    {{ $order->status->label() }}
+</span>
                                 </div>
 
                                 <!-- Items Count -->

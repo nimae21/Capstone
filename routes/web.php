@@ -194,7 +194,13 @@
     )->name('brands.restore');
 
 
-            Route::resource('shoe-types', ShoeTypeController::class);
+            // Shoe Types
+Route::get('/shoe-types', [ShoeTypeController::class, 'index'])->name('shoe-types.index');
+Route::post('/shoe-types', [ShoeTypeController::class, 'store'])->name('shoe-types.store');
+Route::get('/shoe-types/{shoeType}/edit', [ShoeTypeController::class, 'edit'])->name('shoe-types.edit');
+Route::put('/shoe-types/{shoeType}', [ShoeTypeController::class, 'update'])->name('shoe-types.update');
+Route::delete('/shoe-types/{shoeType}', [ShoeTypeController::class, 'destroy'])->name('shoe-types.destroy');
+Route::patch('/shoe-types/{shoeType}/restore', [ShoeTypeController::class, 'restore'])->name('shoe-types.restore');
 
 
             // Products
@@ -231,11 +237,13 @@
 
 
             // Stocks
-            Route::get('/variants/{product_variant_id}/stocks', [StockController::class, 'index'])
-                ->name('stocks.index');
+            // Stocks
+// Stocks
+Route::get('/variants/{variant}/stocks', [StockController::class, 'index'])
+    ->name('stocks.index');
 
-            Route::post('/variants/{product_variant_id}/stocks', [StockController::class, 'store'])
-                ->name('stocks.store');
+Route::post('/variants/{variant}/stocks', [StockController::class, 'store'])
+    ->name('stocks.store');
 
             Route::get('/stocks/{stock}/edit', [StockController::class, 'edit'])
                 ->name('stocks.edit');

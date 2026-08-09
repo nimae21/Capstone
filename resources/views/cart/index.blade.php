@@ -151,7 +151,7 @@
                                     @php
                                         $variant = $item->variant;
                                         $product = $variant->product;
-                                        $stock = $variant->stocks()->latest()->first();
+                                        $availableStock = $item->variant->stocks->sum('remaining_quantity');
                                         $subtotal = $item->price * $item->quantity;
                                         $total += $subtotal;
                                     @endphp
@@ -197,7 +197,7 @@
                                                     <form action="{{ route('cart.increase', $item->cart_item_id) }}" method="POST" class="inline">
                                                         @csrf
                                                         @method('PATCH')
-                                                        <button type="submit" class="quantity-btn w-8 h-8 bg-white hover:bg-red-500 hover:text-white rounded-full text-gray-700 font-bold transition-all shadow-sm" {{ $item->quantity >= ($stock?->quantity ?? 0) ? 'disabled' : '' }}>
+                                                        <button type="submit" class="quantity-btn w-8 h-8 bg-white hover:bg-red-500 hover:text-white rounded-full text-gray-700 font-bold transition-all shadow-sm" {{ $item->quantity >= $availableStock ? 'disabled' : '' }}>
                                                             <i class="fas fa-plus text-xs"></i>
                                                         </button>
                                                     </form>
@@ -240,25 +240,22 @@
                             </h2>
 
                             <div class="space-y-4 mb-6 pb-6 border-b border-gray-200">
-                                <div class="flex justify-between text-gray-600">
-                                    <span>Subtotal:</span>
-                                    <span class="font-semibold">₱{{ number_format($total, 2) }}</span>
-                                </div>
-                                <div class="flex justify-between text-gray-600">
-                                    <span>Shipping:</span>
-                                    <span class="font-semibold text-green-600 flex items-center gap-1">
-                                        <i class="fas fa-truck"></i> FREE
-                                    </span>
-                                </div>
-                                
-                                    <span class="font-semibold">₱{{ number_format($total * 0.12, 2) }}</span>
-                                </div>
-                                <div class="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-2"></div>
-                                <div class="flex justify-between text-xl font-bold">
-                                    <span>Total:</span>
-                                    <span class="text-red-600 text-2xl">₱{{ number_format($total + ($total * 0.12), 2) }}</span>
-                                </div>
-                            </div>
+    <div class="flex justify-between text-gray-600">
+        <span>Subtotal:</span>
+        <span class="font-semibold">₱{{ number_format($total, 2) }}</span>
+    </div>
+    <div class="flex justify-between text-gray-600">
+        <span>Shipping:</span>
+        <span class="font-semibold text-green-600 flex items-center gap-1">
+            <i class="fas fa-truck"></i> FREE
+        </span>
+    </div>
+    <div class="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-2"></div>
+    <div class="flex justify-between text-xl font-bold">
+        <span>Total:</span>
+        <span class="text-red-600 text-2xl">₱{{ number_format($total, 2) }}</span>
+    </div>
+</div>
 
                             <!-- Checkout Button -->
                             <a href="{{ route('checkout.index') }}" class="checkout-btn block w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3.5 rounded-xl text-center transition-all shadow-lg hover:shadow-xl mb-4 transform hover:-translate-y-1">

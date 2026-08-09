@@ -12,11 +12,12 @@ class PageController extends Controller
     }
 
     /**
-     * Reusable product query for category pages
+     * Reusable product query for category pages.
+     * Eager-loads images so views never trigger N+1 queries.
      */
     private function getProductsByCategory(int $categoryId)
     {
-        return Product::with('variants.stocks')
+        return Product::with(['variants.stocks', 'images'])
             ->where('is_active', true)
             ->where('category_id', $categoryId)
             ->orderBy('product_name')
@@ -46,7 +47,9 @@ class PageController extends Controller
 
     public function sale()
     {
-        return view('pages.sale');
+        return view('pages.sale', [
+            'products' => $this->getProductsByCategory(7),
+        ]);
     }
 
     public function new()

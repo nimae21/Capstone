@@ -250,12 +250,15 @@
     <div class="product-grid" id="productGrid">
         @foreach($products as $product)
         @php
+            
+            
             $variant = $product->variants->first();
-            $stock = $variant?->stocks?->last();
-            $originalPrice = $stock->price ?? 0;
+$stock = $variant?->stocks?->sortByDesc('deliver_date')->first();
+$price = $stock->price ?? 0;
+$image = $product->images->first()->image_path ?? null;
             $discountPercent = rand(15, 50);
             $salePrice = $originalPrice * (1 - $discountPercent / 100);
-            $image = $variant->image ?? null;
+            
             $category = $product->category->category_name ?? 'men';
         @endphp
         

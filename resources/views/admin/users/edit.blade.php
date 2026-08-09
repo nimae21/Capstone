@@ -2,7 +2,7 @@
 
 @section('title', 'Edit User')
 @section('page-title', 'Edit User')
-@section('page-subtitle', "Managing " . $user->first_name . " " . $user->last_name)
+@section('page-subtitle', "Managing " . $user->full_name)
 
 @section('styles')
     <script src="https://cdn.tailwindcss.com"></script>

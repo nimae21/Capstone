@@ -194,7 +194,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Completed Orders</p>
-                    <p class="text-3xl font-black text-gray-800 mt-2">{{ $ordersByStatus->where('status', 'completed')->first()->total ?? 0 }}</p>
+                    <p class="text-3xl font-black text-gray-800 mt-2">{{ $completedCount }}</p>
                 </div>
                 <div class="stat-icon bg-gradient-to-br from-red-50 to-red-100 text-red-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,9 +252,9 @@
                         @forelse($ordersByStatus as $status)
                             <tr class="table-row">
                                 <td class="px-6 py-3">
-                                    <span class="status-badge {{ $status->status }}">
-                                        {{ ucfirst($status->status) }}
-                                    </span>
+                                    <span class="status-badge {{ $status->status->value }}">
+    {{ $status->status->label() }}
+</span>
                                 </td>
                                 <td class="px-6 py-3 text-right font-semibold text-gray-800">
                                     {{ $status->total }}
@@ -296,8 +296,8 @@
                                 <td class="px-6 py-3 text-sm text-gray-500">{{ $index + 1 }}</td>
                                 <td class="px-6 py-3">
                                     <span class="font-medium text-gray-800">
-                                        {{ $customer->user->name ?? 'Guest User' }}
-                                    </span>
+    {{ $customer->user->full_name ?? 'Guest User' }}
+</span>
                                 </td>
                                 <td class="px-6 py-3 text-right font-semibold text-gray-800">
                                     ₱{{ number_format($customer->total_spent, 2) }}

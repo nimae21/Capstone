@@ -232,7 +232,7 @@
         </div>
         <div class="hero-features">
             <div><i class="fas fa-truck"></i> Free shipping</div>
-            <div><i class="fas fa-rotate-left"></i> 60-day returns</div>
+            
             <div><i class="fas fa-shield-alt"></i> Authentic Guarantee</div>
         </div>
     </div>

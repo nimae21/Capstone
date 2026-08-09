@@ -169,8 +169,8 @@ class AdminDashboardController extends Controller
             ->get();
 
         $statusLabels = $statusCounts
-            ->pluck('status')
-            ->map(fn ($status) => ucfirst($status));
+    ->pluck('status')
+    ->map(fn ($status) => $status->label());
 
         $statusCountsData = $statusCounts->pluck('total');
 

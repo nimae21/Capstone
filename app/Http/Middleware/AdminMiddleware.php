@@ -14,13 +14,11 @@ class AdminMiddleware
      * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
-    {
-        // Check if user is logged in AND role is admin
-    if (! $request->user() || $request->user()->role !== 'admin') {
-        abort(403, 'Unauthorized'); // blocks access
+{
+    if (! $request->user() || ! $request->user()->isAdmin()) {
+        abort(403, 'Unauthorized');
     }
 
-
-        return $next($request);
-    }
+    return $next($request);
+}
 }

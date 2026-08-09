@@ -242,9 +242,9 @@
         @foreach($products as $product)
         @php
             $variant = $product->variants->first();
-            $stock = $variant?->stocks?->last();
-            $price = $stock->price ?? 0;
-            $image = $variant->image ?? null;
+$stock = $variant?->stocks?->sortByDesc('deliver_date')->first();
+$price = $stock->price ?? 0;
+$image = $product->images->first()->image_path ?? null;
             $category = $product->category->category_name ?? 'men';
         @endphp
         

@@ -14,14 +14,13 @@
                 <div class="card-body text-center">
 
                     <img
-                        src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->first_name.' '.auth()->user()->last_name) }}&size=180"
+                        src="https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->full_name) }}&size=180"
                         class="rounded-circle mb-3"
                         width="160">
 
-                    <h4 class="fw-bold">
-                        {{ auth()->user()->first_name }}
-                        {{ auth()->user()->last_name }}
-                    </h4>
+                   <h4 class="fw-bold">
+    {{ auth()->user()->full_name }}
+</h4>
 
                     <p class="text-muted">
                         {{ auth()->user()->email }}

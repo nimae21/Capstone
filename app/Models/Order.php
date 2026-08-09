@@ -3,11 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Enums\OrderStatus;
+
 
 class Order extends Model
 {
     protected $primaryKey = 'order_id';
-
+    protected $casts = [
+    'status' => OrderStatus::class,
+];
     protected $fillable = [
     'user_id',
     'total_amount',

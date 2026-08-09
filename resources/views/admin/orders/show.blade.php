@@ -1,3 +1,4 @@
+@php use App\Enums\OrderStatus; @endphp
 @extends('layouts.admin')
 
 @section('title', 'Order Details')
@@ -118,9 +119,9 @@
                 <div class="card-cinematic rounded-2xl p-6">
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="text-2xl font-bold gradient-title">Order #{{ $order->order_id }}</h2>
-                        <span class="status-badge status-{{ $order->status }}">
-                            {{ ucfirst($order->status) }}
-                        </span>
+                        <span class="status-badge status-{{ $order->status->value }}">
+    {{ $order->status->label() }}
+</span>
                     </div>
                     <p class="text-gray-600 text-sm">
                         Placed on {{ $order->created_at->format('F d, Y \a\t H:i A') }}
@@ -128,7 +129,7 @@
 
                     <div class="mt-6">
 
-    @if($order->status === 'pending')
+    @if($order->status === OrderStatus::Pending)
 
         <form action="{{ route('admin.orders.update-status', $order->order_id) }}"
               method="POST"
@@ -146,7 +147,7 @@
 
         </form>
 
-    @elseif($order->status === 'paid')
+   @elseif($order->status === OrderStatus::Paid)
 
         <form action="{{ route('admin.orders.update-status', $order->order_id) }}"
               method="POST"
@@ -164,7 +165,7 @@
 
         </form>
 
-    @elseif($order->status === 'shipped')
+    @elseif($order->status === OrderStatus::Shipped)
 
         <form action="{{ route('admin.orders.update-status', $order->order_id) }}"
               method="POST"
@@ -182,7 +183,7 @@
 
         </form>
 
-    @elseif($order->status === 'completed')
+    @elseif($order->status === OrderStatus::Completed)
 
         <div class="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
             <i class="fas fa-check-circle text-green-600 text-2xl mb-2"></i>
@@ -191,7 +192,7 @@
             </p>
         </div>
 
-    @elseif($order->status === 'cancelled')
+    @elseif($order->status === OrderStatus::Cancelled)
 
         <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
             <i class="fas fa-times-circle text-red-600 text-2xl mb-2"></i>
@@ -282,7 +283,7 @@
                     <div class="space-y-3">
                         <div>
                             <p class="text-xs font-semibold text-gray-500 uppercase">Name</p>
-                            <p class="font-medium text-gray-900">{{ $order->user->first_name }} {{ $order->user->last_name }}</p>
+                            <p class="font-medium text-gray-900">{{ $order->user->full_name }}</p>
                         </div>
                         <div>
                             <p class="text-xs font-semibold text-gray-500 uppercase">Email</p>

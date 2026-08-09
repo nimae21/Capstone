@@ -6,9 +6,14 @@ use Illuminate\Http\Request;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\ProductVariant;
+use App\Services\StockService;
 
 class CartController extends Controller
 {
+    public function __construct(
+        protected StockService $stockService
+    ) {}
+
     /**
      * Display cart
      */
@@ -35,16 +40,9 @@ class CartController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $variant = ProductVariant::with('stocks')
-            ->findOrFail($request->product_variant_id);
+        $variant = ProductVariant::findOrFail($request->product_variant_id);
 
-        $stock = $variant->stocks->last();
-
-        if (!$stock) {
-            return back()->with('error', 'Stock record not found.');
-        }
-
-        $availableStock = $stock->remaining_quantity;
+        $availableStock = $this->stockService->availableQuantity($variant);
 
         if ($availableStock <= 0) {
             return back()->with('error', 'This item is out of stock.');
@@ -81,7 +79,7 @@ class CartController extends Controller
                 'cart_id' => $cart->cart_id,
                 'product_variant_id' => $variant->product_variant_id,
                 'quantity' => $request->quantity,
-                'price' => $stock->price
+                'price' => $this->stockService->currentPrice($variant),
             ]);
 
         }
@@ -96,22 +94,13 @@ class CartController extends Controller
      */
     public function increase($id)
     {
-        $item = CartItem::with([
-            'cart',
-            'variant.stocks'
-        ])->findOrFail($id);
+        $item = CartItem::with('cart', 'variant')->findOrFail($id);
 
         abort_if($item->cart->user_id != auth()->id(), 403);
 
-        $stock = $item->variant->stocks->last();
+        $availableStock = $this->stockService->availableQuantity($item->variant);
 
-        if (!$stock) {
-            return response()->json([
-                'error' => 'Stock not found.'
-            ], 404);
-        }
-
-        if ($item->quantity >= $stock->remaining_quantity) {
+        if ($item->quantity >= $availableStock) {
             return response()->json([
                 'error' => 'Maximum stock reached.'
             ], 400);

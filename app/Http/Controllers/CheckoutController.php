@@ -2,152 +2,52 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Order;
-use App\Models\OrderItem;
+use App\Exceptions\EmptyCartException;
+use App\Exceptions\InsufficientStockException;
+use App\Exceptions\OrderNotCancellableException;
+use App\Http\Requests\PlaceOrderRequest;
 use App\Models\Cart;
-use App\Models\Payment;
-use App\Models\StockMovement;
-
-use Illuminate\Support\Facades\DB;
+use App\Models\Order;
+use App\Services\OrderService;
+use Illuminate\Support\Facades\Auth;
 
 class CheckoutController extends Controller
 {
+    public function __construct(
+        protected OrderService $orderService
+    ) {}
+
     public function checkout()
     {
         $cart = Cart::with('items.variant.product')
-        
             ->where('user_id', auth()->id())
             ->where('status', 0)
             ->first();
-            
 
         if (!$cart || $cart->items->isEmpty()) {
             return back()->with('error', 'Cart is empty');
         }
 
         $addresses = auth()->user()->addresses()->orderBy('is_default', 'desc')->get();
+
         return view('checkout.index', compact('cart', 'addresses'));
     }
 
-    public function placeOrder(Request $request)
+    public function placeOrder(PlaceOrderRequest $request)
     {
-        $validated = $request->validate([
-    'address_id' => 'required|exists:user_addresses,address_id',
-    'payment_method' => 'required|in:credit_card,debit_card,gcash,paypal,cash_on_delivery',
-]);
-
-        $cart = Cart::with('items.variant.stocks')
-            ->where('user_id', auth()->id())
-            ->where('status', 0)
-            ->firstOrFail();
-
-        if ($cart->items->isEmpty()) {
-            return back()->with('error', 'Your cart is empty');
-        }
-
-        DB::beginTransaction();
-
         try {
-            $total = 0;
-
-            // Validate stock
-            foreach ($cart->items as $item) {
-                $stock = $item->variant->stocks()->latest()->first();
-
-                if (!$stock || $item->quantity > $stock->remaining_quantity) {
-    throw new \Exception(
-        'Insufficient stock for ' . $item->variant->product->product_name
-    );
-}
-
-                
-            }
-
-            $address = auth()->user()
-    ->addresses()
-    ->findOrFail($validated['address_id']);
-
-$addressData = [
-    'full_name' => $address->full_name,
-    'phone_number' => $address->phone_number,
-    'street' => $address->street,
-    'barangay' => $address->barangay,
-    'city' => $address->city,
-    'province' => $address->province,
-    'postal_code' => $address->postal_code,
-    'latitude' => $address->latitude,
-    'longitude' => $address->longitude,
-];
-
-
-
-
-            // Create Order
-            $order = Order::create(array_merge([
-                'user_id' => auth()->id(),
-                'total_amount' => $total,
-                'status' => 'pending',
-                'payment_method' => $validated['payment_method'],
-            ], $addressData));
-
-            // Create Order Items & Stock Movements
-            foreach ($cart->items as $item) {
-                
-
-                // Create order item
-                // Get latest stock
-$stock = $item->variant->stocks()->latest()->first();
-
-// Create order item
-$orderItem = OrderItem::create([
-    'order_id'           => $order->order_id,
-    'product_variant_id' => $item->product_variant_id,
-    'quantity'           => $item->quantity,
-    'price'              => $item->price,
-]);
-
-// Deduct stock
-$stock->decrement('remaining_quantity', $item->quantity);
-
-// Record stock movement
-StockMovement::create([
-    'stock_id'      => $stock->stock_id,
-    'order_item_id' => $orderItem->order_item_id,
-    'quantity'      => $item->quantity,
-    'type'          => 'out',
-]);
-
-            }
-
-            // Create Payment Record (Mock)
-            Payment::create([
-                'order_id' => $order->order_id,
-                'method' => $validated['payment_method'],
-                'status' => 'completed', // Mock: always complete payment
-                'payment_date' => now(),
-            ]);
-
-            // Update order status to paid (since we mock payment)
-            $order->update([
-    'status' => 'processing'
-]);
-
-            // Mark cart as completed
-            $cart->update(['status' => 1]);
-
-            DB::commit();
+            $order = $this->orderService->placeOrderFromCart(
+                Auth::user(),
+                $request->validated('address_id'),
+                $request->validated('payment_method'),
+            );
 
             return redirect()
                 ->route('orders.show', $order->order_id)
                 ->with('success', 'Order placed successfully! Your payment has been processed.');
 
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return back()
-                ->withInput()
-                ->with('error', 'Failed to place order: ' . $e->getMessage());
+        } catch (EmptyCartException|InsufficientStockException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
         }
     }
 
@@ -171,22 +71,17 @@ StockMovement::create([
         return view('orders.show', compact('order'));
     }
 
-public function cancel(Order $order)
-{
-    // Make sure this order belongs to the logged in user
-    if ($order->user_id != auth()->id()) {
-        abort(403);
+    public function cancel(Order $order)
+    {
+        if ($order->user_id != auth()->id()) {
+            abort(403);
+        }
+
+        try {
+            $this->orderService->cancel($order);
+            return back()->with('success', 'Order cancelled successfully.');
+        } catch (OrderNotCancellableException $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
-
-    // Only pending orders can be cancelled
-    if ($order->status !== 'pending') {
-        return back()->with('error', 'This order can no longer be cancelled.');
-    }
-
-    $order->update([
-        'status' => 'cancelled'
-    ]);
-
-    return back()->with('success', 'Order cancelled successfully.');
-}
 }

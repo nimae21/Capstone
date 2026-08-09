@@ -275,9 +275,9 @@
         @foreach($products as $product)
         @php
             $variant = $product->variants->first();
-            $stock = $variant?->stocks?->last();
-            $price = $stock->price ?? 0;
-            $image = $variant->image ?? null;
+$stock = $variant?->stocks?->sortByDesc('deliver_date')->first();
+$price = $stock->price ?? 0;
+$image = $product->images->first()->image_path ?? null;
             $description = $product->product_description ?? 'Durable and comfortable shoes for active kids.';
             $badges = ['LIMITED EDITION', 'BESTSELLER', 'NEW DROP', 'PLAYFUL'];
             $badgeText = $badges[array_rand($badges)];
