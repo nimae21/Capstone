@@ -15,7 +15,7 @@ class StockService
     public function availableQuantity(ProductVariant $variant): int
     {
         return (int) $variant->stocks()
-            ->where('is_archived', false)
+            
             ->sum('remaining_quantity');
     }
 
