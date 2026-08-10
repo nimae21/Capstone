@@ -259,16 +259,43 @@
         </div>
     </div>
     
-    <div class="filter-bar">
-        <div class="sort-select">
-            <i class="fas fa-arrow-down-wide-short"></i>
-            <select id="sortSelect" onchange="applySort(this.value)">
-                <option value="">Featured</option>
-                <option value="price-low-high" {{ request('sort') == 'price-low-high' ? 'selected' : '' }}>Price: Low to High</option>
-                <option value="price-high-low" {{ request('sort') == 'price-high-low' ? 'selected' : '' }}>Price: High to Low</option>
-            </select>
-        </div>
+    <div class="filter-bar" style="justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+
+    <form method="GET" style="display:flex; gap: 0.75rem; flex-wrap: wrap;">
+        <select name="brand" onchange="this.form.submit()" class="sort-select" style="padding: 0.5rem 1rem;">
+            <option value="">All Brands</option>
+            @foreach($brands as $brand)
+                <option value="{{ $brand->brand_id }}" {{ request('brand') == $brand->brand_id ? 'selected' : '' }}>
+                    {{ $brand->brand_name }}
+                </option>
+            @endforeach
+        </select>
+
+        <select name="shoe_type" onchange="this.form.submit()" class="sort-select" style="padding: 0.5rem 1rem;">
+            <option value="">All Types</option>
+            @foreach($shoeTypes as $shoeType)
+                <option value="{{ $shoeType->shoe_type_id }}" {{ request('shoe_type') == $shoeType->shoe_type_id ? 'selected' : '' }}>
+                    {{ $shoeType->shoe_type_name }}
+                </option>
+            @endforeach
+        </select>
+
+        @if(request('brand') || request('shoe_type'))
+            <a href="{{ url()->current() }}" style="align-self:center; color:#dc2626; font-size:0.85rem; font-weight:600;">
+                Clear filters
+            </a>
+        @endif
+    </form>
+
+    <div class="sort-select">
+        <i class="fas fa-arrow-down-wide-short"></i>
+        <select id="sortSelect" onchange="applySort(this.value)">
+            <option value="">Featured</option>
+            <option value="price-low-high" {{ request('sort') == 'price-low-high' ? 'selected' : '' }}>Price: Low to High</option>
+            <option value="price-high-low" {{ request('sort') == 'price-high-low' ? 'selected' : '' }}>Price: High to Low</option>
+        </select>
     </div>
+</div>
     
     @if($products->count() > 0)
     <div class="product-grid">

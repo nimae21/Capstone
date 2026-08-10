@@ -708,7 +708,100 @@
                 </a>
             </div>
         </div>
+<!-- ========== BEST SELLERS SECTION ========== -->
+<div>
+    <h2 class="section-header text-gray-800 mb-4">Best Sellers</h2>
 
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+        <!-- Top 5 Products -->
+        <div class="card-3d bg-white rounded-xl overflow-hidden shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h3 class="section-header text-gray-800">Top 5 Best-Selling Products</h3>
+            </div>
+            <div class="p-4">
+                @forelse($topProducts as $index => $product)
+                    <div class="flex items-center justify-between py-2 {{ !$loop->last ? 'border-b border-gray-100' : '' }}">
+                        <div class="flex items-center gap-3">
+                            <span class="w-7 h-7 rounded-full bg-red-100 text-red-600 font-bold text-xs flex items-center justify-center">
+                                {{ $index + 1 }}
+                            </span>
+                            <span class="font-medium text-gray-800">{{ $product->product_name }}</span>
+                        </div>
+                        <span class="text-sm font-bold text-gray-600">{{ $product->total_sold }} sold</span>
+                    </div>
+                @empty
+                    <p class="text-center text-gray-400 py-6">No sales data yet.</p>
+                @endforelse
+            </div>
+        </div>
+
+        <!-- Top Shoe Types -->
+        <div class="card-3d bg-white rounded-xl overflow-hidden shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h3 class="section-header text-gray-800">Top Shoe Types</h3>
+            </div>
+            <div class="p-4">
+                @forelse($topShoeTypes as $index => $type)
+                    <div class="flex items-center justify-between py-2 {{ !$loop->last ? 'border-b border-gray-100' : '' }}">
+                        <div class="flex items-center gap-3">
+                            <span class="w-7 h-7 rounded-full bg-blue-100 text-blue-600 font-bold text-xs flex items-center justify-center">
+                                {{ $index + 1 }}
+                            </span>
+                            <span class="font-medium text-gray-800">{{ $type->shoe_type_name }}</span>
+                        </div>
+                        <span class="text-sm font-bold text-gray-600">{{ $type->total_sold }} sold</span>
+                    </div>
+                @empty
+                    <p class="text-center text-gray-400 py-6">No sales data yet.</p>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+    <!-- Best-Selling Attribute Breakdown -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="stat-card stat-blue card-3d">
+            <div class="stat-accent-line" style="background:#3b82f6;"></div>
+            <span class="stat-icon-bg">📏</span>
+            <div class="flex-1">
+                <p class="stat-label">Top Size</p>
+                <p class="stat-number" style="font-size:1.6rem !important;">{{ $topSize->size ?? '—' }}</p>
+                <p class="stat-sub">{{ $topSize->total_sold ?? 0 }} sold</p>
+            </div>
+        </div>
+
+        <div class="stat-card stat-purple card-3d">
+            <div class="stat-accent-line" style="background:#8b5cf6;"></div>
+            <span class="stat-icon-bg">🏷️</span>
+            <div class="flex-1">
+                <p class="stat-label">Top Brand</p>
+                <p class="stat-number" style="font-size:1.6rem !important;">{{ $topBrand->brand_name ?? '—' }}</p>
+                <p class="stat-sub">{{ $topBrand->total_sold ?? 0 }} sold</p>
+            </div>
+        </div>
+
+        <div class="stat-card stat-amber card-3d">
+            <div class="stat-accent-line" style="background:#f59e0b;"></div>
+            <span class="stat-icon-bg">👟</span>
+            <div class="flex-1">
+                <p class="stat-label">Top Type</p>
+                <p class="stat-number" style="font-size:1.6rem !important;">{{ $topType->shoe_type_name ?? '—' }}</p>
+                <p class="stat-sub">{{ $topType->total_sold ?? 0 }} sold</p>
+            </div>
+        </div>
+
+        <div class="stat-card stat-cyan card-3d">
+            <div class="stat-accent-line" style="background:#06b6d4;"></div>
+            <span class="stat-icon-bg">📂</span>
+            <div class="flex-1">
+                <p class="stat-label">Top Category</p>
+                <p class="stat-number" style="font-size:1.6rem !important;">{{ $topCategory->category_name ?? '—' }}</p>
+                <p class="stat-sub">{{ $topCategory->total_sold ?? 0 }} sold</p>
+            </div>
+        </div>
+    </div>
+</div>
 
         <!-- ========== LOWER GRID: Recent Orders + Low Stock Alerts ========== -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -729,6 +822,7 @@
                             </tr>
                         </thead>
                         <tbody>
+                            
                             @forelse($recentOrders as $order)
                             <tr class="table-row-3d">
                                 <td class="text-sm font-semibold text-gray-900">#{{ $order->order_id }}</td>

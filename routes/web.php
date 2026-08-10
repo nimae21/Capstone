@@ -286,6 +286,8 @@ Route::post('/variants/{variant}/stocks', [StockController::class, 'store'])
                 ->name('orders.update-status');
             //reports
             Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+            Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.export-pdf');
             
             //inventory routes
             Route::get('/inventory', [InventoryController::class, 'index'])

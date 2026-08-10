@@ -19,6 +19,80 @@ class AdminDashboardController extends Controller
         $now = Carbon::now();
 
         /*
+|--------------------------------------------------------------------------
+| Top 5 Best-Selling Products (by quantity sold)
+|--------------------------------------------------------------------------
+*/
+$topProducts = DB::table('order_items')
+    ->join('product_variants', 'product_variants.product_variant_id', '=', 'order_items.product_variant_id')
+    ->join('products', 'products.product_id', '=', 'product_variants.product_id')
+    ->select(
+        'products.product_id',
+        'products.product_name',
+        DB::raw('SUM(order_items.quantity) as total_sold')
+    )
+    ->groupBy('products.product_id', 'products.product_name')
+    ->orderByDesc('total_sold')
+    ->take(5)
+    ->get();
+
+/*
+|--------------------------------------------------------------------------
+| Top Shoe Types (by quantity sold)
+|--------------------------------------------------------------------------
+*/
+$topShoeTypes = DB::table('order_items')
+    ->join('product_variants', 'product_variants.product_variant_id', '=', 'order_items.product_variant_id')
+    ->join('products', 'products.product_id', '=', 'product_variants.product_id')
+    ->join('shoe_types', 'shoe_types.shoe_type_id', '=', 'products.shoe_type_id')
+    ->select(
+        'shoe_types.shoe_type_name',
+        DB::raw('SUM(order_items.quantity) as total_sold')
+    )
+    ->groupBy('shoe_types.shoe_type_id', 'shoe_types.shoe_type_name')
+    ->orderByDesc('total_sold')
+    ->take(5)
+    ->get();
+
+    /*
+|--------------------------------------------------------------------------
+| Best-Selling Attributes (Size / Brand / Type / Category)
+|--------------------------------------------------------------------------
+*/
+$topSize = DB::table('order_items')
+    ->join('product_variants', 'product_variants.product_variant_id', '=', 'order_items.product_variant_id')
+    ->select('product_variants.size', DB::raw('SUM(order_items.quantity) as total_sold'))
+    ->groupBy('product_variants.size')
+    ->orderByDesc('total_sold')
+    ->first();
+
+$topBrand = DB::table('order_items')
+    ->join('product_variants', 'product_variants.product_variant_id', '=', 'order_items.product_variant_id')
+    ->join('products', 'products.product_id', '=', 'product_variants.product_id')
+    ->join('brands', 'brands.brand_id', '=', 'products.brand_id')
+    ->select('brands.brand_name', DB::raw('SUM(order_items.quantity) as total_sold'))
+    ->groupBy('brands.brand_id', 'brands.brand_name')
+    ->orderByDesc('total_sold')
+    ->first();
+
+$topType = DB::table('order_items')
+    ->join('product_variants', 'product_variants.product_variant_id', '=', 'order_items.product_variant_id')
+    ->join('products', 'products.product_id', '=', 'product_variants.product_id')
+    ->join('shoe_types', 'shoe_types.shoe_type_id', '=', 'products.shoe_type_id')
+    ->select('shoe_types.shoe_type_name', DB::raw('SUM(order_items.quantity) as total_sold'))
+    ->groupBy('shoe_types.shoe_type_id', 'shoe_types.shoe_type_name')
+    ->orderByDesc('total_sold')
+    ->first();
+
+$topCategory = DB::table('order_items')
+    ->join('product_variants', 'product_variants.product_variant_id', '=', 'order_items.product_variant_id')
+    ->join('products', 'products.product_id', '=', 'product_variants.product_id')
+    ->join('categories', 'categories.category_id', '=', 'products.category_id')
+    ->select('categories.category_name', DB::raw('SUM(order_items.quantity) as total_sold'))
+    ->groupBy('categories.category_id', 'categories.category_name')
+    ->orderByDesc('total_sold')
+    ->first();
+        /*
         |--------------------------------------------------------------------------
         | Stock Totals Per Variant
         |--------------------------------------------------------------------------
@@ -192,7 +266,13 @@ class AdminDashboardController extends Controller
             'chartLabels',
             'chartData',
             'statusLabels',
-            'statusCountsData'
+            'statusCountsData',
+            'topProducts',
+            'topShoeTypes',
+            'topSize',
+            'topBrand',
+            'topType',
+            'topCategory'
         ));
     }
 }

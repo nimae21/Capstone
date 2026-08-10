@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\ShoeType;
 use Illuminate\Http\Request;
+use App\Services\ProductImageService;  
 
 class ProductController extends Controller
 {

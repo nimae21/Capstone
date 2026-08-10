@@ -131,6 +131,23 @@
             background: linear-gradient(135deg, #94a3b8, #64748b);
             border-radius: 10px;
         }
+        .btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    font-weight: 700;
+    padding: 0.6rem 1.25rem;
+    border-radius: 0.75rem;
+    text-decoration: none;
+    box-shadow: 0 4px 0 #991b1b, 0 2px 8px rgba(0,0,0,0.06);
+    transition: all 0.15s ease;
+}
+.btn-export:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #991b1b, 0 8px 16px -4px rgba(220,38,38,0.2);
+}
     </style>
 @endsection
 
@@ -139,6 +156,7 @@
 
     <!-- Header Stats -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
         <!-- Total Sales -->
         <div class="stat-card p-6 shadow-sm">
             <div class="flex items-center justify-between">
@@ -154,6 +172,8 @@
             </div>
             <div class="mt-3 h-0.5 w-12 bg-gradient-to-r from-green-300 to-transparent rounded-full"></div>
         </div>
+
+
 
         <!-- Total Orders -->
         <div class="stat-card p-6 shadow-sm">
@@ -203,6 +223,44 @@
                 </div>
             </div>
             <div class="mt-3 h-0.5 w-12 bg-gradient-to-r from-red-300 to-transparent rounded-full"></div>
+        </div>
+    </div>
+<!-- Year Filter + Export -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <form method="GET" class="flex items-center gap-2">
+            <label class="text-sm font-semibold text-gray-600">Viewing Year:</label>
+            <select name="year" onchange="this.form.submit()"
+                    class="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white">
+                @foreach($availableYears as $year)
+                    <option value="{{ $year }}" {{ $selectedYear == $year ? 'selected' : '' }}>{{ $year }}</option>
+                @endforeach
+            </select>
+        </form>
+
+        <a href="{{ route('admin.reports.export-pdf', ['year' => $selectedYear]) }}" class="btn-export">
+            <i class="fas fa-file-pdf"></i> Export as PDF
+        </a>
+    </div>
+
+    <!-- Monthly + Yearly Trend Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card-3d rounded-2xl p-6">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="w-1 h-5 bg-gradient-to-b from-red-600 to-black rounded-full"></div>
+                <h3 class="text-lg font-bold gradient-title">Monthly Sales — {{ $selectedYear }}</h3>
+            </div>
+            <canvas id="monthlyChart" height="250"></canvas>
+        </div>
+
+        <div class="card-3d rounded-2xl p-6">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="w-1 h-5 bg-gradient-to-b from-red-600 to-black rounded-full"></div>
+                <h3 class="text-lg font-bold gradient-title">Yearly Sales Comparison</h3>
+            </div>
+            <canvas id="yearlyChart" height="250"></canvas>
+            @if($yearlyTrend->isEmpty())
+                <p class="text-center text-gray-500 py-8">No sales data available yet.</p>
+            @endif
         </div>
     </div>
 
@@ -502,6 +560,74 @@
 
 </div>
 
+<!-- Sales by Location -->
+<div class="card-3d rounded-2xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100">
+        <h3 class="text-lg font-bold gradient-title">Sales by Location</h3>
+        <p class="text-xs text-gray-500 mt-1">Identify high-demand areas for potential expansion.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2">
+        <!-- By Province -->
+        <div class="overflow-x-auto custom-scroll border-r border-gray-100">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 text-gray-600 text-xs font-semibold uppercase tracking-wider">
+                    <tr>
+                        <th class="px-6 py-3">Province</th>
+                        <th class="px-6 py-3 text-right">Orders</th>
+                        <th class="px-6 py-3 text-right">Sales</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    @forelse($salesByProvince as $row)
+                        <tr class="table-row">
+                            <td class="px-6 py-3 font-medium text-gray-800">{{ $row->province }}</td>
+                            <td class="px-6 py-3 text-right text-gray-600">{{ $row->order_count }}</td>
+                            <td class="px-6 py-3 text-right font-semibold text-gray-800">
+                                ₱{{ number_format($row->total_sales, 2) }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="3" class="px-6 py-10 text-center text-gray-500">No location data yet.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <!-- By City (Top 10) -->
+        <div class="overflow-x-auto custom-scroll">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 text-gray-600 text-xs font-semibold uppercase tracking-wider">
+                    <tr>
+                        <th class="px-6 py-3">City</th>
+                        <th class="px-6 py-3 text-right">Orders</th>
+                        <th class="px-6 py-3 text-right">Sales</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    @forelse($salesByCity as $row)
+                        <tr class="table-row">
+                            <td class="px-6 py-3">
+                                <span class="font-medium text-gray-800">{{ $row->city }}</span>
+                                <span class="text-xs text-gray-400 block">{{ $row->province }}</span>
+                            </td>
+                            <td class="px-6 py-3 text-right text-gray-600">{{ $row->order_count }}</td>
+                            <td class="px-6 py-3 text-right font-semibold text-gray-800">
+                                ₱{{ number_format($row->total_sales, 2) }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="3" class="px-6 py-10 text-center text-gray-500">No location data yet.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Sales Chart (Line)
@@ -616,5 +742,80 @@
             });
         }
     });
+
+    // Monthly Trend Chart (bar)
+const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+new Chart(monthlyCtx, {
+    type: 'bar',
+    data: {
+        labels: @json($monthlyLabels),
+        datasets: [{
+            label: 'Sales (₱)',
+            data: @json($monthlySalesData),
+            backgroundColor: '#dc2626',
+            borderRadius: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: (ctx) => '₱' + ctx.raw.toLocaleString()
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: { callback: (v) => '₱' + v.toLocaleString() }
+            }
+        }
+    }
+});
+
+// Yearly Trend Chart (line)
+const yearlyData = @json($yearlyTrend);
+
+if (yearlyData.length > 0) {
+    const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
+    new Chart(yearlyCtx, {
+        type: 'line',
+        data: {
+            labels: yearlyData.map(row => row.year),
+            datasets: [{
+                label: 'Sales (₱)',
+                data: yearlyData.map(row => row.total_sales),
+                borderColor: '#1e293b',
+                backgroundColor: 'rgba(30, 41, 59, 0.06)',
+                borderWidth: 2.5,
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: '#1e293b',
+                pointRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => '₱' + ctx.raw.toLocaleString()
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: (v) => '₱' + v.toLocaleString() }
+                }
+            }
+        }
+    });
+}
 </script>
 @endsection
