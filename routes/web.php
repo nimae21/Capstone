@@ -2,7 +2,7 @@
 
     use Illuminate\Support\Facades\Route;
     use Illuminate\Support\Facades\Auth;
-
+    use App\Http\Controllers\PayMongoWebhookController;
     use App\Http\Controllers\PageController;
     use App\Http\Controllers\Guest\GuestController;
     use App\Http\Controllers\Admin\ProductImageController;
@@ -27,7 +27,9 @@
     | PUBLIC ROUTES
     |--------------------------------------------------------------------------
     */
-
+    //paymongo webhook route
+    Route::post('/webhooks/paymongo', [PayMongoWebhookController::class, 'handle'])
+    ->name('paymongo.webhook');
     // Landing page
     Route::get('/', [GuestController::class, 'index'])->name('index');
 
@@ -90,11 +92,10 @@
         |--------------------------------------------------------------------------
         */
 
-        Route::get('/checkout', [CheckoutController::class, 'checkout'])
-            ->name('checkout.index');
-
-        Route::post('/checkout/place-order', [CheckoutController::class, 'placeOrder'])
-            ->name('checkout.place-order');
+        Route::get('/checkout', [CheckoutController::class, 'checkout'])->name('checkout.index');
+        Route::post('/checkout/place-order', [CheckoutController::class, 'placeOrder'])->name('checkout.place-order');
+        Route::get('/checkout/{order}/success', [CheckoutController::class, 'success'])->name('checkout.success');
+        Route::get('/checkout/{order}/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
 
 
         /*
@@ -103,13 +104,10 @@
         |--------------------------------------------------------------------------
         */
 
-        Route::get('/orders', [CheckoutController::class, 'myOrders'])
-            ->name('orders.index');
 
-        Route::get('/orders/{id}', [CheckoutController::class, 'show'])
-            ->name('orders.show');
-        Route::put('/orders/{order}/cancel', [CheckoutController::class, 'cancel'])
-        ->name('orders.cancel');
+        Route::get('/orders', [CheckoutController::class, 'myOrders'])->name('orders.index');
+        Route::get('/orders/{id}', [CheckoutController::class, 'show'])->name('orders.show');
+        Route::put('/orders/{order}/cancel', [CheckoutController::class, 'cancelOrder'])->name('orders.cancel');
 
 
         /*
@@ -284,8 +282,9 @@ Route::post('/variants/{variant}/stocks', [StockController::class, 'store'])
 
             Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])
                 ->name('orders.update-status');
+
+
             //reports
-            Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
             Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.export-pdf');
             

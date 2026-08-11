@@ -8,13 +8,16 @@ use App\Exceptions\OrderNotCancellableException;
 use App\Http\Requests\PlaceOrderRequest;
 use App\Models\Cart;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Services\OrderService;
+use App\Services\PayMongoService;
 use Illuminate\Support\Facades\Auth;
 
 class CheckoutController extends Controller
 {
     public function __construct(
-        protected OrderService $orderService
+        protected OrderService $orderService,
+        protected PayMongoService $payMongoService
     ) {}
 
     public function checkout()
@@ -36,19 +39,51 @@ class CheckoutController extends Controller
     public function placeOrder(PlaceOrderRequest $request)
     {
         try {
-            $order = $this->orderService->placeOrderFromCart(
+            $order = $this->orderService->createPendingOrderFromCart(
                 Auth::user(),
                 $request->validated('address_id'),
-                $request->validated('payment_method'),
             );
 
-            return redirect()
-                ->route('orders.show', $order->order_id)
-                ->with('success', 'Order placed successfully! Your payment has been processed.');
+            $session = $this->payMongoService->createCheckoutSession(
+                $order,
+                route('checkout.success', $order->order_id),
+                route('checkout.cancel', $order->order_id),
+            );
+
+            Payment::create([
+                'order_id'            => $order->order_id,
+                'checkout_session_id' => $session['id'],
+                'method'              => 'pending', // real method known only after webhook
+                'status'              => 'pending',
+            ]);
+
+            return redirect()->away($session['checkout_url']);
 
         } catch (EmptyCartException|InsufficientStockException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Customer lands here after completing (or attempting) payment on
+     * PayMongo's page. The webhook — not this page — is the source of
+     * truth for whether payment actually succeeded, since it can arrive
+     * before or after this redirect.
+     */
+    public function success(Order $order)
+    {
+        abort_if($order->user_id != auth()->id(), 403);
+
+        return view('checkout.success', compact('order'));
+    }
+
+    public function cancel(Order $order)
+    {
+        abort_if($order->user_id != auth()->id(), 403);
+
+        return redirect()
+            ->route('checkout.index')
+            ->with('error', 'Payment was cancelled. Your order was not placed — please try again.');
     }
 
     public function myOrders()
@@ -71,7 +106,7 @@ class CheckoutController extends Controller
         return view('orders.show', compact('order'));
     }
 
-    public function cancel(Order $order)
+    public function cancelOrder(Order $order)
     {
         if ($order->user_id != auth()->id()) {
             abort(403);

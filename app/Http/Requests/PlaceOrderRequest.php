@@ -15,7 +15,6 @@ class PlaceOrderRequest extends FormRequest
     {
         return [
             'address_id'     => ['required', 'exists:user_addresses,address_id'],
-            'payment_method' => ['required', 'in:credit_card,debit_card,gcash,paypal,cash_on_delivery'],
         ];
     }
 }

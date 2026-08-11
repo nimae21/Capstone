@@ -107,62 +107,16 @@ name="address_id"
                             </div>
                         @endif
 
-                    <!-- Payment Method Section -->
                     <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i class="fas fa-credit-card text-red-600"></i>
-                            <span class="bg-gradient-to-r from-black to-red-600 bg-clip-text text-transparent">Payment Method</span>
-                        </h2>
-
-                        @error('payment_method')<span class="text-red-600 text-sm block mb-4">{{ $message }}</span>@enderror
-
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            <label class="cursor-pointer">
-                                <input type="radio" name="payment_method" value="credit_card" {{ old('payment_method') === 'credit_card' ? 'checked' : '' }} class="hidden peer">
-                                <div class="border-2 border-gray-300 rounded-xl p-4 text-center peer-checked:border-red-600 peer-checked:bg-red-50 transition-all hover:border-red-400">
-                                    <i class="fas fa-credit-card text-red-600 text-2xl mb-2 block"></i>
-                                    <span class="font-semibold text-sm">Credit Card</span>
-                                </div>
-                            </label>
-
-                            <label class="cursor-pointer">
-                                <input type="radio" name="payment_method" value="debit_card" {{ old('payment_method') === 'debit_card' ? 'checked' : '' }} class="hidden peer">
-                                <div class="border-2 border-gray-300 rounded-xl p-4 text-center peer-checked:border-red-600 peer-checked:bg-red-50 transition-all hover:border-red-400">
-                                    <i class="fas fa-id-card text-green-600 text-2xl mb-2 block"></i>
-                                    <span class="font-semibold text-sm">Debit Card</span>
-                                </div>
-                            </label>
-
-                            <label class="cursor-pointer">
-                                <input type="radio" name="payment_method" value="gcash" {{ old('payment_method') === 'gcash' ? 'checked' : '' }} class="hidden peer">
-                                <div class="border-2 border-gray-300 rounded-xl p-4 text-center peer-checked:border-red-600 peer-checked:bg-red-50 transition-all hover:border-red-400">
-                                    <i class="fas fa-mobile-alt text-blue-600 text-2xl mb-2 block"></i>
-                                    <span class="font-semibold text-sm">GCash</span>
-                                </div>
-                            </label>
-
-                            <label class="cursor-pointer">
-                                <input type="radio" name="payment_method" value="paypal" {{ old('payment_method') === 'paypal' ? 'checked' : '' }} class="hidden peer">
-                                <div class="border-2 border-gray-300 rounded-xl p-4 text-center peer-checked:border-red-600 peer-checked:bg-red-50 transition-all hover:border-red-400">
-                                    <i class="fab fa-paypal text-blue-800 text-2xl mb-2 block"></i>
-                                    <span class="font-semibold text-sm">PayPal</span>
-                                </div>
-                            </label>
-
-                            <label class="cursor-pointer col-span-2 md:col-span-1">
-                                <input type="radio" name="payment_method" value="cash_on_delivery" {{ old('payment_method') === 'cash_on_delivery' ? 'checked' : '' }} class="hidden peer">
-                                <div class="border-2 border-gray-300 rounded-xl p-4 text-center peer-checked:border-red-600 peer-checked:bg-red-50 transition-all hover:border-red-400">
-                                    <i class="fas fa-money-bill-wave text-amber-600 text-2xl mb-2 block"></i>
-                                    <span class="font-semibold text-sm">Cash on Delivery</span>
-                                </div>
-                            </label>
-                        </div>
-
-                        <div class="mt-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-                            <p class="text-blue-700 text-sm"><strong>Demo:</strong> All payments are securely processed and auto-approved for testing.</p>
-                        </div>
-                    </div>
-                </div>
+    <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+        <i class="fas fa-shield-alt text-red-600"></i>
+        <span class="bg-gradient-to-r from-black to-red-600 bg-clip-text text-transparent">Secure Payment</span>
+    </h2>
+    <p class="text-gray-600 text-sm mb-4">
+        You'll be redirected to PayMongo's secure checkout to complete payment via
+        Card, GCash, GrabPay, or Maya.
+    </p>
+</div>
 
                 <!-- Sidebar: Order Summary -->
                 <div>
