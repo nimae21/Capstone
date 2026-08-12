@@ -4,7 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\OrderStatus;
-use App\Models\SaleType;
+use App\Enums\SaleType;
+
 
 
 class Order extends Model

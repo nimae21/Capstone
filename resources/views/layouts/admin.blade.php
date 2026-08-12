@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>@yield('title', 'Admin Dashboard') | Achilles</title>
 
@@ -393,6 +394,8 @@
         <a href="{{ route('admin.products.index') }}" data-tooltip="Products" class="{{ request()->routeIs('admin.products.*') ? 'active' : '' }}">
             <i class="fas fa-box-open"></i> <span>Products</span>
         </a>
+        <a href="{{ route('admin.pos.index') }}" data-tooltip="POS" class="{{ request()->routeIs('admin.pos.*') ? 'active' : '' }}">
+    <i class="fas fa-cash-register"></i> <span>Point of Sale</span>
         <a href="{{ route('admin.categories.index') }}" data-tooltip="Categories" class="{{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
             <i class="fas fa-tags"></i> <span>Categories</span>
         </a>
@@ -425,6 +428,8 @@
         <div class="sidebar-divider"></div>
 
         <h3><i class="fas fa-user-cog fa-fw"></i> Account</h3>
+
+
         <!-- Settings – active if route exists (optional) -->
         <a href="#" data-tooltip="Settings" class="{{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
             <i class="fas fa-sliders-h"></i> <span>Settings</span>

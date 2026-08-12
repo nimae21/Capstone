@@ -21,6 +21,7 @@
     use App\Http\Controllers\UserAddressController;
     use App\Http\Controllers\Admin\ShoeTypeController;
     use App\Http\Controllers\ProfileController;
+    use App\Http\Controllers\Admin\PosController;
 
     /*
     |--------------------------------------------------------------------------
@@ -291,4 +292,10 @@ Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name(
             //inventory routes
             Route::get('/inventory', [InventoryController::class, 'index'])
             ->name('inventory.index');
+
+            // POS
+        Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+        Route::get('/pos/variant/{variant}', [PosController::class, 'variantInfo'])->name('pos.variant-info');
+        Route::post('/pos/sale', [PosController::class, 'store'])->name('pos.store');
+        Route::get('/pos/receipt/{order}', [PosController::class, 'receipt'])->name('pos.receipt'); 
         });
