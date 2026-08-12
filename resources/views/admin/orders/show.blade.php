@@ -131,23 +131,17 @@
 
     @if($order->status === OrderStatus::Pending)
 
-        <form action="{{ route('admin.orders.update-status', $order->order_id) }}"
-              method="POST"
-              onsubmit="return confirm('Approve payment for this order?');">
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+        <i class="fas fa-clock text-amber-600 text-2xl mb-2"></i>
+        <p class="font-semibold text-amber-700">
+            Awaiting payment confirmation.
+        </p>
+        <p class="text-sm text-amber-600 mt-1">
+            This order will move to "Paid" automatically once PayMongo confirms the customer's payment.
+        </p>
+    </div>
 
-            @csrf
-            @method('PUT')
-
-            <input type="hidden" name="status" value="paid">
-
-            <button class="btn-update w-full">
-                <i class="fas fa-check-circle mr-2"></i>
-                Approve Payment
-            </button>
-
-        </form>
-
-   @elseif($order->status === OrderStatus::Paid)
+@elseif($order->status === OrderStatus::Paid)
 
         <form action="{{ route('admin.orders.update-status', $order->order_id) }}"
               method="POST"

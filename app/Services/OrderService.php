@@ -12,8 +12,10 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\User;
+use App\Enums\SaleType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+
 
 class OrderService
 {
@@ -57,6 +59,7 @@ class OrderService
 
             $order = Order::create([
                 'user_id'        => $cart->user_id,
+                'sale_type'      => SaleType::Online,
                 'total_amount'   => $total,
                 'status'         => OrderStatus::Pending,
                 'payment_method' => null, // unknown until PayMongo confirms
@@ -175,4 +178,73 @@ class OrderService
 
         return $order->fresh();
     }
+
+    /**
+ * Create and immediately complete a walk-in POS sale. Unlike web
+ * checkout, this is synchronous and cash-only — no pending state,
+ * no webhook. Stock is deducted immediately since payment is
+ * confirmed at the point of sale.
+ *
+ * @param array $items [['product_variant_id' => int, 'quantity' => int, 'price' => float], ...]
+ * @throws InsufficientStockException
+ */
+public function createPosSale(array $items, User $cashier): Order
+{
+    if (empty($items)) {
+        throw new \InvalidArgumentException('Cannot create a sale with no items.');
+    }
+
+    return DB::transaction(function () use ($items, $cashier) {
+        $total = 0;
+
+        foreach ($items as $item) {
+            $variant = \App\Models\ProductVariant::findOrFail($item['product_variant_id']);
+
+            if (!$this->stockService->hasStock($variant, $item['quantity'])) {
+                throw new InsufficientStockException(
+                    "Insufficient stock for {$variant->product->product_name} ({$variant->size}/{$variant->color})."
+                );
+            }
+
+            $total += $item['price'] * $item['quantity'];
+        }
+
+        $order = Order::create([
+            'user_id'        => $cashier->id,
+            'sale_type'      => SaleType::Pos,
+            'total_amount'   => $total,
+            'status'         => OrderStatus::Paid,
+            'payment_method' => 'cash_pos',
+            'full_name'      => 'Walk-in Customer',
+            'phone_number'   => 'N/A',
+            'street'         => 'In-Store Purchase',
+            'barangay'       => 'N/A',
+            'city'           => 'N/A',
+            'province'       => 'N/A',
+            'postal_code'    => 'N/A',
+        ]);
+
+        foreach ($items as $item) {
+            $variant = \App\Models\ProductVariant::findOrFail($item['product_variant_id']);
+
+            $orderItem = OrderItem::create([
+                'order_id'           => $order->order_id,
+                'product_variant_id' => $item['product_variant_id'],
+                'quantity'           => $item['quantity'],
+                'price'              => $item['price'],
+            ]);
+
+            $this->stockService->deduct($variant, $item['quantity'], $orderItem->order_item_id);
+        }
+
+        Payment::create([
+            'order_id'     => $order->order_id,
+            'method'       => 'cash_pos',
+            'status'       => 'completed',
+            'payment_date' => now(),
+        ]);
+
+        return $order->fresh('items.variant.product');
+    });
+}
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\OrderStatus;
+use App\Models\SaleType;
 
 
 class Order extends Model
@@ -11,9 +12,11 @@ class Order extends Model
     protected $primaryKey = 'order_id';
     protected $casts = [
     'status' => OrderStatus::class,
+    'sale_type' => SaleType::class,
 ];
-    protected $fillable = [
+   protected $fillable = [
     'user_id',
+    'sale_type',
     'total_amount',
     'status',
     'full_name',
@@ -27,6 +30,7 @@ class Order extends Model
     'longitude',
     'payment_method',
 ];
+
 
     public function user()
 {

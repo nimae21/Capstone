@@ -16,19 +16,25 @@ class AdminOrderController extends Controller
         protected OrderService $orderService
     ) {}
 
-    public function index()
-    {
-        $orders = Order::with(['user', 'items'])->latest()->paginate(20);
+    public function index(Request $request)
+{
+    $query = Order::with(['user', 'items']);
 
-        $stats = [
-            'total_orders'  => Order::count(),
-            'pending'       => Order::where('status', OrderStatus::Pending)->count(),
-            'completed'     => Order::where('status', OrderStatus::Completed)->count(),
-            'total_revenue' => Order::where('status', OrderStatus::Completed)->sum('total_amount'),
-        ];
-
-        return view('admin.orders.index', compact('orders', 'stats'));
+    if ($request->filled('sale_type')) {
+        $query->where('sale_type', $request->sale_type);
     }
+
+    $orders = $query->latest()->paginate(20);
+
+    $stats = [
+        'total_orders'  => Order::count(),
+        'pending'       => Order::where('status', OrderStatus::Pending)->count(),
+        'completed'     => Order::where('status', OrderStatus::Completed)->count(),
+        'total_revenue' => Order::where('status', OrderStatus::Completed)->sum('total_amount'),
+    ];
+
+    return view('admin.orders.index', compact('orders', 'stats'));
+}
 
     public function show(Order $order)
     {

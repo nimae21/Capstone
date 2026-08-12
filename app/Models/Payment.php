@@ -9,11 +9,13 @@ class Payment extends Model
     protected $primaryKey = 'payment_id';
 
     protected $fillable = [
-        'order_id',
-        'method',
-        'status',
-        'payment_date',
-    ];
+    'order_id',
+    'checkout_session_id',
+    'paymongo_payment_id',
+    'method',
+    'status',
+    'payment_date',
+];
 
     protected $casts = [
         'payment_date' => 'datetime',
