@@ -46,4 +46,8 @@ public function primaryImage()
     return $this->hasOne(ProductImage::class, 'product_id', 'product_id')
         ->where('is_primary', true);
 }
+public function interactions()
+{
+    return $this->hasMany(UserActivity::class, 'product_id', 'product_id');
+}
 }

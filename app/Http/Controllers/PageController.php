@@ -7,12 +7,22 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ShoeType;
 use Illuminate\Http\Request;
+use App\Services\ActivityTrackingService;
+use App\Services\RecommendationClient;
+
 
 class PageController extends Controller
+
 {
+     public function __construct(
+    protected ActivityTrackingService $activityTracker
+) {}
     public function home()
     {
-        return view('pages.home');
+        $recommendations = auth()->check()
+        ? app(RecommendationClient::class)->forUser(auth()->id())
+        : collect();
+        return view('pages.home', compact('recommendations'));
     }
 
     /**
@@ -88,25 +98,28 @@ class PageController extends Controller
         ], $this->filterOptions()));
     }
 
-    public function showProduct($id)
-    {
-        $product = Product::with([
-            'images',
-            'category',
-            'brand',
-            'variants.stocks',
-        ])->findOrFail($id);
+   
 
-        foreach ($product->variants as $variant) {
-            $variant->available_stock = $variant->stocks->sum('remaining_quantity');
+public function showProduct($id)
+{
+    $product = Product::with([
+        'images', 'category', 'brand', 'variants.stocks',
+    ])->findOrFail($id);
 
-            $latestStock = $variant->stocks()
-                ->latest('deliver_date')
-                ->first();
-
-            $variant->current_price = $latestStock?->price ?? 0;
-        }
-
-        return view('product.show', compact('product'));
+    if (auth()->check()) {
+        $this->activityTracker->logView(auth()->user(), $product);
     }
+
+    foreach ($product->variants as $variant) {
+        $variant->available_stock = $variant->stocks->sum('remaining_quantity');
+        $latestStock = $variant->stocks()->latest('deliver_date')->first();
+        $variant->current_price = $latestStock?->price ?? 0;
+    }
+
+     $recommendations = auth()->check()
+        ? app(RecommendationClient::class)->forUser(auth()->id())->reject(fn ($p) => $p->product_id === $product->product_id)
+        : collect();
+
+    return view('product.show', compact('product', 'recommendations'));
+}
 }

@@ -285,4 +285,5 @@
         </a>
     </div>
 </div>
+@include('partials.recommendations')
 @endsection

@@ -74,5 +74,10 @@ public function carts()
 {
     return $this->hasMany(Cart::class, 'user_id', 'id');
 }
+public function interactions()
+{
+    return $this->hasMany(UserActivity::class, 'user_id', 'id');
 }
+}
+
 
