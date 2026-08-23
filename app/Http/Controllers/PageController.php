@@ -6,22 +6,22 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ShoeType;
-use Illuminate\Http\Request;
 use App\Services\ActivityTrackingService;
 use App\Services\RecommendationClient;
-
+use Illuminate\Http\Request;
 
 class PageController extends Controller
-
 {
-     public function __construct(
-    protected ActivityTrackingService $activityTracker
-) {}
+    public function __construct(
+        protected ActivityTrackingService $activityTracker
+    ) {}
+
     public function home()
     {
         $recommendations = auth()->check()
         ? app(RecommendationClient::class)->forUser(auth()->id())
         : collect();
+
         return view('pages.home', compact('recommendations'));
     }
 
@@ -58,8 +58,8 @@ class PageController extends Controller
     private function filterOptions(): array
     {
         return [
-            'brands'     => Brand::where('is_active', true)->orderBy('brand_name')->get(),
-            'shoeTypes'  => ShoeType::where('is_active', true)->orderBy('display_order')->get(),
+            'brands' => Brand::where('is_active', true)->orderBy('brand_name')->get(),
+            'shoeTypes' => ShoeType::where('is_active', true)->orderBy('display_order')->get(),
         ];
     }
 
@@ -98,28 +98,56 @@ class PageController extends Controller
         ], $this->filterOptions()));
     }
 
-   
+    public function showProduct($id)
+    {
+        $product = Product::with([
+            'images', 'category', 'brand', 'variants.stocks',
+        ])->findOrFail($id);
 
-public function showProduct($id)
-{
-    $product = Product::with([
-        'images', 'category', 'brand', 'variants.stocks',
-    ])->findOrFail($id);
+        if (auth()->check()) {
+            $this->activityTracker->logView(auth()->user(), $product);
+        }
 
-    if (auth()->check()) {
-        $this->activityTracker->logView(auth()->user(), $product);
+        foreach ($product->variants as $variant) {
+            $variant->available_stock = $variant->stocks->sum('remaining_quantity');
+            $latestStock = $variant->stocks()->latest('deliver_date')->first();
+            $variant->current_price = $latestStock?->price ?? 0;
+        }
+
+        $recommendations = auth()->check()
+           ? app(RecommendationClient::class)->forUser(auth()->id())->reject(fn ($p) => $p->product_id === $product->product_id)
+           : collect();
+
+        return view('product.show', compact('product', 'recommendations'));
     }
 
-    foreach ($product->variants as $variant) {
-        $variant->available_stock = $variant->stocks->sum('remaining_quantity');
-        $latestStock = $variant->stocks()->latest('deliver_date')->first();
-        $variant->current_price = $latestStock?->price ?? 0;
+    public function search(Request $request)
+    {
+        $query = trim((string) $request->input('q'));
+
+        $products = collect();
+
+        if ($query !== '') {
+            $products = Product::with(['variants.stocks', 'images', 'brand', 'category'])
+                ->where('is_active', true)
+                ->whereRaw('LOWER(product_name) LIKE ?', ['%'.strtolower($query).'%'])
+                ->orderBy('product_name')
+                ->paginate(12)
+                ->withQueryString();
+
+            // Log a 'search' activity for the top results shown — this is
+            // the signal used later by the recommendation engine, treating
+            // "appeared in a matching search" as a moderate interest signal.
+            if (auth()->check()) {
+                foreach ($products->take(5) as $product) {
+                    $this->activityTracker->logSearch(auth()->user(), $product);
+                }
+            }
+        }
+
+        return view('pages.search', [
+            'products' => $products,
+            'query' => $query,
+        ]);
     }
-
-     $recommendations = auth()->check()
-        ? app(RecommendationClient::class)->forUser(auth()->id())->reject(fn ($p) => $p->product_id === $product->product_id)
-        : collect();
-
-    return view('product.show', compact('product', 'recommendations'));
-}
 }

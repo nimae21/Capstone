@@ -5,15 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Achilles') }}</title>
-
+    <link rel="icon" type="image/png" href="{{ asset('images/achilles logo foot.png') }}">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-    <!-- Tailwind CSS via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Custom Tailwind config override -->
     <script>
@@ -263,7 +261,7 @@
     </style>
 
     <!-- Scripts -->
-    @viteReactRefresh
+    
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
     
     @stack('styles')

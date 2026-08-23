@@ -240,6 +240,13 @@
   .animation-delay-5000 {
     animation-delay: 5s;
   }
+  .logo-image {
+    width: auto;
+    height: 50px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
 </style>
 
 <!-- BACKGROUND (identical to login) -->
@@ -263,9 +270,7 @@
     <div class="w-full max-w-[460px] bg-white/90 backdrop-blur-16 rounded-[48px] p-8 md:p-9 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.7),0_0_0_2px_rgba(230,0,35,0.1),inset_0_1px_0_rgba(255,255,255,0.9)] transition-shadow duration-300 hover:shadow-[0_30px_60px_-15px_rgba(230,0,35,0.2),0_0_0_1px_rgba(255,255,255,0.8),0_0_0_2px_rgba(230,0,35,0.15),inset_0_1px_0_rgba(255,255,255,1)] glass-card-clean relative before:content-[''] before:absolute before:inset-0 before:rounded-[48px] before:bg-gradient-to-br before:from-white/30 before:to-transparent before:pointer-events-none" id="cleanGlassCard">
       
       <div class="text-center mb-7">
-        <div class="text-5xl text-[#E60023] mb-2 animate-soft-glow inline-block">
-          <i class="fas fa-shoe-prints"></i>
-        </div>
+        <img src="{{ asset('images/achilles logo foot.png') }}" alt="Achilles Logo" class="logo-image">
         <h2 class="text-3xl md:text-4xl font-extrabold font-['Space_Grotesk',sans-serif] bg-gradient-to-r from-black via-black to-[#E60023] bg-clip-text text-transparent tracking-tight">
           CREATE ACCOUNT
         </h2>

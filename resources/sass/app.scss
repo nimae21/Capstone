@@ -1,8 +1,10 @@
-// Fonts
-@import url('https://fonts.bunny.net/css?family=Nunito');
+@import "tailwindcss";
 
-// Variables
-@import 'variables';
+@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
+@source "../../storage/framework/views/*.php";
+@source "../**/*.blade.php";
+@source "../**/*.js";
 
-// Bootstrap
-@import 'bootstrap/scss/bootstrap';
+@theme {
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}

@@ -558,6 +558,22 @@
             font-size: 0.8rem;
         }
 
+
+.logo-image {
+    width: auto;
+    height: 50px;
+    object-fit: contain;
+    display: block;
+    flex-shrink: 0;
+}
+.site-logo {
+    display: block;
+    width: auto;
+    height: 50px;
+    max-width: 220px;
+    object-fit: contain;
+}
+
         @media (max-width: 1000px) {
             .category-grid, .featured-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -596,6 +612,7 @@
             .container {
                 padding: 0 1.2rem;
             }
+            
         }
     </style>
 </head>
@@ -605,9 +622,10 @@
 
 <nav class="navbar">
     <a href="#" class="logo">
-        <i class="fas fa-bolt"></i>
-        <span>ACHILLES</span>
-    </a>
+    <img src="{{ asset('images/achilles logo.png') }}" 
+         alt="Achilles Electronics and Computer Shop"
+         class="site-logo">
+</a>
     <div class="auth-buttons">
         <a class="nav-link" href="{{ route('login') }}">Login</a>
         <a class="nav-link" href="{{ route('register') }}">Register</a>
@@ -708,9 +726,9 @@
     <div class="container footer-grid">
         <div class="footer-col">
             <div class="logo" style="margin-bottom: 1rem; justify-content: flex-start;">
-                <i class="fas fa-bolt"></i>
-                <span>Achilles</span>
-            </div>
+    <img src="{{ asset('images/achilles logo.png') }}" alt="Achilles Logo" class="logo-image">
+    
+</div>
             <p>Authentic footwear store<br>for the relentless.</p>
             <div class="social-icons">
                 <i class="fab fa-instagram"></i>
