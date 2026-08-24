@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class ProductImage extends Model
 {
@@ -19,8 +20,9 @@ class ProductImage extends Model
     {
         return $this->belongsTo(Product::class, 'product_id', 'product_id');
     }
+
     public function getImageUrlAttribute()
-{
-    return asset('storage/' . $this->image_path);
-}
+    {
+        return Storage::disk('supabase')->url($this->image_path);
+    }
 }

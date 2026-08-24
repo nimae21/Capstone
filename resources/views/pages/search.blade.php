@@ -64,4 +64,5 @@
     @endif
 
 </div>
+@include('partials.recommendations')
 @endsection

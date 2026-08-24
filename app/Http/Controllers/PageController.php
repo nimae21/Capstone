@@ -9,6 +9,7 @@ use App\Models\ShoeType;
 use App\Services\ActivityTrackingService;
 use App\Services\RecommendationClient;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class PageController extends Controller
 {
@@ -18,9 +19,7 @@ class PageController extends Controller
 
     public function home()
     {
-        $recommendations = auth()->check()
-        ? app(RecommendationClient::class)->forUser(auth()->id())
-        : collect();
+        $recommendations = $this->recommendationsForCurrentUser();
 
         return view('pages.home', compact('recommendations'));
     }
@@ -63,10 +62,18 @@ class PageController extends Controller
         ];
     }
 
+    private function recommendationsForCurrentUser(): Collection
+    {
+        return auth()->check()
+            ? app(RecommendationClient::class)->forUser(auth()->id())
+            : collect();
+    }
+
     public function men(Request $request)
     {
         return view('pages.men', array_merge([
             'products' => $this->getProductsByCategory(1, $request),
+            'recommendations' => $this->recommendationsForCurrentUser(),
         ], $this->filterOptions()));
     }
 
@@ -74,6 +81,7 @@ class PageController extends Controller
     {
         return view('pages.women', array_merge([
             'products' => $this->getProductsByCategory(2, $request),
+            'recommendations' => $this->recommendationsForCurrentUser(),
         ], $this->filterOptions()));
     }
 
@@ -81,6 +89,7 @@ class PageController extends Controller
     {
         return view('pages.kids', array_merge([
             'products' => $this->getProductsByCategory(5, $request),
+            'recommendations' => $this->recommendationsForCurrentUser(),
         ], $this->filterOptions()));
     }
 
@@ -88,6 +97,7 @@ class PageController extends Controller
     {
         return view('pages.sale', array_merge([
             'products' => $this->getProductsByCategory(7, $request),
+            'recommendations' => $this->recommendationsForCurrentUser(),
         ], $this->filterOptions()));
     }
 
@@ -95,6 +105,7 @@ class PageController extends Controller
     {
         return view('pages.new', array_merge([
             'products' => $this->getProductsByCategory(7, $request),
+            'recommendations' => $this->recommendationsForCurrentUser(),
         ], $this->filterOptions()));
     }
 
@@ -110,7 +121,7 @@ class PageController extends Controller
 
         foreach ($product->variants as $variant) {
             $variant->available_stock = $variant->stocks->sum('remaining_quantity');
-            $latestStock = $variant->stocks()->latest('deliver_date')->first();
+            $latestStock = $variant->stocks->sortByDesc('deliver_date')->first();
             $variant->current_price = $latestStock?->price ?? 0;
         }
 
@@ -148,6 +159,7 @@ class PageController extends Controller
         return view('pages.search', [
             'products' => $products,
             'query' => $query,
+            'recommendations' => $this->recommendationsForCurrentUser(),
         ]);
     }
 }

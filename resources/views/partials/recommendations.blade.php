@@ -1,4 +1,3 @@
-@if($recommendations->isNotEmpty())
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <div class="flex items-center gap-2 mb-6">
         <div class="w-1 h-6 bg-gradient-to-b from-red-600 to-black rounded-full"></div>
@@ -7,13 +6,14 @@
         </h2>
     </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-        @foreach($recommendations as $product)
+    @if($recommendations->isNotEmpty())
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+            @foreach($recommendations as $product)
             <a href="{{ route('product.show', $product->product_id) }}" class="group">
                 <div class="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-all">
                     <div class="aspect-square bg-gray-100 overflow-hidden">
                         @if($product->images->first())
-                            <img src="{{ asset('storage/' . $product->images->first()->image_path) }}"
+                            <img src="{{ $product->images->first()->image_url }}"
                                  alt="{{ $product->product_name }}"
                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform">
                         @else
@@ -29,7 +29,9 @@
                     </div>
                 </div>
             </a>
-        @endforeach
-    </div>
+            @endforeach
+        </div>
+    @else
+        <p class="text-gray-500">Browse or add products to your cart to build personalized recommendations.</p>
+    @endif
 </div>
-@endif

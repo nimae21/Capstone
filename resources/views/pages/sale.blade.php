@@ -109,6 +109,7 @@
     }
     
     .shoe-card {
+        display: block;
         background: #ffffff;
         border-radius: 1.5rem;
         overflow: hidden;
@@ -116,6 +117,8 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
         border: 1px solid #f0f0f0;
         position: relative;
+        color: inherit;
+        text-decoration: none;
     }
     
     .shoe-card:hover {
@@ -270,25 +273,22 @@
     <div class="product-grid" id="productGrid">
         @foreach($products as $product)
         @php
-            
-            
             $variant = $product->variants->first();
-$stock = $variant?->stocks?->sortByDesc('deliver_date')->first();
-$price = $stock->price ?? 0;
-$image = $product->images->first()->image_path ?? null;
+            $stock = $variant?->stocks?->sortByDesc('deliver_date')->first();
+            $price = $stock->price ?? 0;
+            $image = $product->images->first()?->image_url ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400';
             $discountPercent = rand(15, 50);
-            $salePrice = $originalPrice * (1 - $discountPercent / 100);
-            
+            $salePrice = $price * (1 - $discountPercent / 100);
             $category = $product->category->category_name ?? 'men';
         @endphp
         
-        <div class="shoe-card" data-category="{{ strtolower($category) }}" data-price="{{ round($salePrice) }}" data-discount="{{ $discountPercent }}">
+        <a href="{{ route('product.show', $product->product_id) }}" class="shoe-card" data-category="{{ strtolower($category) }}" data-price="{{ round($salePrice) }}" data-discount="{{ $discountPercent }}" aria-label="View {{ $product->product_name }}">
             <span class="sale-badge">-{{ $discountPercent }}%</span>
-            <img class="shoe-image" src="{{ $image ? asset('storage/' . $image) : 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400' }}" alt="{{ $product->product_name }}">
+            <img class="shoe-image" src="{{ $image }}" alt="{{ $product->product_name }}">
             <h3>{{ $product->product_name }}</h3>
-            <div class="price">₱{{ number_format(round($salePrice), 2) }} <small>₱{{ number_format($originalPrice, 2) }}</small></div>
-            <a href="{{ route('product.show', $product->product_id) }}" class="btn-card">Shop Now <i class="fas fa-arrow-right ml-1"></i></a>
-        </div>
+            <div class="price">₱{{ number_format(round($salePrice), 2) }} <small>₱{{ number_format($price, 2) }}</small></div>
+            <span class="btn-card">Shop Now <i class="fas fa-arrow-right ml-1"></i></span>
+        </a>
         @endforeach
     </div>
     
@@ -343,4 +343,5 @@ $image = $product->images->first()->image_path ?? null;
     sortSelect.addEventListener('change', filterAndSort);
 </script>
 @endpush
+@include('partials.recommendations')
 @endsection

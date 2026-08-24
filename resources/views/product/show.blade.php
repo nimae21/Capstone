@@ -184,7 +184,7 @@
                 <div class="glass-card rounded-2xl p-4 shadow-xl overflow-hidden">
                     <div class="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center">
                         @if($product->images->first())
-                            <img src="{{ asset('storage/' . $product->images->first()->image_path) }}" 
+                            <img src="{{ $product->images->first()->image_url }}" 
                                  alt="{{ $product->product_name }}" 
                                  class="w-full h-full object-cover rounded-xl transition-transform duration-500 hover:scale-110">
                         @else
@@ -198,7 +198,7 @@
                 <div class="flex gap-3 overflow-x-auto pb-2 custom-scroll">
                     @foreach($product->images as $image)
                         <div class="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-red-500 transition-all">
-                            <img src="{{ asset('storage/' . $image->image_path) }}" 
+                            <img src="{{ $image->image_url }}" 
                                  alt="Thumbnail" 
                                  class="w-full h-full object-cover">
                         </div>

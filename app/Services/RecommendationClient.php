@@ -3,9 +3,10 @@
 namespace App\Services;
 
 use App\Models\Product;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Collection;
 
 class RecommendationClient
 {
@@ -24,14 +25,29 @@ class RecommendationClient
      */
     public function forUser(int $userId, int $limit = 8): Collection
     {
+        $cacheKey = "recommendations.user.{$userId}.{$limit}";
+
+        return Cache::remember($cacheKey, now()->addSeconds(60), function () use ($userId, $limit): Collection {
+            return $this->fetchForUser($userId, $limit);
+        });
+    }
+
+    public function forgetForUser(int $userId): void
+    {
+        Cache::forget("recommendations.user.{$userId}.8");
+    }
+
+    private function fetchForUser(int $userId, int $limit): Collection
+    {
         try {
-            $response = Http::timeout(2)
+            $response = Http::connectTimeout(0.3)->timeout(1)
                 ->get("{$this->baseUrl}/recommendations/{$userId}", [
                     'limit' => $limit,
                 ]);
 
             if ($response->failed()) {
-                Log::warning("Recommendation service returned an error for user {$userId}: " . $response->status());
+                Log::warning("Recommendation service returned an error for user {$userId}: ".$response->status());
+
                 return collect();
             }
 
@@ -60,7 +76,8 @@ class RecommendationClient
         } catch (\Throwable $e) {
             // Connection refused, timeout, DNS failure, etc. — the
             // Python service being unreachable should degrade silently.
-            Log::warning("Recommendation service unreachable: " . $e->getMessage());
+            Log::warning('Recommendation service unreachable: '.$e->getMessage());
+
             return collect();
         }
     }

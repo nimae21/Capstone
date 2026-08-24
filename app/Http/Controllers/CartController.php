@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\ProductVariant;
-use App\Services\StockService;
 use App\Services\ActivityTrackingService;
+use App\Services\StockService;
+use Illuminate\Http\Request;
 
 class CartController extends Controller
 {
@@ -23,11 +23,11 @@ class CartController extends Controller
     {
         $cart = Cart::with([
             'items.variant.product',
-            'items.variant.stocks'
+            'items.variant.stocks',
         ])
-        ->where('user_id', auth()->id())
-        ->where('status', 0)
-        ->first();
+            ->where('user_id', auth()->id())
+            ->where('status', 0)
+            ->first();
 
         return view('cart.index', compact('cart'));
     }
@@ -36,62 +36,62 @@ class CartController extends Controller
      * Add product to cart
      */
     public function store(Request $request)
-{
-    $request->validate([
-        'product_variant_id' => 'required|exists:product_variants,product_variant_id',
-        'quantity' => 'required|integer|min:1',
-    ]);
+    {
+        $request->validate([
+            'product_variant_id' => 'required|exists:product_variants,product_variant_id',
+            'quantity' => 'required|integer|min:1',
+        ]);
 
-    $variant = ProductVariant::with('product')->findOrFail($request->product_variant_id);
+        $variant = ProductVariant::with('product')->findOrFail($request->product_variant_id);
 
-    $availableStock = $this->stockService->availableQuantity($variant);
+        $availableStock = $this->stockService->availableQuantity($variant);
 
-    if ($availableStock <= 0) {
-        return back()->with('error', 'This item is out of stock.');
-    }
+        if ($availableStock <= 0) {
+            return back()->with('error', 'This item is out of stock.');
+        }
 
-    if ($request->quantity > $availableStock) {
-        return back()->with('error', "Only {$availableStock} item(s) available.");
-    }
-
-    $cart = Cart::firstOrCreate([
-        'user_id' => auth()->id(),
-        'status' => 0
-    ]);
-
-    $item = CartItem::where('cart_id', $cart->cart_id)
-        ->where('product_variant_id', $variant->product_variant_id)
-        ->first();
-
-    if ($item) {
-
-        $newQuantity = $item->quantity + $request->quantity;
-
-        if ($newQuantity > $availableStock) {
+        if ($request->quantity > $availableStock) {
             return back()->with('error', "Only {$availableStock} item(s) available.");
         }
 
-        $item->update([
-            'quantity' => $newQuantity
+        $cart = Cart::firstOrCreate([
+            'user_id' => auth()->id(),
+            'status' => 0,
         ]);
 
-    } else {
+        $item = CartItem::where('cart_id', $cart->cart_id)
+            ->where('product_variant_id', $variant->product_variant_id)
+            ->first();
 
-        CartItem::create([
-            'cart_id' => $cart->cart_id,
-            'product_variant_id' => $variant->product_variant_id,
-            'quantity' => $request->quantity,
-            'price' => $this->stockService->currentPrice($variant),
-        ]);
+        if ($item) {
 
+            $newQuantity = $item->quantity + $request->quantity;
+
+            if ($newQuantity > $availableStock) {
+                return back()->with('error', "Only {$availableStock} item(s) available.");
+            }
+
+            $item->update([
+                'quantity' => $newQuantity,
+            ]);
+
+        } else {
+
+            CartItem::create([
+                'cart_id' => $cart->cart_id,
+                'product_variant_id' => $variant->product_variant_id,
+                'quantity' => $request->quantity,
+                'price' => $this->stockService->currentPrice($variant),
+            ]);
+
+        }
+
+        $this->activityTracker->logAddToCart(auth()->user(), $variant->product);
+
+        return redirect()
+            ->route('cart.index')
+            ->with('success', 'Product added to cart.');
     }
-
-    $this->activityTracker->logAddToCart(auth()->user(), $variant->product);
-
-    return redirect()
-        ->route('cart.index')
-        ->with('success', 'Product added to cart.');
-}
 
     /**
      * Increase quantity
@@ -105,17 +105,12 @@ class CartController extends Controller
         $availableStock = $this->stockService->availableQuantity($item->variant);
 
         if ($item->quantity >= $availableStock) {
-            return response()->json([
-                'error' => 'Maximum stock reached.'
-            ], 400);
+            return back()->with('error', 'Maximum stock reached.');
         }
 
         $item->increment('quantity');
 
-        return response()->json([
-            'success' => true,
-            'quantity' => $item->quantity
-        ]);
+        return back()->with('success', 'Cart quantity updated.');
     }
 
     /**
@@ -131,18 +126,12 @@ class CartController extends Controller
 
             $item->delete();
 
-            return response()->json([
-                'success' => true,
-                'removed' => true
-            ]);
+            return back()->with('success', 'Item removed from cart.');
         }
 
         $item->decrement('quantity');
 
-        return response()->json([
-            'success' => true,
-            'quantity' => $item->quantity
-        ]);
+        return back()->with('success', 'Cart quantity updated.');
     }
 
     /**
@@ -156,9 +145,7 @@ class CartController extends Controller
 
         $item->delete();
 
-        return response()->json([
-            'success' => true
-        ]);
+        return back()->with('success', 'Item removed from cart.');
     }
 
     /**
@@ -176,7 +163,7 @@ class CartController extends Controller
             : 0;
 
         return response()->json([
-            'count' => $count
+            'count' => $count,
         ]);
     }
 }

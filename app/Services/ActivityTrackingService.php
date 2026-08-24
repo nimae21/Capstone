@@ -3,8 +3,9 @@
 namespace App\Services;
 
 use App\Models\Product;
-use App\Models\UserActivity;
 use App\Models\User;
+use App\Models\UserActivity;
+use Illuminate\Support\Facades\Cache;
 
 class ActivityTrackingService
 {
@@ -26,9 +27,13 @@ class ActivityTrackingService
     private function log(User $user, Product $product, string $type): void
     {
         UserActivity::create([
-            'user_id'       => $user->id,
-            'product_id'    => $product->product_id,
+            'user_id' => $user->id,
+            'product_id' => $product->product_id,
             'activity_type' => $type,
         ]);
+
+        if ($type !== 'view') {
+            Cache::forget("recommendations.user.{$user->id}.8");
+        }
     }
 }

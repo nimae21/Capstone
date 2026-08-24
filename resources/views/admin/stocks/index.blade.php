@@ -209,8 +209,8 @@
                 <form action="{{ route('admin.stocks.store', $variant->product_variant_id) }}" method="POST" class="space-y-5">
                     @csrf
                     <div>
-                        <label for="quantity" class="block text-sm font-semibold text-gray-700 mb-1">Quantity <span class="text-red-500">*</span></label>
-                        <input type="number" name="quantity" id="quantity" placeholder="e.g., 100" required
+                        <label for="received_quantity" class="block text-sm font-semibold text-gray-700 mb-1">Quantity <span class="text-red-500">*</span></label>
+                        <input type="number" name="received_quantity" id="received_quantity" placeholder="e.g., 100" required
                                class="input-premium">
                     </div>
                     <div>
@@ -244,8 +244,8 @@
                         <span class="text-2xl font-bold text-gray-800">{{ $stocks->count() }}</span>
                     </div>
                     <div class="flex items-center justify-between p-3 bg-white/50 rounded-xl mb-3">
-                        <span class="text-sm text-gray-600">Total Quantity</span>
-                        <span class="text-2xl font-bold text-gray-800">{{ $stocks->sum('quantity') }}</span>
+                        <span class="text-sm text-gray-600">Remaining Quantity</span>
+                        <span class="text-2xl font-bold text-gray-800">{{ $stocks->sum('remaining_quantity') }}</span>
                     </div>
                     <div class="tip-3d flex items-center gap-2 text-sm p-3 rounded-lg transition-all mt-4">
                         <span class="font-medium text-gray-800">💡 Tip:</span>
@@ -277,7 +277,7 @@
                             @foreach($stocks as $stock)
                                 <tr class="table-row-3d">
                                     <td class="px-6 py-3 text-sm text-gray-500">{{ $stock->stock_id }}</td>
-                                    <td class="px-6 py-3 font-medium text-gray-800">{{ $stock->quantity }}</td>
+                                    <td class="px-6 py-3 font-medium text-gray-800">{{ $stock->remaining_quantity }}</td>
                                     <td class="px-6 py-3 text-gray-600">${{ number_format($stock->price, 2) }}</td>
                                     <td class="px-6 py-3 text-gray-600">{{ $stock->deliver_date }}</td>
                                     <td class="px-6 py-3 text-right">

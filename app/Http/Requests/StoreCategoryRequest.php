@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreBrandRequest extends FormRequest
+class StoreCategoryRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -14,16 +14,16 @@ class StoreBrandRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'brand_name'        => $this->normalizeTitleCase($this->brand_name),
-            'brand_description' => trim((string) $this->brand_description),
+            'category_name' => $this->normalizeTitleCase($this->category_name),
+            'category_description' => trim((string) $this->category_description),
         ]);
     }
 
     public function rules(): array
     {
         return [
-            'brand_name'        => ['required', 'string', 'max:255'],
-            'brand_description' => ['nullable', 'string', 'max:255'],
+            'category_name' => ['required', 'string', 'max:255'],
+            'category_description' => ['nullable', 'string', 'max:255'],
         ];
     }
 

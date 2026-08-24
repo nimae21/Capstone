@@ -20,20 +20,20 @@ class ProductImageService
         $hasPrimary = $product->images()->where('is_primary', true)->exists();
 
         foreach ($images as $index => $image) {
-            $path = $image->store('products', 'public');
+            $path = $image->store('products', 'supabase');
 
             ProductImage::create([
-                'product_id'    => $product->product_id,
-                'image_path'    => $path,
+                'product_id' => $product->product_id,
+                'image_path' => $path,
                 'display_order' => ++$displayOrder,
-                'is_primary'    => !$hasPrimary && $index === 0,
+                'is_primary' => ! $hasPrimary && $index === 0,
             ]);
         }
     }
 
     public function delete(ProductImage $image): void
     {
-        Storage::disk('public')->delete($image->image_path);
+        Storage::disk('supabase')->delete($image->image_path);
 
         $product = $image->product;
         $wasPrimary = $image->is_primary;

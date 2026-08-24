@@ -87,6 +87,7 @@
     }
     
     .shoe-card {
+        display: block;
         background: #ffffff;
         border-radius: 1.5rem;
         overflow: hidden;
@@ -94,6 +95,8 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
         border: 1px solid #f0f0f0;
         position: relative;
+        color: inherit;
+        text-decoration: none;
     }
     
     .shoe-card:hover {
@@ -302,22 +305,22 @@
         @foreach($products as $product)
         @php
             $variant = $product->variants->first();
-$stock = $variant?->stocks?->sortByDesc('deliver_date')->first();
-$price = $stock->price ?? 0;
-$image = $product->images->first()->image_path ?? null;
+            $stock = $variant?->stocks?->sortByDesc('deliver_date')->first();
+            $price = $stock->price ?? 0;
+            $image = $product->images->first()?->image_url ?? 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400';
             $description = $product->product_description ?? 'Elegant design meets performance. Perfect for the modern woman.';
             $badges = ['LIMITED EDITION', 'BESTSELLER', 'NEW DROP', 'PREMIUM'];
             $badgeText = $badges[array_rand($badges)];
         @endphp
         
-        <div class="shoe-card" data-price="{{ $price }}">
+        <a href="{{ route('product.show', $product->product_id) }}" class="shoe-card" data-price="{{ $price }}" aria-label="View {{ $product->product_name }}">
             <span class="shoe-badge">{{ $badgeText }}</span>
-            <img class="shoe-image" src="{{ $image ? asset('storage/' . $image) : 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400' }}" alt="{{ $product->product_name }}">
+            <img class="shoe-image" src="{{ $image }}" alt="{{ $product->product_name }}">
             <h3>{{ $product->product_name }}</h3>
             <p>{{ Str::limit($description, 55) }}</p>
             <p class="price">₱{{ number_format($price, 2) }}</p>
-            <a href="{{ route('product.show', $product->product_id) }}" class="btn-card">View Product <i class="fas fa-arrow-right ml-1"></i></a>
-        </div>
+            <span class="btn-card">View Product <i class="fas fa-arrow-right ml-1"></i></span>
+        </a>
         @endforeach
     </div>
     
@@ -377,4 +380,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endpush
+@include('partials.recommendations')
 @endsection

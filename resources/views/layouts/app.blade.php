@@ -15,7 +15,8 @@
     
     <!-- Custom Tailwind config override -->
     <script>
-        tailwind.config = {
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
@@ -44,6 +45,7 @@
                     },
                 },
             },
+            };
         }
     </script>
 
@@ -258,15 +260,74 @@
         .bg-gradient-radial { background-image: radial-gradient(circle, var(--tw-gradient-stops)); }
         .animation-delay-2000 { animation-delay: 2s; }
         .animation-delay-5000 { animation-delay: 5s; }
+
+        .page-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: grid;
+            place-items: center;
+            background: rgba(10, 10, 15, 0.72);
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .page-loader.is-visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .page-loader-content {
+            display: grid;
+            justify-items: center;
+            gap: 1rem;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+        .page-loader-logo {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+            animation: pageLoaderPulse 1.2s ease-in-out infinite;
+        }
+        .page-loader-ring {
+            width: 34px;
+            height: 34px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #e60023;
+            border-radius: 50%;
+            animation: pageLoaderSpin 0.8s linear infinite;
+        }
+        @keyframes pageLoaderPulse {
+            0%, 100% { transform: scale(0.94); opacity: 0.72; }
+            50% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes pageLoaderSpin {
+            to { transform: rotate(360deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .page-loader-logo, .page-loader-ring { animation: none; }
+        }
     </style>
 
     <!-- Scripts -->
     
-    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     
-    @stack('styles')
+    @yield('styles')
 </head>
 <body class="relative bg-black font-['Inter',sans-serif] antialiased overflow-x-hidden">
+    <div id="pageLoader" class="page-loader" role="status" aria-live="polite" aria-label="Loading">
+        <div class="page-loader-content">
+            <img src="{{ asset('images/achilles logo foot.png') }}" alt="Achilles" class="page-loader-logo">
+            <div class="page-loader-ring" aria-hidden="true"></div>
+            <span>Loading</span>
+        </div>
+    </div>
+
     <!-- GLOBAL BACKGROUND LAYER (visible on all pages) -->
     <div class="fixed inset-0 z-0 overflow-hidden">
         <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=2000&auto=format')] bg-cover bg-center bg-no-repeat animate-cinematic-zoom" style="background-position: center 35%;"></div>
@@ -292,9 +353,49 @@
     <!-- Global Script for Particles -->
     <script>
         (function() {
+            const loader = document.getElementById('pageLoader');
+
+            if (!loader) {
+                return;
+            }
+
+            const showLoader = () => loader.classList.add('is-visible');
+
+            document.addEventListener('click', function(event) {
+                const link = event.target.closest('a');
+
+                if (!link || event.defaultPrevented || link.target === '_blank' || link.hasAttribute('download')) {
+                    return;
+                }
+
+                const href = link.getAttribute('href');
+
+                if (!href || href.startsWith('#') || href.startsWith('javascript:') || new URL(link.href).origin !== window.location.origin) {
+                    return;
+                }
+
+                showLoader();
+            });
+
+            document.addEventListener('submit', function(event) {
+                if (!event.defaultPrevented) {
+                    showLoader();
+                }
+            });
+
+            document.addEventListener('click', function(event) {
+                if (event.target.closest('#searchSubmit, button[type="submit"]')) {
+                    showLoader();
+                }
+            });
+
+            window.addEventListener('pageshow', () => loader.classList.remove('is-visible'));
+        })();
+
+        (function() {
             const particleField = document.getElementById('elegantParticles');
             if(particleField && particleField.children.length === 0) {
-                for(let i = 0; i < 120; i++) {
+                for(let i = 0; i < 36; i++) {
                     const p = document.createElement('div');
                     p.classList.add('particle-elegant');
                     const size = Math.random() * 5 + 2;
@@ -319,7 +420,6 @@
             }
         })();
     </script>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     @stack('scripts')
     
 </body>

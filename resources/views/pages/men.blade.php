@@ -141,6 +141,8 @@
     }
 
     .shoe-card {
+        display: flex;
+        flex-direction: column;
         background: #ffffff;
         border-radius: 1.25rem;
         overflow: hidden;
@@ -148,8 +150,8 @@
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
         border: 1px solid #f0f0f0;
         position: relative;
-        display: flex;
-        flex-direction: column;
+        color: inherit;
+        text-decoration: none;
     }
 
     .shoe-card:hover {
@@ -464,28 +466,28 @@
                     $variant = $product->variants->first();
                     $stock = $variant?->stocks?->sortByDesc('deliver_date')->first();
                     $price = $stock->price ?? 0;
-                    $image = $product->images->first()->image_path ?? null;
+                    $image = $product->images->first()?->image_url ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400';
                     $description = $product->product_description ?? 'Premium performance footwear engineered for the relentless athlete.';
 
                     $badges = ['LIMITED EDITION', 'BESTSELLER', 'NEW DROP', 'PREMIUM'];
                     $badgeText = $badges[array_rand($badges)];
                 @endphp
 
-                <div class="shoe-card" data-price="{{ $price }}">
+                <a href="{{ route('product.show', $product->product_id) }}" class="shoe-card" data-price="{{ $price }}" aria-label="View {{ $product->product_name }}">
                     <span class="shoe-badge">{{ $badgeText }}</span>
 
                     <img class="shoe-image"
-                         src="{{ $image ? asset('storage/' . $image) : 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400' }}"
+                         src="{{ $image }}"
                          alt="{{ $product->product_name }}">
 
                     <h3>{{ $product->product_name }}</h3>
                     <p class="desc">{{ Str::limit($description, 55) }}</p>
                     <p class="price">₱{{ number_format($price, 2) }}</p>
 
-                    <a href="{{ route('product.show', $product->product_id) }}" class="btn-view">
+                    <span class="btn-view">
                         View Product <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
+                    </span>
+                </a>
             @endforeach
         </div>
 
@@ -581,4 +583,5 @@
     });
 </script>
 @endpush
+@include('partials.recommendations')
 @endsection

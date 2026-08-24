@@ -161,7 +161,7 @@
                                             <!-- Product Image -->
                                             <div class="w-28 h-28 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden shadow-md">
                                                 @if($product->images->first())
-                                                    <img src="{{ asset('storage/' . $product->images->first()->image_path) }}" alt="{{ $product->product_name }}" class="w-full h-full object-cover rounded-xl transition-transform duration-300 hover:scale-110">
+                                                    <img src="{{ $product->images->first()->image_url }}" alt="{{ $product->product_name }}" class="w-full h-full object-cover rounded-xl transition-transform duration-300 hover:scale-110">
                                                 @else
                                                     <i class="fas fa-shoe-prints text-gray-400 text-3xl"></i>
                                                 @endif

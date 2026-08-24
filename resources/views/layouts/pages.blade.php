@@ -653,11 +653,65 @@
                 padding: 1.5rem;
             }
         }
+
+        .page-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: grid;
+            place-items: center;
+            background: rgba(10, 10, 15, 0.72);
+            backdrop-filter: blur(8px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .page-loader.is-visible { opacity: 1; pointer-events: auto; }
+        .page-loader-content {
+            display: grid;
+            justify-items: center;
+            gap: 1rem;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+        .page-loader-logo {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+            animation: pageLoaderPulse 1.2s ease-in-out infinite;
+        }
+        .page-loader-ring {
+            width: 34px;
+            height: 34px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: #e60023;
+            border-radius: 50%;
+            animation: pageLoaderSpin 0.8s linear infinite;
+        }
+        @keyframes pageLoaderPulse {
+            0%, 100% { transform: scale(0.94); opacity: 0.72; }
+            50% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes pageLoaderSpin { to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) {
+            .page-loader-logo, .page-loader-ring { animation: none; }
+        }
     </style>
     
     @yield('styles')
 </head>
 <body>
+    <div id="pageLoader" class="page-loader" role="status" aria-live="polite" aria-label="Loading">
+        <div class="page-loader-content">
+            <img src="{{ asset('images/achilles logo foot.png') }}" alt="Achilles" class="page-loader-logo">
+            <div class="page-loader-ring" aria-hidden="true"></div>
+            <span>Loading</span>
+        </div>
+    </div>
+
     <!-- ════════════════════════════════════════ -->
     <!--  NAVIGATION                            -->
     <!-- ════════════════════════════════════════ -->
@@ -683,6 +737,9 @@
                     <div class="user-dropdown" id="userDropdown">
                         <a href="{{ route('profile.index') }}">
                             <i class="fas fa-user"></i> My Profile
+                        </a>
+                        <a href="{{ route('addresses.index') }}">
+                            <i class="fas fa-location-dot"></i> My Addresses
                         </a>
                         <a href="{{ route('orders.index') }}">
                             <i class="fas fa-box"></i> My Orders
@@ -773,6 +830,46 @@
     <!--  SCRIPTS                               -->
     <!-- ════════════════════════════════════════ -->
     <script>
+        (function() {
+            const loader = document.getElementById('pageLoader');
+
+            if (!loader) {
+                return;
+            }
+
+            const showLoader = () => loader.classList.add('is-visible');
+
+            document.addEventListener('click', function(event) {
+                const link = event.target.closest('a');
+
+                if (!link || event.defaultPrevented || link.target === '_blank' || link.hasAttribute('download')) {
+                    return;
+                }
+
+                const href = link.getAttribute('href');
+
+                if (!href || href.startsWith('#') || href.startsWith('javascript:') || new URL(link.href).origin !== window.location.origin) {
+                    return;
+                }
+
+                showLoader();
+            });
+
+            document.addEventListener('submit', function(event) {
+                if (!event.defaultPrevented) {
+                    showLoader();
+                }
+            });
+
+            document.addEventListener('click', function(event) {
+                if (event.target.closest('#searchSubmit, button[type="submit"]')) {
+                    showLoader();
+                }
+            });
+
+            window.addEventListener('pageshow', () => loader.classList.remove('is-visible'));
+        })();
+
         document.addEventListener('DOMContentLoaded', function() {
 
             // ── User Dropdown (click + hover fallback) ──
