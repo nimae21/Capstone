@@ -81,6 +81,7 @@
     📍 Use My Current Location
 
 </button>
+<p id="locationStatus" class="mt-2 text-sm text-gray-500" role="status" aria-live="polite"></p>
 
                 <div>
     <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -230,5 +231,5 @@
 @endsection
 @push('scripts')
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="{{ asset('js/address-selector.js') }}"></script>
+<script src="{{ asset('js/address-selector.js') }}?v={{ filemtime(public_path('js/address-selector.js')) }}"></script>
 @endpush
