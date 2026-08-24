@@ -115,6 +115,7 @@
     name="barangay"
     id="barangay"
     required
+    data-default="{{ old('barangay') }}"
     disabled
     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
 
@@ -136,6 +137,7 @@
         id="region"
         name="region"
         required
+        data-default="{{ old('region') }}"
         class="w-full px-4 py-2 border border-gray-300 rounded-lg">
 
         <option value="">Select Region</option>
@@ -154,6 +156,7 @@
     name="city"
     id="city"
     required
+    data-default="{{ old('city') }}"
     disabled
     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
 
@@ -172,6 +175,7 @@
     name="province"
     id="province"
     required
+    data-default="{{ old('province') }}"
     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
 
     <option value="">Select Province</option>

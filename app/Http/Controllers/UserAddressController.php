@@ -10,6 +10,7 @@ class UserAddressController extends Controller
     public function index()
     {
         $addresses = auth()->user()->addresses()->paginate(10);
+
         return view('addresses.index', compact('addresses'));
     }
 
@@ -27,14 +28,16 @@ class UserAddressController extends Controller
             'barangay' => 'required|string|max:255',
             'city' => 'required|string|max:255',
             'province' => 'required|string|max:255',
+            'region' => 'nullable|string|max:255',
             'postal_code' => 'required|string|max:10',
-'latitude' => 'nullable|numeric',
-'longitude' => 'nullable|numeric',
-'is_default' => 'nullable|boolean',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'is_default' => 'nullable|boolean',
         ]);
 
+        $validated['is_default'] = (bool) ($validated['is_default'] ?? false);
+
         try {
-            // If setting as default, unset other defaults
             if ($validated['is_default']) {
                 auth()->user()->addresses()->update(['is_default' => false]);
             }
@@ -47,7 +50,7 @@ class UserAddressController extends Controller
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'Failed to add address: ' . $e->getMessage());
+                ->with('error', 'Failed to add address: '.$e->getMessage());
         }
     }
 
@@ -63,7 +66,6 @@ class UserAddressController extends Controller
 
     public function update(Request $request, UserAddress $address)
     {
-        // Ensure user can only update their own addresses
         if ($address->user_id !== auth()->id()) {
             abort(403, 'Unauthorized');
         }
@@ -75,14 +77,16 @@ class UserAddressController extends Controller
             'barangay' => 'required|string|max:255',
             'city' => 'required|string|max:255',
             'province' => 'required|string|max:255',
+            'region' => 'nullable|string|max:255',
             'postal_code' => 'required|string|max:10',
-'latitude' => 'nullable|numeric',
-'longitude' => 'nullable|numeric',
-'is_default' => 'nullable|boolean',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'is_default' => 'nullable|boolean',
         ]);
 
+        $validated['is_default'] = (bool) ($validated['is_default'] ?? false);
+
         try {
-            // If setting as default, unset other defaults
             if ($validated['is_default']) {
                 auth()->user()->addresses()->where('address_id', '!=', $address->address_id)->update(['is_default' => false]);
             }
@@ -95,7 +99,7 @@ class UserAddressController extends Controller
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'Failed to update address: ' . $e->getMessage());
+                ->with('error', 'Failed to update address: '.$e->getMessage());
         }
     }
 
@@ -114,7 +118,7 @@ class UserAddressController extends Controller
                 ->with('success', 'Address deleted successfully!');
         } catch (\Exception $e) {
             return back()
-                ->with('error', 'Failed to delete address: ' . $e->getMessage());
+                ->with('error', 'Failed to delete address: '.$e->getMessage());
         }
     }
 
@@ -134,7 +138,7 @@ class UserAddressController extends Controller
 
             return back()->with('success', 'Default address updated!');
         } catch (\Exception $e) {
-            return back()->with('error', 'Failed to update default address: ' . $e->getMessage());
+            return back()->with('error', 'Failed to update default address: '.$e->getMessage());
         }
     }
 }

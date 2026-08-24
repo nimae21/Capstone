@@ -120,19 +120,64 @@ async function loadAddressData() {
     province.disabled = true;
     city.disabled = true;
     barangay.disabled = true;
+
+    const initialValues = {
+        region: region.dataset.default || region.value || '',
+        province: province.dataset.default || province.value || '',
+        city: city.dataset.default || city.value || '',
+        barangay: barangay.dataset.default || barangay.value || '',
+    };
+
+    if (initialValues.region) {
+        selectOption(region, initialValues.region);
+    }
+
+    if (initialValues.province) {
+        selectOption(province, initialValues.province);
+    }
+
+    if (initialValues.city) {
+        selectOption(city, initialValues.city);
+    }
+
+    if (initialValues.barangay) {
+        selectOption(barangay, initialValues.barangay);
+    }
+
+    const lat = parseFloat(latitude.value || '');
+    const lon = parseFloat(longitude.value || '');
+
+    if (!Number.isNaN(lat) && !Number.isNaN(lon) && lat && lon) {
+        updateMap(lat, lon);
+    }
 }
 
 async function reverseGeocode(lat, lon) {
-    const query = new URLSearchParams({ lat, lon, format: 'json', addressdetails: '1' });
+    const query = new URLSearchParams({
+        lat,
+        lon,
+        format: 'json',
+        addressdetails: '1',
+        countrycodes: 'ph',
+        zoom: '18',
+        'accept-language': 'en',
+    });
+
     const response = await fetchWithTimeout(`https://nominatim.openstreetmap.org/reverse?${query}`, {
         headers: { Accept: 'application/json' },
-    }, 10000);
+    }, 15000);
 
     if (!response.ok) {
         throw new Error('Unable to find the address for this location.');
     }
 
-    return response.json();
+    const result = await response.json();
+
+    if (!result || result.address?.country_code && result.address.country_code.toLowerCase() !== 'ph') {
+        throw new Error('Location is outside the Philippines. Please use a Philippine address.');
+    }
+
+    return result;
 }
 
 async function findAddressOnMap() {
@@ -151,42 +196,64 @@ async function findAddressOnMap() {
 async function fillAddressFromLocation(lat, lon) {
     const result = await reverseGeocode(lat, lon);
     const address = result.address || {};
-    const provinceName = address.state || address.province || '';
+    const provinceName = address.state || address.province || address.state_district || '';
     const cityName = address.city || address.town || address.municipality || address.city_district || '';
     const barangayName = address.village || address.suburb || address.quarter || address.hamlet || address.neighbourhood || '';
-    const normalizedProvince = normalizeName(provinceName);
-    const normalizedCity = normalizeName(cityName);
-    const matchedProvince = provinces.find((item) => normalizeName(item.province_name) === normalizedProvince)
-        || provinces.find((item) => normalizeName(item.province_name).includes(normalizedCity) || normalizedCity.includes(normalizeName(item.province_name)));
 
     street.value = address.house_number && address.road
         ? `${address.house_number} ${address.road}`
         : (address.road || street.value);
     postalCode.value = address.postcode || postalCode.value;
 
+    const normalizedProvince = normalizeName(provinceName);
+    const normalizedCity = normalizeName(cityName);
+
+    const matchedProvince = provinces.find((item) => normalizeName(item.province_name) === normalizedProvince)
+        || provinces.find((item) => normalizeName(item.province_name).includes(normalizedProvince) || normalizedProvince.includes(normalizeName(item.province_name)));
+
     if (!matchedProvince) {
+        setLocationStatus('Location found, but the province could not be matched to the Philippines dataset. Please verify the address fields manually.', false);
         return;
     }
 
     const matchedRegion = regions.find((item) => String(item.region_code) === String(matchedProvince.region_code));
-    const matchedCity = cities.find((item) => String(item.province_code) === String(matchedProvince.province_code) && normalizeName(item.city_name) === normalizeName(cityName));
+    const matchedCity = cities.find((item) =>
+        String(item.province_code) === String(matchedProvince.province_code)
+        && (
+            normalizeName(item.city_name) === normalizedCity
+            || normalizeName(item.city_name).includes(normalizedCity)
+            || normalizedCity.includes(normalizeName(item.city_name))
+        )
+    );
 
     if (matchedRegion) {
         selectOption(region, matchedRegion.region_name);
     }
 
-    selectOption(province, matchedProvince.province_name);
+    setTimeout(() => {
+        if (selectOption(province, matchedProvince.province_name)) {
+            setTimeout(() => {
+                if (matchedCity && selectOption(city, matchedCity.city_name)) {
+                    setTimeout(() => {
+                        if (barangay.options.length > 1 && barangayName) {
+                            if (!selectOption(barangay, barangayName)) {
+                                const partialMatch = [...barangay.options].find((item) =>
+                                    normalizeName(barangayName).includes(normalizeName(item.value))
+                                    || normalizeName(item.value).includes(normalizeName(barangayName))
+                                );
 
-    if (matchedCity) {
-        selectOption(city, matchedCity.city_name);
-        if (!selectOption(barangay, barangayName) && barangayName) {
-            const partialMatch = [...barangay.options].find((item) => normalizeName(barangayName).includes(normalizeName(item.value)) || normalizeName(item.value).includes(normalizeName(barangayName)));
-
-            if (partialMatch) {
-                barangay.value = partialMatch.value;
-            }
+                                if (partialMatch) {
+                                    barangay.value = partialMatch.value;
+                                }
+                            }
+                        }
+                    }, 250);
+                }
+            }, 250);
         }
-    }
+    }, 150);
+
+    setLocationStatus('Current location detected successfully.', false);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -264,11 +331,25 @@ locateButton.addEventListener('click', () => {
             return;
         }
 
+        const lat = coords.latitude;
+        const lon = coords.longitude;
+
+        console.log('LOCATION SUCCESS:', {
+            latitude: lat,
+            longitude: lon,
+            accuracy: coords.accuracy
+        });
+
         try {
+            updateMap(lat, lon);
+            map.invalidateSize();
+            console.log('MAP MOVED SUCCESSFULLY');
+            setLocationStatus(`Location found. Accuracy: approximately ${Math.round(coords.accuracy)} meters.`);
+
             await addressDataPromise;
-            updateMap(coords.latitude, coords.longitude);
-            await fillAddressFromLocation(coords.latitude, coords.longitude);
+            await fillAddressFromLocation(lat, lon);
         } catch (error) {
+            console.error('LOCATION PROCESS ERROR:', error);
             setLocationStatus(error.name === 'AbortError' ? 'The address lookup timed out. Please try again.' : error.message, true);
         } finally {
             finishLocationRequest();
@@ -292,5 +373,9 @@ locateButton.addEventListener('click', () => {
         }[error.code] || 'Unable to access your location. Please choose your address manually on the map.';
 
         setLocationStatus(message, true);
-    }, { enableHighAccuracy: false, timeout: 6000, maximumAge: 300000 });
+    }, {
+        enableHighAccuracy: false,
+        timeout: 20000,
+        maximumAge: 60000,
+    });
 });
