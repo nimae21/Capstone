@@ -58,9 +58,13 @@ function selectOption(dropdown, value) {
 }
 
 function normalizeName(value) {
-    return value
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
         .replace(/^(barangay|brgy\.?|city of|municipality of)\s+/i, '')
+        .replace(/\s*\(.*?\)\s*/g, ' ')
+        .replace(/[^a-z0-9]+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
 }
@@ -198,12 +202,21 @@ async function fillAddressFromLocation(lat, lon) {
     const address = result.address || {};
     const provinceName = address.state || address.province || address.state_district || '';
     const cityName = address.city || address.town || address.municipality || address.city_district || '';
-    const barangayName = address.village || address.suburb || address.quarter || address.hamlet || address.neighbourhood || '';
+    const barangayName = address.village
+        || address.suburb
+        || address.quarter
+        || address.hamlet
+        || address.neighbourhood
+        || address.city_district
+        || address.residential
+        || '';
 
     street.value = address.house_number && address.road
         ? `${address.house_number} ${address.road}`
         : (address.road || street.value);
-    postalCode.value = address.postcode || postalCode.value;
+    if (address.postcode && /^\d{4}$/.test(address.postcode)) {
+        postalCode.value = address.postcode;
+    }
 
     const normalizedProvince = normalizeName(provinceName);
     const normalizedCity = normalizeName(cityName);
@@ -230,30 +243,30 @@ async function fillAddressFromLocation(lat, lon) {
         selectOption(region, matchedRegion.region_name);
     }
 
-    setTimeout(() => {
-        if (selectOption(province, matchedProvince.province_name)) {
-            setTimeout(() => {
-                if (matchedCity && selectOption(city, matchedCity.city_name)) {
-                    setTimeout(() => {
-                        if (barangay.options.length > 1 && barangayName) {
-                            if (!selectOption(barangay, barangayName)) {
-                                const partialMatch = [...barangay.options].find((item) =>
-                                    normalizeName(barangayName).includes(normalizeName(item.value))
-                                    || normalizeName(item.value).includes(normalizeName(barangayName))
-                                );
+    if (!selectOption(province, matchedProvince.province_name)) {
+        setLocationStatus('Location found, but the province could not be selected. Please verify the address manually.', true);
+        return;
+    }
 
-                                if (partialMatch) {
-                                    barangay.value = partialMatch.value;
-                                }
-                            }
-                        }
-                    }, 250);
-                }
-            }, 250);
-        }
-    }, 150);
+    if (!matchedCity || !selectOption(city, matchedCity.city_name)) {
+        setLocationStatus('Location found, but the city could not be matched. Please select it manually.', true);
+        return;
+    }
 
-    setLocationStatus('Current location detected successfully.', false);
+    const normalizedBarangay = normalizeName(barangayName);
+    const exactBarangay = [...barangay.options].find((item) => normalizeName(item.value) === normalizedBarangay);
+    const partialBarangay = [...barangay.options].find((item) => {
+        const optionName = normalizeName(item.value);
+
+        return normalizedBarangay && (optionName.includes(normalizedBarangay) || normalizedBarangay.includes(optionName));
+    });
+
+    if (exactBarangay || partialBarangay) {
+        barangay.value = (exactBarangay || partialBarangay).value;
+        setLocationStatus('Location detected. Please verify the address and postal code before saving.', false);
+    } else {
+        setLocationStatus('Location detected, but the barangay and postal code need manual confirmation.', false);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -324,7 +337,7 @@ locateButton.addEventListener('click', () => {
 
         finishLocationRequest();
         setLocationStatus('Location lookup timed out. Please choose your address manually on the map.', true);
-    }, 20000);
+    }, 12000);
 
     navigator.geolocation.getCurrentPosition(async ({ coords }) => {
         if (locationRequestFinished) {
@@ -359,6 +372,12 @@ locateButton.addEventListener('click', () => {
             return;
         }
 
+        console.warn('LOCATION ERROR:', {
+            code: error.code,
+            message: error.message,
+            permission: await navigator.permissions?.query({ name: 'geolocation' }).then((result) => result.state).catch(() => 'unknown'),
+        });
+
         if (error.code === 1) {
             finishLocationRequest();
             setLocationStatus('Location permission was denied. Enable location access for this site, then try again.', true);
@@ -373,9 +392,10 @@ locateButton.addEventListener('click', () => {
         }[error.code] || 'Unable to access your location. Please choose your address manually on the map.';
 
         setLocationStatus(message, true);
-    }, {
+       }, {
         enableHighAccuracy: false,
-        timeout: 20000,
-        maximumAge: 60000,
+        timeout: 10000,
+        maximumAge: 300000,
     });
+        
 });

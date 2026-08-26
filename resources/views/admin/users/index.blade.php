@@ -282,6 +282,32 @@
             border-radius: 10px;
         }
 
+        .users-table td,
+        .users-table th {
+            vertical-align: middle;
+        }
+
+        .users-table .user-name-cell {
+            min-width: 230px;
+        }
+
+        .users-table .user-email-cell {
+            min-width: 220px;
+            color: #64748b;
+        }
+
+        .users-table .actions-cell {
+            min-width: 190px;
+        }
+
+        @media (hover: none) {
+            .card-3d:hover,
+            .table-row-3d:hover {
+                transform: none;
+                box-shadow: none;
+            }
+        }
+
         /* Responsive */
         @media (max-width: 640px) {
             .gradient-title {
@@ -295,22 +321,141 @@
                 right: -5px;
                 bottom: -5px;
             }
+
+            .users-page {
+                padding: 1rem;
+            }
+
+            .users-page .gradient-title {
+                font-size: 2rem;
+            }
+
+            .users-page .user-toolbar {
+                align-items: stretch;
+            }
+
+            .users-page .user-toolbar form,
+            .users-page .user-toolbar input,
+            .users-page .user-toolbar .btn-create-3d {
+                width: 100%;
+            }
+
+            .users-page .user-toolbar .btn-create-3d {
+                justify-content: center;
+            }
+
+            .users-page .users-table,
+            .users-page .users-table tbody,
+            .users-page .users-table tr,
+            .users-page .users-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .users-page .users-table {
+                min-width: 0 !important;
+            }
+
+            .users-page .users-table thead {
+                display: none;
+            }
+
+            .users-page .users-table tr {
+                margin: 0.75rem;
+                width: calc(100% - 1.5rem);
+                border: 1px solid #e2e8f0;
+                border-radius: 0.85rem;
+                overflow: hidden;
+                background: #fff;
+                box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+            }
+
+            .users-page .users-table td {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 1rem;
+                min-width: 0;
+                padding: 0.8rem 1rem !important;
+                border-bottom: 1px solid #f1f5f9;
+                text-align: right;
+            }
+
+            .users-page .users-table td::before {
+                content: attr(data-label);
+                flex: 0 0 auto;
+                color: #94a3b8;
+                font-size: 0.68rem;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                text-align: left;
+            }
+
+            .users-page .users-table .user-name-cell,
+            .users-page .users-table .actions-cell {
+                display: block;
+                text-align: left;
+            }
+
+            .users-page .users-table .user-name-cell::before,
+            .users-page .users-table .actions-cell::before {
+                display: block;
+                margin-bottom: 0.6rem;
+            }
+
+            .users-page .users-table td:last-child {
+                border-bottom: 0;
+            }
+
+            .users-page .users-table .actions-cell > div {
+                justify-content: flex-start;
+            }
+
+            .users-page .users-table .btn-sm-3d {
+                min-height: 42px;
+                padding-inline: 0.8rem;
+            }
+
+            .users-page .users-table tr:has(td[colspan]) {
+                margin: 0;
+                width: 100%;
+                border: 0;
+                box-shadow: none;
+            }
+
+            .users-page .users-table tr:has(td[colspan]) td {
+                display: block;
+                text-align: center;
+            }
+
+            .users-page .users-table tr:has(td[colspan]) td::before {
+                display: none;
+            }
         }
     </style>
 @endsection
 
 @section('content')
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+    <div class="users-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
 
 
 
         <!-- ===== HEADER ===== -->
-        <div class="mb-6">
-            <h1 class="gradient-title">Users</h1>
-            <p class="text-gray-500 text-sm mt-1 flex items-center gap-2">
-                <i class="fas fa-users text-gray-400"></i>
-                Manage all users and admin accounts.
-            </p>
+        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <h1 class="gradient-title">Users</h1>
+                <p class="text-gray-500 text-sm mt-1 flex items-center gap-2">
+                    <i class="fas fa-users text-gray-400"></i>
+                    Manage all users and admin accounts.
+                </p>
+            </div>
+
+            <a href="{{ route('admin.users.create-admin') }}"
+               class="btn-create-3d self-start sm:self-auto">
+                <i class="fas fa-user-plus"></i>
+                Create Admin
+            </a>
         </div>
 
         @if(request('search'))
@@ -378,7 +523,7 @@
         All Users
     </h3>
 
-    <div class="flex items-center gap-3">
+    <div class="user-toolbar flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
 
         <form method="GET"
               action="{{ route('admin.users.index') }}"
@@ -398,18 +543,12 @@
 
         </form>
 
-        <a href="{{ route('admin.users.create-admin') }}"
-           class="btn-create-3d text-sm">
-            <i class="fas fa-user-plus"></i>
-            Create Admin
-        </a>
-
     </div>
 
 </div>
 
             <div class="overflow-x-auto custom-scroll">
-                <table class="w-full text-sm">
+                <table class="users-table w-full text-sm">
                     <thead class="bg-gray-50/60 text-gray-600 font-semibold uppercase tracking-wider">
                         <tr>
                             <th class="px-6 py-3 text-left">Name</th>
@@ -426,7 +565,7 @@
                     <tbody class="divide-y divide-gray-100">
                         @forelse($users as $user)
                             <tr class="table-row-3d">
-                                <td class="px-6 py-3 font-medium text-gray-800">
+                                <td data-label="Name" class="user-name-cell px-6 py-3 font-medium text-gray-800">
                                     <div class="flex items-center gap-3">
 
     <div
@@ -471,18 +610,16 @@
 
         </div>
 
-        <div class="text-xs text-gray-500">
-
-            {{ $user->email }}
-
-        </div>
-
     </div>
 
 </div>
                                 </td>
-                                
-                                <td class="px-6 py-3">
+
+                                <td data-label="Email" class="user-email-cell px-6 py-3">
+                                    <span class="break-all">{{ $user->email }}</span>
+                                </td>
+
+                                <td data-label="Role" class="px-6 py-3">
                                     @if($user->role === 'admin')
                                         <span class="role-badge role-badge-admin">
                                             <i class="fas fa-crown"></i> Admin
@@ -494,7 +631,7 @@
                                     @endif
                                 </td>
                                 
-                                <td class="px-6 py-3 text-gray-600 text-xs">
+                                <td data-label="Joined" class="px-6 py-3 text-gray-600 text-xs">
                                     <div>
 
     <div class="font-medium text-gray-700">
@@ -511,7 +648,7 @@
 
 </div>
                                 </td>
-                                <td class="px-6 py-3">
+                                <td data-label="Status" class="px-6 py-3">
     @if($user->is_active)
         <span class="role-badge bg-green-100 text-green-700">
             <i class="fas fa-check-circle"></i>
@@ -524,7 +661,7 @@
         </span>
     @endif
 </td>
-                                <td class="px-6 py-3 text-right">
+                                <td data-label="Actions" class="actions-cell px-6 py-3 text-right">
                                     <div class="flex gap-2 justify-end flex-wrap">
                                         @if($user->id !== auth()->id())
     <a href="{{ route('admin.users.edit', $user->id) }}" class="btn-sm-3d btn-sm-blue">
@@ -568,7 +705,7 @@
                             </tr>
                         @empty
                             <tr>
-    <td colspan="5" class="px-6 py-12 text-center">
+    <td colspan="6" class="px-6 py-12 text-center">
 
         <div class="flex flex-col items-center">
 

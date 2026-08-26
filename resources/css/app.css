@@ -9,3 +9,81 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Keep touch layouts stable and prevent mobile browsers from zooming focused fields. */
+@media (max-width: 640px) {
+    html,
+    body {
+        min-width: 320px;
+        overflow-x: hidden;
+    }
+
+    .glass-card-clean {
+        animation: entranceRise 0.35s ease-out both !important;
+        border-radius: 24px !important;
+        padding: 1.25rem !important;
+        transform: none !important;
+    }
+
+    .glass-card-clean::before {
+        border-radius: 24px !important;
+    }
+
+    .glass-card-clean h2 {
+        font-size: clamp(1.5rem, 7vw, 2rem) !important;
+        line-height: 1.15;
+    }
+
+    .input-group-float input,
+    input,
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+
+    .input-group-float input {
+        min-height: 48px;
+    }
+
+    .password-toggle {
+        width: 44px;
+        height: 44px;
+        right: 0.25rem;
+    }
+
+    .glass-card-clean button[type='submit'],
+    .btn-reset,
+    .btn-resend,
+    .btn-logout {
+        min-height: 48px;
+    }
+
+    .glass-card-clean .flex.justify-between {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        row-gap: 0.75rem;
+    }
+
+    .glass-card-clean .flex.justify-between a {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .floating-orb,
+    .particle-elegant,
+    .animate-sweep-glide,
+    .animate-grid-drift,
+    .animate-lens-flare {
+        animation: none !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce), (hover: none) and (pointer: coarse) {
+    .glass-card-clean,
+    .card-3d,
+    .animate-cinematic-zoom {
+        animation: none !important;
+        transform: none !important;
+    }
+}

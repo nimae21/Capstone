@@ -86,8 +86,11 @@ class AdminUserController extends Controller
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'role' => 'admin',
-                'email_verified_at' => now(),
             ]);
+
+            $user->forceFill([
+                'email_verified_at' => now(),
+            ])->save();
 
             return redirect()
                 ->route('admin.users.index')
@@ -102,7 +105,7 @@ class AdminUserController extends Controller
                 ->withInput()
                 ->with(
                     'error',
-                    'Failed to create admin: ' . $e->getMessage()
+                    'Failed to create admin: '.$e->getMessage()
                 );
 
         }
@@ -148,7 +151,7 @@ class AdminUserController extends Controller
             'last_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
             'suffix' => 'nullable|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email,' . $user->id . ',id',
+            'email' => 'required|email|max:255|unique:users,email,'.$user->id.',id',
             'role' => 'required|in:user,admin',
         ]);
 
@@ -166,7 +169,7 @@ class AdminUserController extends Controller
                 ->withInput()
                 ->with(
                     'error',
-                    'Failed to update user: ' . $e->getMessage()
+                    'Failed to update user: '.$e->getMessage()
                 );
 
         }
@@ -178,27 +181,27 @@ class AdminUserController extends Controller
     |--------------------------------------------------------------------------
     */
     public function toggleStatus(User $user)
-{
-    if (
-        $user->isAdmin() &&
-        $user->is_active &&
-        User::where('role', 'admin')->where('is_active', true)->count() <= 1
-    ) {
+    {
+        if (
+            $user->isAdmin() &&
+            $user->is_active &&
+            User::where('role', 'admin')->where('is_active', true)->count() <= 1
+        ) {
+            return back()->with(
+                'error',
+                'You cannot suspend the last active administrator.'
+            );
+        }
+
+        $user->update([
+            'is_active' => ! $user->is_active,
+        ]);
+
         return back()->with(
-            'error',
-            'You cannot suspend the last active administrator.'
+            'success',
+            $user->is_active
+                ? 'User activated successfully.'
+                : 'User suspended successfully.'
         );
     }
-
-    $user->update([
-        'is_active' => ! $user->is_active
-    ]);
-
-    return back()->with(
-        'success',
-        $user->is_active
-            ? 'User activated successfully.'
-            : 'User suspended successfully.'
-    );
-}
 }

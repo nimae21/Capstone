@@ -190,7 +190,7 @@
   .animation-delay-5000 { animation-delay: 5s; }
 </style>
 
-<body class="relative bg-black font-['Inter',sans-serif] overflow-x-hidden">
+<div class="relative bg-black font-['Inter',sans-serif] overflow-x-hidden">
   <div class="absolute inset-0 z-0 overflow-hidden">
     <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=2000&auto=format')] bg-cover bg-center bg-no-repeat animate-cinematic-zoom" style="background-position: center 35%;"></div>
     <div class="absolute inset-0 bg-gradient-radial from-black/30 via-black/50 to-black/70"></div>
@@ -313,5 +313,5 @@
       }
     })();
   </script>
-</body>
+</div>
 @endsection

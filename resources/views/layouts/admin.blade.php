@@ -5,7 +5,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>@yield('title', 'Admin Dashboard') | Achilles</title>
-
+    <link rel="icon" type="image/png" href="{{ asset('images/achilles logo foot.png') }}?v=2">
     <!-- Google Fonts + Font Awesome -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -268,6 +268,10 @@
 
         /* ========== RESPONSIVE (mobile overlay) ========== */
         @media (max-width: 768px) {
+            body.menu-open {
+                overflow: hidden;
+            }
+
             .sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
@@ -305,12 +309,13 @@
             }
             .menu-toggle {
                 position: fixed;
-                top: 1rem;
+                top: max(1rem, env(safe-area-inset-top));
                 right: 1rem;
                 z-index: 1100;
                 background: white;
                 border: none;
-                padding: 0.5rem 1rem;
+                min-height: 48px;
+                padding: 0.65rem 1rem;
                 border-radius: 2rem;
                 font-size: 1.2rem;
                 cursor: pointer;
@@ -321,6 +326,23 @@
             }
             .desktop-toggle {
                 display: none;
+            }
+
+            .main {
+                padding-top: 5rem;
+            }
+
+            .dashboard-grid {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+
+            table {
+                min-width: 680px;
+            }
+
+            .overflow-x-auto {
+                -webkit-overflow-scrolling: touch;
             }
         }
 
@@ -395,7 +417,8 @@
             <i class="fas fa-box-open"></i> <span>Products</span>
         </a>
         <a href="{{ route('admin.pos.index') }}" data-tooltip="POS" class="{{ request()->routeIs('admin.pos.*') ? 'active' : '' }}">
-    <i class="fas fa-cash-register"></i> <span>Point of Sale</span>
+            <i class="fas fa-cash-register"></i> <span>Point of Sale</span>
+        </a>
         <a href="{{ route('admin.categories.index') }}" data-tooltip="Categories" class="{{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
             <i class="fas fa-tags"></i> <span>Categories</span>
         </a>
@@ -556,7 +579,8 @@
             // Mobile: open/close overlay
             function toggleMobile() {
                 if (isDesktop()) return;
-                sidebar.classList.toggle('mobile-open');
+                const isOpen = sidebar.classList.toggle('mobile-open');
+                body.classList.toggle('menu-open', isOpen);
             }
 
             // Close mobile sidebar when clicking outside
@@ -564,6 +588,7 @@
                 if (!isDesktop() && sidebar.classList.contains('mobile-open')) {
                     if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
                         sidebar.classList.remove('mobile-open');
+                        body.classList.remove('menu-open');
                     }
                 }
             }
@@ -572,6 +597,7 @@
             function handleResize() {
                 if (isDesktop()) {
                     sidebar.classList.remove('mobile-open');
+                    body.classList.remove('menu-open');
                     // Re‑apply saved collapsed state for desktop
                     const saved = localStorage.getItem(STORAGE_KEY);
                     const shouldCollapse = saved === '1';

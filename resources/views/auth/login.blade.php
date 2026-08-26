@@ -263,7 +263,7 @@
 </style>
 
 <!-- BACKGROUND – scrolls with page, elegant cinematic layers -->
-<body class="relative bg-black font-['Inter',sans-serif] overflow-x-hidden">
+<div class="relative bg-black font-['Inter',sans-serif] overflow-x-hidden">
   <div class="absolute inset-0 z-0 overflow-hidden">
     <!-- Main shoe image with slow zoom -->
     <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=2000&auto=format')] bg-cover bg-center bg-no-repeat animate-cinematic-zoom" style="background-position: center 35%;"></div>
@@ -505,5 +505,5 @@
       }
     })();
   </script>
-</body>
+</div>
 @endsection
