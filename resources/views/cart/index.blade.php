@@ -86,7 +86,7 @@
 @endsection
 
 @section('content')
-    <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-12 relative overflow-hidden">
+    <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-8 sm:py-12 relative overflow-hidden">
         
         <!-- Cinematic Background Elements -->
         <div class="absolute inset-0 overflow-hidden pointer-events-none">
@@ -106,7 +106,7 @@
                         <i class="fas fa-shopping-cart text-white text-xl"></i>
                     </div>
                     <div>
-                        <h1 class="text-5xl font-black gradient-text">Shopping Cart</h1>
+                        <h1 class="text-3xl sm:text-5xl font-black gradient-text">Shopping Cart</h1>
                         <p class="text-gray-500 mt-2">Review your items before checkout</p>
                     </div>
                 </div>
@@ -134,8 +134,8 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <!-- Cart Items -->
                     <div class="lg:col-span-2 space-y-4">
-                        <div class="glass-card rounded-2xl p-6 shadow-xl border border-gray-100">
-                            <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+                        <div class="glass-card rounded-2xl p-4 sm:p-6 shadow-xl border border-gray-100">
+                            <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-gray-200">
                                 <h2 class="text-xl font-bold flex items-center gap-2">
                                     <i class="fas fa-shopping-bag text-red-600"></i>
                                     <span class="gradient-text">Cart Items</span>
@@ -156,10 +156,10 @@
                                         $total += $subtotal;
                                     @endphp
                                     
-                                    <div class="cart-item bg-white rounded-xl p-5 border border-gray-100 shadow-sm hover:shadow-xl transition-all">
-                                        <div class="flex gap-5">
+                                    <div class="cart-item bg-white rounded-xl p-4 sm:p-5 border border-gray-100 shadow-sm hover:shadow-xl transition-all">
+                                        <div class="flex flex-col gap-4 sm:flex-row sm:gap-5">
                                             <!-- Product Image -->
-                                            <div class="w-28 h-28 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden shadow-md">
+                                            <div class="w-full h-48 sm:w-28 sm:h-28 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl shrink-0 flex items-center justify-center overflow-hidden shadow-md">
                                                 @if($product->images->first())
                                                     <img src="{{ $product->images->first()->image_url }}" alt="{{ $product->product_name }}" class="w-full h-full object-cover rounded-xl transition-transform duration-300 hover:scale-110">
                                                 @else
@@ -182,7 +182,7 @@
                                             </div>
 
                                             <!-- Quantity Control -->
-                                            <div class="flex flex-col items-center justify-between gap-2">
+                                            <div class="flex flex-row items-center justify-between gap-3 sm:flex-col sm:items-center sm:gap-2">
                                                 <div class="flex items-center gap-2 bg-gray-100 rounded-full p-1 shadow-inner">
                                                     <form action="{{ route('cart.decrease', $item->cart_item_id) }}" method="POST" class="inline">
                                                         @csrf
@@ -213,7 +213,7 @@
                                             </div>
 
                                             <!-- Subtotal -->
-                                            <div class="flex flex-col items-end justify-between min-w-[100px]">
+                                            <div class="flex flex-row items-center justify-between gap-3 sm:flex-col sm:items-end sm:justify-between sm:min-w-[100px]">
                                                 <p class="font-bold text-gray-900 text-lg">₱{{ number_format($subtotal, 2) }}</p>
                                                 <p class="text-xs text-gray-400 mt-1">Subtotal</p>
                                             </div>

@@ -3,7 +3,7 @@
 @section('title', 'Checkout - ACHILLES')
 
 @section('content')
-    <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-10">
+    <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-8 sm:py-10">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <!-- Back Button -->
@@ -13,7 +13,7 @@
 
             <!-- Header -->
             <div class="mb-8">
-                <h1 class="text-4xl font-black bg-gradient-to-r from-black to-red-600 bg-clip-text text-transparent">Secure Checkout</h1>
+                <h1 class="text-3xl sm:text-4xl font-black bg-gradient-to-r from-black to-red-600 bg-clip-text text-transparent">Secure Checkout</h1>
                 <p class="text-gray-600 mt-2">Complete your order with your preferred payment method</p>
             </div>
 
@@ -41,7 +41,7 @@
                 <div class="lg:col-span-2 space-y-6">
                     
                     <!-- Delivery Address Section -->
-                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                    <div class="bg-white rounded-2xl p-5 sm:p-8 shadow-sm border border-gray-100">
                         <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
                             <i class="fas fa-map-marker-alt text-red-600"></i>
                             <span class="bg-gradient-to-r from-black to-red-600 bg-clip-text text-transparent">Delivery Address</span>
@@ -107,7 +107,7 @@ name="address_id"
                             </div>
                         @endif
 
-                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                    <div class="bg-white rounded-2xl p-5 sm:p-8 shadow-sm border border-gray-100">
     <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
         <i class="fas fa-shield-alt text-red-600"></i>
         <span class="bg-gradient-to-r from-black to-red-600 bg-clip-text text-transparent">Secure Payment</span>
@@ -120,7 +120,7 @@ name="address_id"
 
                 <!-- Sidebar: Order Summary -->
                 <div>
-                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 sticky top-24">
+                    <div class="bg-white rounded-2xl p-5 sm:p-8 shadow-sm border border-gray-100 lg:sticky lg:top-24">
                         <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
                             <i class="fas fa-shopping-bag text-red-600"></i>
                             <span class="bg-gradient-to-r from-black to-red-600 bg-clip-text text-transparent">Order Summary</span>

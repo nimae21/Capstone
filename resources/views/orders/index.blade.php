@@ -11,7 +11,7 @@
                 <a href="{{ route('home') }}" class="inline-flex items-center gap-2 text-red-600 hover:text-red-700 font-semibold mb-4">
                     <i class="fas fa-arrow-left"></i> Back to Shop
                 </a>
-                <h1 class="text-4xl font-black bg-gradient-to-r from-black to-red-600 bg-clip-text text-transparent">My Orders</h1>
+                <h1 class="text-3xl sm:text-4xl font-black bg-gradient-to-r from-black to-red-600 bg-clip-text text-transparent">My Orders</h1>
                 <p class="text-gray-600 mt-2">Track and manage all your purchases</p>
             </div>
             
@@ -55,7 +55,7 @@
                     @foreach($orders as $order)
 
 <div class="order-card" data-status="{{ $order->status->value }}" data-id="{{ $order->order_id }}">
-                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div class="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                             <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
                                 <!-- Order Number -->
                                 <div>

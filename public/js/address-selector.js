@@ -63,10 +63,34 @@ function normalizeName(value) {
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
         .replace(/^(barangay|brgy\.?|city of|municipality of)\s+/i, '')
+        .replace(/\s*\(capital\)\s*/gi, ' ')
+        .replace(/\s*\(pob\.\)\s*/gi, ' ')
         .replace(/\s*\(.*?\)\s*/g, ' ')
         .replace(/[^a-z0-9]+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
+}
+
+function findMatchingItem(list, values, nameKey, filter = () => true) {
+    const normalizedValues = values.map(normalizeName).filter(Boolean);
+
+    return list.find((item) => {
+        if (!filter(item)) {
+            return false;
+        }
+
+        const itemName = normalizeName(item[nameKey]);
+
+        return normalizedValues.some((value) => itemName === value);
+    }) || list.find((item) => {
+        if (!filter(item)) {
+            return false;
+        }
+
+        const itemName = normalizeName(item[nameKey]);
+
+        return normalizedValues.some((value) => itemName.includes(value) || value.includes(itemName));
+    });
 }
 
 function updateMap(lat, lon) {
@@ -186,8 +210,13 @@ async function reverseGeocode(lat, lon) {
 
 async function findAddressOnMap() {
     const address = [barangay.value, city.value, province.value, 'Philippines'].filter(Boolean).join(', ');
-    const query = new URLSearchParams({ q: address, format: 'json', limit: '1' });
+    const query = new URLSearchParams({ q: address, format: 'json', limit: '1', countrycodes: 'ph' });
     const response = await fetchWithTimeout(`https://nominatim.openstreetmap.org/search?${query}`, {}, 10000);
+
+    if (!response.ok) {
+        throw new Error('Unable to find this address.');
+    }
+
     const results = await response.json();
 
     if (!results.length) {
@@ -195,21 +224,22 @@ async function findAddressOnMap() {
     }
 
     updateMap(results[0].lat, results[0].lon);
+    setLocationStatus('Location pinned. Please verify the address and postal code before saving.', false);
 }
 
 async function fillAddressFromLocation(lat, lon) {
     const result = await reverseGeocode(lat, lon);
     const address = result.address || {};
-    const provinceName = address.state || address.province || address.state_district || '';
-    const cityName = address.city || address.town || address.municipality || address.city_district || '';
-    const barangayName = address.village
-        || address.suburb
-        || address.quarter
-        || address.hamlet
-        || address.neighbourhood
-        || address.city_district
-        || address.residential
-        || '';
+    const provinceNames = [address.province, address.state_district, address.county, address.state, address.region];
+    const cityNames = [address.city, address.municipality, address.town, address.city_district, address.county];
+    const barangayNames = [
+        address.village,
+        address.neighbourhood,
+        address.quarter,
+        address.suburb,
+        address.hamlet,
+        address.residential,
+    ];
 
     street.value = address.house_number && address.road
         ? `${address.house_number} ${address.road}`
@@ -218,11 +248,18 @@ async function fillAddressFromLocation(lat, lon) {
         postalCode.value = address.postcode;
     }
 
-    const normalizedProvince = normalizeName(provinceName);
-    const normalizedCity = normalizeName(cityName);
+    let matchedProvince = findMatchingItem(provinces, provinceNames, 'province_name');
+    let matchedCity = matchedProvince
+        ? findMatchingItem(cities, cityNames, 'city_name', (item) =>
+            String(item.province_code) === String(matchedProvince.province_code)
+        )
+        : findMatchingItem(cities, cityNames, 'city_name');
 
-    const matchedProvince = provinces.find((item) => normalizeName(item.province_name) === normalizedProvince)
-        || provinces.find((item) => normalizeName(item.province_name).includes(normalizedProvince) || normalizedProvince.includes(normalizeName(item.province_name)));
+    if (!matchedProvince && matchedCity) {
+        matchedProvince = provinces.find((item) =>
+            String(item.province_code) === String(matchedCity.province_code)
+        );
+    }
 
     if (!matchedProvince) {
         setLocationStatus('Location found, but the province could not be matched to the Philippines dataset. Please verify the address fields manually.', false);
@@ -230,14 +267,11 @@ async function fillAddressFromLocation(lat, lon) {
     }
 
     const matchedRegion = regions.find((item) => String(item.region_code) === String(matchedProvince.region_code));
-    const matchedCity = cities.find((item) =>
-        String(item.province_code) === String(matchedProvince.province_code)
-        && (
-            normalizeName(item.city_name) === normalizedCity
-            || normalizeName(item.city_name).includes(normalizedCity)
-            || normalizedCity.includes(normalizeName(item.city_name))
-        )
-    );
+    matchedCity = matchedCity && String(matchedCity.province_code) === String(matchedProvince.province_code)
+        ? matchedCity
+        : findMatchingItem(cities, cityNames, 'city_name', (item) =>
+            String(item.province_code) === String(matchedProvince.province_code)
+        );
 
     if (matchedRegion) {
         selectOption(region, matchedRegion.region_name);
@@ -253,16 +287,14 @@ async function fillAddressFromLocation(lat, lon) {
         return;
     }
 
-    const normalizedBarangay = normalizeName(barangayName);
-    const exactBarangay = [...barangay.options].find((item) => normalizeName(item.value) === normalizedBarangay);
-    const partialBarangay = [...barangay.options].find((item) => {
-        const optionName = normalizeName(item.value);
+    const matchedBarangay = findMatchingItem(
+        [...barangay.options].map((option) => ({ value: option.value })),
+        barangayNames,
+        'value',
+    );
 
-        return normalizedBarangay && (optionName.includes(normalizedBarangay) || normalizedBarangay.includes(optionName));
-    });
-
-    if (exactBarangay || partialBarangay) {
-        barangay.value = (exactBarangay || partialBarangay).value;
+    if (matchedBarangay) {
+        barangay.value = matchedBarangay.value;
         setLocationStatus('Location detected. Please verify the address and postal code before saving.', false);
     } else {
         setLocationStatus('Location detected, but the barangay and postal code need manual confirmation.', false);
@@ -276,13 +308,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     }).addTo(map);
     marker = L.marker([12.8797, 121.7740], { draggable: true }).addTo(map);
 
-    marker.on('dragend', () => {
+    marker.on('dragend', async () => {
         const position = marker.getLatLng();
         latitude.value = position.lat;
         longitude.value = position.lng;
+
+        try {
+            await addressDataPromise;
+            await fillAddressFromLocation(position.lat, position.lng);
+        } catch (error) {
+            setLocationStatus(error.message, true);
+        }
     });
 
-    map.on('click', (event) => updateMap(event.latlng.lat, event.latlng.lng));
+    map.on('click', async (event) => {
+        updateMap(event.latlng.lat, event.latlng.lng);
+
+        try {
+            await addressDataPromise;
+            await fillAddressFromLocation(event.latlng.lat, event.latlng.lng);
+        } catch (error) {
+            setLocationStatus(error.message, true);
+        }
+    });
 
     try {
         addressDataPromise = loadAddressData();
@@ -347,16 +395,9 @@ locateButton.addEventListener('click', () => {
         const lat = coords.latitude;
         const lon = coords.longitude;
 
-        console.log('LOCATION SUCCESS:', {
-            latitude: lat,
-            longitude: lon,
-            accuracy: coords.accuracy
-        });
-
         try {
             updateMap(lat, lon);
             map.invalidateSize();
-            console.log('MAP MOVED SUCCESSFULLY');
             setLocationStatus(`Location found. Accuracy: approximately ${Math.round(coords.accuracy)} meters.`);
 
             await addressDataPromise;

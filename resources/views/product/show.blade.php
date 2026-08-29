@@ -214,7 +214,7 @@
                     <div class="inline-block px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs font-semibold mb-3">
                         <i class="fas fa-tag mr-1"></i> New Arrival
                     </div>
-                    <h1 class="text-4xl md:text-5xl font-black gradient-text mb-2">{{ $product->product_name }}</h1>
+                    <h1 class="text-3xl sm:text-4xl md:text-5xl font-black gradient-text mb-2 break-words">{{ $product->product_name }}</h1>
                     <p class="text-gray-500 text-sm">{{ $product->category->category_name ?? 'Uncategorized' }} | {{ $product->brand->brand_name ?? 'No Brand' }}</p>
                 </div>
                 
@@ -253,14 +253,14 @@
                 </div>
                 
                 <!-- Price & Stock Info -->
-                <div class="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-5 flex justify-between items-center">
+                <div class="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-5 flex flex-col gap-4 items-start sm:flex-row sm:justify-between sm:items-center">
                     <div>
                         <p class="text-sm text-gray-500 mb-1">Price</p>
                         <p class="text-3xl font-black text-red-600">
                             ₱<span id="priceDisplay">0</span>
                         </p>
                     </div>
-                    <div class="text-right">
+                    <div class="text-left sm:text-right">
                         <p class="text-sm text-gray-500 mb-1">Availability</p>
                         <p><span id="stockDisplay" class="stock-badge">Select size</span></p>
                     </div>

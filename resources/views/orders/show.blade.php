@@ -26,9 +26,9 @@
 
             <!-- Header -->
             <div class="mb-8">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                     <div>
-                        <h1 class="text-4xl font-black bg-gradient-to-r from-black to-red-600 bg-clip-text text-transparent">Order #{{ $order->order_id }}</h1>
+                        <h1 class="text-3xl sm:text-4xl font-black bg-gradient-to-r from-black to-red-600 bg-clip-text text-transparent">Order #{{ $order->order_id }}</h1>
                         <p class="text-gray-600 mt-2">Placed on {{ $order->created_at->format('F d, Y \a\t H:i A') }}</p>
                     </div>
                     <div class="text-right">
@@ -60,7 +60,7 @@
 
                         <div class="space-y-4">
                             @foreach($order->items as $item)
-                                <div class="border rounded-2xl p-5 flex gap-5 hover:shadow-md transition">
+                                <div class="border rounded-2xl p-4 sm:p-5 flex flex-col gap-4 sm:flex-row sm:gap-5 hover:shadow-md transition">
 
     <div class="w-24 h-24 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
         @if($item->variant->product->images->first())
@@ -99,7 +99,7 @@
 
     </div>
 
-    <div class="text-right flex flex-col justify-between">
+    <div class="flex flex-row items-center justify-between gap-3 sm:flex-col sm:items-end sm:justify-between">
 
         <span class="bg-red-100 text-red-600 px-3 py-1 rounded-full font-bold">
             x{{ $item->quantity }}

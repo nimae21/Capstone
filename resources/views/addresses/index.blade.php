@@ -8,12 +8,12 @@
             
             <!-- Header -->
             <div class="mb-8">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                     <div>
                         <h1 class="text-3xl font-bold text-gray-900">My Addresses</h1>
                         <p class="text-gray-600 mt-2">Manage your delivery addresses</p>
                     </div>
-                    <a href="{{ route('addresses.create') }}" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition">
+                    <a href="{{ route('addresses.create') }}" class="w-full sm:w-auto text-center bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition">
                         <i class="fas fa-plus mr-2"></i> Add New Address
                     </a>
                 </div>
@@ -70,7 +70,7 @@
                                 </div>
 
                                 <!-- Actions -->
-                                <div class="flex gap-3 pt-4 border-t border-gray-200">
+                                <div class="grid gap-3 pt-4 border-t border-gray-200 sm:grid-cols-3">
                                     <a href="{{ route('addresses.edit', $address->address_id) }}" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition text-center">
                                         <i class="fas fa-edit mr-1"></i> Edit
                                     </a>
