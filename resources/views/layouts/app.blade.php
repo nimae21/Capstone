@@ -2,9 +2,22 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Achilles') }}</title>
+    <script>
+        (() => {
+            const setViewportHeight = () => {
+                const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+                document.documentElement.style.setProperty('--app-height', height + 'px');
+            };
+
+            setViewportHeight();
+            window.addEventListener('resize', setViewportHeight, { passive: true });
+            window.addEventListener('orientationchange', setViewportHeight, { passive: true });
+            window.visualViewport?.addEventListener('resize', setViewportHeight, { passive: true });
+        })();
+    </script>
     <link rel="icon" type="image/png" href="{{ asset('images/achilles logo foot.png') }}">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -51,6 +64,25 @@
 
     <!-- Global Cinematic Styles -->
     <style>
+        :root {
+            --app-height: 100vh;
+        }
+
+        @supports (height: 100dvh) {
+            :root {
+                --app-height: 100dvh;
+            }
+        }
+
+        html, body {
+            min-height: 100%;
+            height: 100%;
+        }
+
+        body {
+            min-height: var(--app-height);
+        }
+
         /* ---------- CINEMATIC BACKGROUND ANIMATIONS ---------- */
         @keyframes cinematicZoom {
             0% { transform: scale(1.08); filter: brightness(0.88) contrast(1.12); }

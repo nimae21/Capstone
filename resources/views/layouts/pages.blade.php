@@ -2,9 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Achilles') }}</title>
+    <script>
+        (() => {
+            const setViewportHeight = () => {
+                const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+                document.documentElement.style.setProperty('--app-height', height + 'px');
+            };
+
+            setViewportHeight();
+            window.addEventListener('resize', setViewportHeight, { passive: true });
+            window.addEventListener('orientationchange', setViewportHeight, { passive: true });
+            window.visualViewport?.addEventListener('resize', setViewportHeight, { passive: true });
+        })();
+    </script>
     <link rel="icon" type="image/png" href="{{ asset('images/achilles logo foot.png') }}">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -12,6 +25,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
+        :root {
+            --app-height: 100vh;
+        }
+
+        @supports (height: 100dvh) {
+            :root {
+                --app-height: 100dvh;
+            }
+        }
+
+        html, body {
+            min-height: 100%;
+            height: 100%;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -23,6 +51,7 @@
             background: #ffffff;
             color: #0a0a0f;
             line-height: 1.5;
+            min-height: var(--app-height);
         }
         
         /* Navigation */

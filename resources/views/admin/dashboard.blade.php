@@ -20,7 +20,7 @@
 
         body {
             background: linear-gradient(145deg, #f1f5f9 0%, #eef2f6 100%);
-            min-height: 100vh;
+            min-height: var(--app-height, 100vh);
         }
 
         h1,

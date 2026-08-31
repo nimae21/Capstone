@@ -26,7 +26,7 @@
         display: grid;
         grid-template-columns: 1fr 380px;
         gap: 1.5rem;
-        height: calc(100vh - 180px);
+        height: calc(var(--app-height, 100vh) - 180px);
         min-height: 600px;
     }
     @media (max-width: 1024px) {

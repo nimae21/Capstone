@@ -10,12 +10,36 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+:root {
+    --app-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+    :root {
+        --app-height: 100dvh;
+    }
+}
+
+html,
+body {
+    min-height: 100%;
+    height: 100%;
+}
+
+body {
+    min-height: var(--app-height);
+}
+
 /* Keep touch layouts stable and prevent mobile browsers from zooming focused fields. */
 @media (max-width: 640px) {
     html,
     body {
         min-width: 320px;
         overflow-x: hidden;
+    }
+
+    body {
+        min-height: var(--app-height);
     }
 
     .glass-card-clean {

@@ -5,6 +5,19 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>@yield('title', 'Admin Dashboard') | Achilles</title>
+    <script>
+        (() => {
+            const setViewportHeight = () => {
+                const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+                document.documentElement.style.setProperty('--app-height', height + 'px');
+            };
+
+            setViewportHeight();
+            window.addEventListener('resize', setViewportHeight, { passive: true });
+            window.addEventListener('orientationchange', setViewportHeight, { passive: true });
+            window.visualViewport?.addEventListener('resize', setViewportHeight, { passive: true });
+        })();
+    </script>
     <link rel="icon" type="image/png" href="{{ asset('images/achilles logo foot.png') }}?v=2">
     <!-- Google Fonts + Font Awesome -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,12 +30,22 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --app-height: 100vh;
+        }
+
+        @supports (height: 100dvh) {
+            :root {
+                --app-height: 100dvh;
+            }
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background: linear-gradient(145deg, #f0f4f8 0%, #e9eef3 100%);
             color: #1e293b;
             display: flex;
-            min-height: 100vh;
+            min-height: var(--app-height);
             position: relative;
         }
 
@@ -36,7 +59,8 @@
             position: fixed;
             top: 0;
             left: 0;
-            height: 100vh;
+            height: var(--app-height);
+            max-height: var(--app-height);
             overflow-y: auto;
             padding: 1.5rem 1rem;
             transition: width 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
