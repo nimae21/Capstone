@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ShoeTypeController;
 use App\Http\Controllers\Admin\StockController;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Guest\GuestController;
@@ -45,6 +46,12 @@ Route::get('/product/{id}', [PageController::class, 'showProduct'])
 */
 
 Auth::routes(['verify' => true]);
+
+Route::post('/email/verification-notification', [
+    EmailVerificationNotificationController::class,
+])
+    ->middleware(['auth', 'throttle:6,1'])
+    ->name('verification.send');
 
 /*
 |--------------------------------------------------------------------------
@@ -206,8 +213,8 @@ Route::middleware(['auth', 'admin'])
         Route::patch('/product-images/{image}/primary', [ProductImageController::class, 'setPrimary'])
             ->name('products.images.primary');
 
-       Route::patch('/products/images/{image}/color', [ProductImageController::class, 'assignColor'])
-    ->name('products.images.assignColor');
+        Route::patch('/products/images/{image}/color', [ProductImageController::class, 'assignColor'])
+            ->name('products.images.assignColor');
 
         // Product Variants
         Route::get('/products/{product}/variants', [ProductVariantController::class, 'index'])
