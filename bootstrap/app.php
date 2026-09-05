@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\IsUser;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Session\Middleware\StartSession;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -11,18 +14,21 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-    $middleware->trustProxies(at: '*');
+        $middleware->trustProxies(at: '*');
+        $middleware->web(prepend: [
+            StartSession::class,
+        ]);
 
-    $middleware->alias([
-        'admin'  => \App\Http\Middleware\AdminMiddleware::class,
-        'isUser' => \App\Http\Middleware\IsUser::class,
-    ]);
+        $middleware->alias([
+            'admin' => AdminMiddleware::class,
+            'isUser' => IsUser::class,
+        ]);
 
-    $middleware->validateCsrfTokens(except: [
-        'webhooks/paymongo',
-    ]);
-})
-    
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/paymongo',
+        ]);
+    })
+
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
