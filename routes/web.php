@@ -21,6 +21,7 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\PayMongoWebhookController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserAddressController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -38,6 +39,18 @@ Route::get('/', [GuestController::class, 'index'])->name('index');
 // Product detail (PUBLIC - no login needed)
 Route::get('/product/{id}', [PageController::class, 'showProduct'])
     ->name('product.show');
+
+Route::get('/_debug/session', function (Request $request) {
+    return response()->json([
+        'app_env' => config('app.env'),
+        'session_driver' => config('session.driver'),
+        'session_cookie' => config('session.cookie'),
+        'session_domain' => config('session.domain'),
+        'session_secure' => config('session.secure'),
+        'has_session' => $request->hasSession(),
+        'session_started' => $request->hasSession() && $request->session()->isStarted(),
+    ]);
+})->middleware('web');
 
 /*
 |--------------------------------------------------------------------------
