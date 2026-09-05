@@ -156,7 +156,9 @@ return [
     |
     */
 
-    'domain' => env('SESSION_DOMAIN'),
+    'domain' => in_array(strtolower(trim((string) env('SESSION_DOMAIN'))), ['', 'null'], true)
+        ? null
+        : env('SESSION_DOMAIN'),
 
     /*
     |--------------------------------------------------------------------------
