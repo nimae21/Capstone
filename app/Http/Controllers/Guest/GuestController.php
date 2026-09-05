@@ -24,4 +24,5 @@ class GuestController extends Controller
     return view('guest.index', compact('products'));
 }
 //fixed folder name
+//sana all fix na
 }
