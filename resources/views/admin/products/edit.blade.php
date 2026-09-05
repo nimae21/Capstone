@@ -8,6 +8,7 @@
     <!-- Tailwind CSS + Google Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     <style>
         * { font-family: 'Inter', sans-serif; }
 
@@ -143,81 +144,107 @@
         </div>
 
         <!-- Current Product Images -->
-<div class="mb-6">
-    <label class="block text-sm font-semibold text-gray-700 mb-2">
-        Current Images
-    </label>
+        <div class="mb-6">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                Current Images
+            </label>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
 
-    @forelse($product->images as $image)
+                @forelse($product->images as $image)
 
-        <div class="border rounded-xl p-3 bg-white shadow">
+                    <div class="border rounded-xl p-3 bg-white shadow">
 
-            <img
-                src="{{ asset('storage/' . $image->image_path) }}"
-                class="w-full h-32 object-cover rounded-lg">
+                        <img
+                            src="{{ $image->image_url }}"
+                            class="w-full h-32 object-cover rounded-lg">
 
-            @if(!$image->is_primary)
+                        <p class="text-xs text-gray-500 mt-2 text-center">
+                            {{ $image->color ? 'Color: ' . $image->color : 'No color assigned' }}
+                        </p>
 
-                <form
-                    action="{{ route('admin.products.images.primary', $image->image_id) }}"
-                    method="POST"
-                    class="mt-3">
+                        <form
+                            action="{{ route('admin.products.images.assignColor', $image->image_id) }}"
+                            method="POST"
+                            class="mt-2 flex gap-1">
 
-                    @csrf
-                    @method('PATCH')
+                            @csrf
+                            @method('PATCH')
 
-                    <button
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg">
+                            <select name="color" class="input-premium text-xs py-1.5 flex-1">
+                                <option value="">— No color —</option>
+                                @foreach($product->variants->pluck('color')->unique() as $color)
+                                    <option value="{{ $color }}" {{ $image->color === $color ? 'selected' : '' }}>{{ $color }}</option>
+                                @endforeach
+                            </select>
 
-                        ⭐ Set as Primary
+                            <button class="bg-gray-800 hover:bg-black text-white text-xs px-3 rounded-lg">
+                                Save
+                            </button>
 
-                    </button>
+                        </form>
 
-                </form>
+                        @if(!$image->is_primary)
 
-            @else
+                            <form
+                                action="{{ route('admin.products.images.primary', $image->image_id) }}"
+                                method="POST"
+                                class="mt-2">
 
-                <div class="mt-3 bg-green-600 text-white text-center py-2 rounded-lg font-semibold">
+                                @csrf
+                                @method('PATCH')
 
-                    ✓ Primary Image
+                                <button
+                                    class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg">
 
-                </div>
+                                    ⭐ Set as Primary
 
-            @endif
+                                </button>
 
-            <form
-                action="{{ route('admin.products.images.destroy', $image->image_id) }}"
-                method="POST"
-                class="mt-2"
-                onsubmit="return confirm('Delete this image?')">
+                            </form>
 
-                @csrf
-                @method('DELETE')
+                        @else
 
-                <button
-                    class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg">
+                            <div class="mt-2 bg-green-600 text-white text-center py-2 rounded-lg font-semibold">
 
-                    🗑 Delete Image
+                                ✓ Primary Image
 
-                </button>
+                            </div>
 
-            </form>
+                        @endif
 
+                        <form
+                            action="{{ route('admin.products.images.destroy', $image->image_id) }}"
+                            method="POST"
+                            class="mt-2"
+                            onsubmit="return confirm('Delete this image?')">
+
+                            @csrf
+                            @method('DELETE')
+
+                            <button
+                                class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg">
+
+                                🗑 Delete Image
+
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                @empty
+
+                    <p class="text-gray-400 col-span-full text-center">
+
+                        No images uploaded.
+
+                    </p>
+
+                @endforelse
+
+            </div>
         </div>
-
-    @empty
-
-        <p class="text-gray-400 col-span-full text-center">
-
-            No images uploaded.
-
-        </p>
-
-    @endforelse
-
-</div>
 
         <!-- Edit Product Form Card -->
         <div class="card-3d rounded-2xl p-6 md:p-8">
@@ -226,44 +253,60 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                 </div>
                 <h3 class="text-2xl font-bold gradient-title">Edit Product</h3>
-                <div class="card-3d rounded-2xl p-6 md:p-8 mt-8">
-
-    <h3 class="text-2xl font-bold gradient-title mb-6">
-
-        Upload New Images
-
-    </h3>
-
-    <form
-        action="{{ route('admin.products.images.upload', $product->product_id) }}"
-        method="POST"
-        enctype="multipart/form-data">
-
-        @csrf
-
-        <input
-            type="file"
-            name="images[]"
-            multiple
-            class="input-premium">
-
-        <button
-            type="submit"
-            class="btn-3d-red w-full mt-4">
-
-            Upload Images
-
-        </button>
-
-    </form>
-
-</div>
             </div>
 
+            <!-- Upload New Images -->
+            <div class="card-3d rounded-2xl p-6 md:p-8 mt-8">
+
+                <h3 class="text-2xl font-bold gradient-title mb-6">
+                    Upload New Images
+                </h3>
+
+                <form
+                    action="{{ route('admin.products.images.upload', $product->product_id) }}"
+                    method="POST"
+                    enctype="multipart/form-data">
+
+                    @csrf
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Color (optional)</label>
+                        <select name="color" class="input-premium">
+                            <option value="">— No color (general) —</option>
+                            @foreach($product->variants->pluck('color')->unique() as $color)
+                                <option value="{{ $color }}">{{ $color }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <input
+                        type="file"
+                        name="images[]"
+                        id="productImages"
+                        multiple
+                        accept="image/*"
+                        class="input-premium"
+                        onchange="handleFileSelect(this)">
+
+                    <div id="imagePreviewGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-3"></div>
+
+                    <button
+                        type="submit"
+                        class="btn-3d-red w-full mt-4">
+
+                        Upload Images
+
+                    </button>
+
+                </form>
+
+            </div>
+
+            <!-- Main Product Details Form -->
             <form action="{{ route('admin.products.update', $product->product_id) }}"
-      method="POST" 
-      enctype="multipart/form-data"
-      class="space-y-6">
+                  method="POST"
+                  enctype="multipart/form-data"
+                  class="space-y-6 mt-8">
                 @csrf
                 @method('PUT')
 
@@ -306,31 +349,31 @@
                 </div>
 
                 <!-- Shoe Type -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">
+                        Shoe Type
+                    </label>
 
-<div>
-    <label class="block text-sm font-semibold text-gray-700 mb-1">
-        Shoe Type
-    </label>
+                    <select
+                        name="shoe_type_id"
+                        class="input-premium"
+                        required>
 
-    <select
-        name="shoe_type_id"
-        class="input-premium"
-        required>
+                        @foreach($shoeTypes as $shoeType)
 
-        @foreach($shoeTypes as $shoeType)
+                            <option
+                                value="{{ $shoeType->shoe_type_id }}"
+                                {{ old('shoe_type_id', $product->shoe_type_id) == $shoeType->shoe_type_id ? 'selected' : '' }}>
 
-            <option
-                value="{{ $shoeType->shoe_type_id }}"
-                {{ old('shoe_type_id', $product->shoe_type_id) == $shoeType->shoe_type_id ? 'selected' : '' }}>
+                                {{ $shoeType->shoe_type_name }}
 
-                {{ $shoeType->shoe_type_name }}
+                            </option>
 
-            </option>
+                        @endforeach
 
-        @endforeach
+                    </select>
+                </div>
 
-    </select>
-</div>
                 <!-- Submit Button -->
                 <div class="pt-2">
                     <button type="submit" class="btn-3d-red w-full">
@@ -347,6 +390,48 @@
         </div>
     </div>
 @endsection
+
+<script>
+let selectedFiles = [];
+
+function handleFileSelect(input) {
+    selectedFiles = selectedFiles.concat(Array.from(input.files));
+    syncFileInput();
+    renderPreviews();
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    syncFileInput();
+    renderPreviews();
+}
+
+function syncFileInput() {
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach(file => dataTransfer.items.add(file));
+    document.getElementById('productImages').files = dataTransfer.files;
+}
+
+function renderPreviews() {
+    const grid = document.getElementById('imagePreviewGrid');
+    grid.innerHTML = '';
+
+    selectedFiles.forEach((file, index) => {
+        const url = URL.createObjectURL(file);
+
+        const card = document.createElement('div');
+        card.className = 'relative border rounded-lg overflow-hidden bg-white shadow-sm';
+        card.innerHTML = `
+            <img src="${url}" class="w-full h-24 object-cover">
+            <button type="button" onclick="removeFile(${index})"
+                class="absolute top-1 right-1 w-6 h-6 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center text-sm font-bold shadow">
+                &times;
+            </button>
+        `;
+        grid.appendChild(card);
+    });
+}
+</script>
 
 @if(session('success') || session('error') || $errors->any())
 <div id="systemModal"

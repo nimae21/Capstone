@@ -36,23 +36,30 @@ class CategoryController extends Controller
     }
 
     public function store(StoreCategoryRequest $request)
-    {
-        $this->abortIfDuplicateName(
-            Category::class,
-            'category_name',
-            $request->category_name
-        );
+{
+    $this->abortIfDuplicateName(
+        Category::class,
+        'category_name',
+        $request->category_name
+    );
 
-        Category::create([
-            'category_name'        => $request->category_name,
-            'category_description' => $request->category_description,
-            'is_active'             => true,
+    $category = Category::create([
+        'category_name'        => $request->category_name,
+        'category_description' => $request->category_description,
+        'is_active'             => true,
+    ]);
+
+    if ($request->wantsJson()) {
+        return response()->json([
+            'id'   => $category->category_id,
+            'name' => $category->category_name,
         ]);
-
-        return redirect()
-            ->route('admin.categories.index')
-            ->with('success', 'Category created successfully.');
     }
+
+    return redirect()
+        ->route('admin.categories.index')
+        ->with('success', 'Category created successfully.');
+}
 
     public function edit(Category $category)
     {

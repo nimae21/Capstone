@@ -934,11 +934,11 @@
                 }
             });
 
-            document.addEventListener('click', function(event) {
-                if (event.target.closest('#searchSubmit, button[type="submit"]')) {
-                    showLoader();
-                }
-            });
+           document.addEventListener('click', function(event) {
+    if (event.target.closest('#searchSubmit')) {
+        showLoader();
+    }
+});
 
             window.addEventListener('pageshow', () => loader.classList.remove('is-visible'));
         })();

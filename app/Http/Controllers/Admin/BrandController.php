@@ -36,22 +36,29 @@ class BrandController extends Controller
     }
 
     public function store(StoreBrandRequest $request)
-    {
-        $this->abortIfDuplicateName(
-            Brand::class,
-            'brand_name',
-            $request->brand_name
-        );
+{
+    $this->abortIfDuplicateName(
+        Brand::class,
+        'brand_name',
+        $request->brand_name
+    );
 
-        Brand::create([
-            'brand_name' => $request->brand_name,
-            'is_active'  => true,
+    $brand = Brand::create([
+        'brand_name' => $request->brand_name,
+        'is_active'  => true,
+    ]);
+
+    if ($request->wantsJson()) {
+        return response()->json([
+            'id'   => $brand->brand_id,
+            'name' => $brand->brand_name,
         ]);
-
-        return redirect()
-            ->route('admin.brands.index')
-            ->with('success', 'Brand created successfully!');
     }
+
+    return redirect()
+        ->route('admin.brands.index')
+        ->with('success', 'Brand created successfully!');
+}
 
     public function edit(Brand $brand)
     {

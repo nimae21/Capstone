@@ -304,21 +304,20 @@
     <div class="product-grid">
         @foreach($products as $product)
         @php
-            $variant = $product->variants->first();
-            $stock = $variant?->stocks?->sortByDesc('deliver_date')->first();
-            $price = $stock->price ?? 0;
-            $image = $product->images->first()?->image_url ?? 'https://images.unsplash.com/photo-1514989940723-e8e51635b782?w=400';
-            $description = $product->product_description ?? 'Durable and comfortable shoes for active kids.';
-            $badges = ['LIMITED EDITION', 'BESTSELLER', 'NEW DROP', 'PLAYFUL'];
-            $badgeText = $badges[array_rand($badges)];
-        @endphp
+    $price = $product->display_price ?? 0;
+    $image = $product->images->first()?->image_url ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400';
+    $description = $product->product_description ?? 'Premium performance footwear engineered for the relentless athlete.';
+
+    $badges = ['LIMITED EDITION', 'BESTSELLER', 'NEW DROP', 'PREMIUM'];
+    $badgeText = $badges[array_rand($badges)];
+@endphp
         
         <a href="{{ route('product.show', $product->product_id) }}" class="shoe-card" data-price="{{ $price }}" aria-label="View {{ $product->product_name }}">
             <span class="shoe-badge">{{ $badgeText }}</span>
             <img class="shoe-image" src="{{ $image }}" alt="{{ $product->product_name }}">
             <h3>{{ $product->product_name }}</h3>
             <p>{{ Str::limit($description, 55) }}</p>
-            <p class="price">₱{{ number_format($price, 2) }}</p>
+            <p class="price">From ₱{{ number_format($price, 2) }}</p>
             <span class="btn-card">View Product <i class="fas fa-arrow-right ml-1"></i></span>
         </a>
         @endforeach

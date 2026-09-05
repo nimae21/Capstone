@@ -183,28 +183,25 @@
             <div class="space-y-4">
                 <div class="glass-card rounded-2xl p-4 shadow-xl overflow-hidden">
                     <div class="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center">
-                        @if($product->images->first())
-                            <img src="{{ $product->images->first()->image_url }}" 
-                                 alt="{{ $product->product_name }}" 
+                        @if($product->images->count() > 0)
+                            <img id="mainProductImage"
+                                 src="{{ $product->images->first()->image_url }}"
+                                 alt="{{ $product->product_name }}"
                                  class="w-full h-full object-cover rounded-xl transition-transform duration-500 hover:scale-110">
                         @else
                             <i class="fas fa-shoe-prints text-gray-400 text-6xl"></i>
                         @endif
                     </div>
                 </div>
-                
-                <!-- Thumbnail Gallery (optional) -->
-                @if($product->images->count() > 1)
-                <div class="flex gap-3 overflow-x-auto pb-2 custom-scroll">
-                    @foreach($product->images as $image)
-                        <div class="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-red-500 transition-all">
-                            <img src="{{ $image->image_url }}" 
-                                 alt="Thumbnail" 
-                                 class="w-full h-full object-cover">
+
+                <div id="thumbnailGallery" class="flex gap-3 overflow-x-auto pb-2 custom-scroll">
+                    @foreach($product->images->where('color', $product->images->first()?->color) as $image)
+                        <div class="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-red-500 transition-all"
+                             onclick="document.getElementById('mainProductImage').src = '{{ $image->image_url }}'">
+                            <img src="{{ $image->image_url }}" alt="Thumbnail" class="w-full h-full object-cover">
                         </div>
                     @endforeach
                 </div>
-                @endif
             </div>
             
             <!-- Product Info -->
@@ -302,16 +299,41 @@
     </div>
 </div>
 
-<!-- Loading Overlay -->
-<div id="loadingOverlay" class="loading-overlay">
-    <div class="loading-spinner"></div>
-</div>
 
 <script>
 const variants = @json($product->variants);
 
+const productImages = @json($product->images->map(fn($img) => [
+    'url' => $img->image_url,
+    'color' => $img->color,
+]));
+
 let selectedColor = null;
 let selectedVariant = null;
+
+/*
+|--------------------------------------------------------------------------
+| GALLERY: SWITCH IMAGES BASED ON SELECTED COLOR
+|--------------------------------------------------------------------------
+*/
+function updateGalleryForColor(color)
+{
+    const matching = productImages.filter(img => img.color === color);
+    const fallback = productImages.filter(img => img.color === null);
+    const toShow = matching.length > 0 ? matching : (fallback.length > 0 ? fallback : productImages);
+
+    if (toShow.length === 0) return;
+
+    document.getElementById('mainProductImage').src = toShow[0].url;
+
+    const gallery = document.getElementById('thumbnailGallery');
+    gallery.innerHTML = toShow.map(img => `
+        <div class="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-red-500 transition-all"
+             onclick="document.getElementById('mainProductImage').src = '${img.url}'">
+            <img src="${img.url}" alt="Thumbnail" class="w-full h-full object-cover">
+        </div>
+    `).join('');
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -331,6 +353,7 @@ document.querySelectorAll('.variant-btn').forEach(button => {
         selectedColor = this.dataset.color;
 
         renderSizes(selectedColor);
+        updateGalleryForColor(selectedColor);
 
     });
 
@@ -535,7 +558,6 @@ function validateSelection()
         return false;
     }
 
-    document.getElementById('loadingOverlay').style.display = 'flex';
 
     return true;
 }
@@ -556,17 +578,6 @@ document.getElementById('addToCartForm')
 
 });
 
-
-/*
-|--------------------------------------------------------------------------
-| PAGE RESTORE
-|--------------------------------------------------------------------------
-*/
-window.addEventListener('pageshow', () => {
-
-    document.getElementById('loadingOverlay').style.display = 'none';
-
-});
 
 
 /*

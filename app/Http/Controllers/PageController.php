@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Stock;
 use App\Models\ShoeType;
 use App\Services\ActivityTrackingService;
 use App\Services\RecommendationClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+
 
 class PageController extends Controller
 {
@@ -28,27 +30,33 @@ class PageController extends Controller
      * Reusable, filterable product query for category pages.
      */
     private function getProductsByCategory(int $categoryId, Request $request)
-    {
-        $query = Product::with(['variants.stocks', 'images'])
-            ->where('is_active', true)
-            ->where('category_id', $categoryId);
+{
+    $priceSubquery = Stock::selectRaw('MIN(stocks.price)')
+        ->join('product_variants', 'product_variants.product_variant_id', '=', 'stocks.product_variant_id')
+        ->whereColumn('product_variants.product_id', 'products.product_id');
 
-        if ($request->filled('brand')) {
-            $query->where('brand_id', $request->brand);
-        }
+    $query = Product::with(['variants.stocks', 'images'])
+        ->where('is_active', true)
+        ->where('category_id', $categoryId)
+        ->addSelect(['display_price' => $priceSubquery]);
 
-        if ($request->filled('shoe_type')) {
-            $query->where('shoe_type_id', $request->shoe_type);
-        }
-
-        if ($request->filled('sort') && $request->sort === 'price-low-high') {
-            // Price lives on stocks, not products — sort client-side already
-            // handles this in JS; server-side price sort would need a join.
-            // Left as-is since existing JS sort already covers it.
-        }
-
-        return $query->orderBy('product_name')->paginate(9)->withQueryString();
+    if ($request->filled('brand')) {
+        $query->where('brand_id', $request->brand);
     }
+
+    if ($request->filled('shoe_type')) {
+        $query->where('shoe_type_id', $request->shoe_type);
+    }
+
+    if ($request->filled('sort') && in_array($request->sort, ['price-low-high', 'price-high-low'])) {
+        $direction = $request->sort === 'price-low-high' ? 'asc' : 'desc';
+        $query->orderBy('display_price', $direction);
+    } else {
+        $query->orderBy('product_name');
+    }
+
+    return $query->paginate(9)->withQueryString();
+}
 
     /**
      * Brands/shoe types relevant to filter dropdowns, scoped to what's

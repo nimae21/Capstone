@@ -40,10 +40,10 @@ class RecommendationClient
     private function fetchForUser(int $userId, int $limit): Collection
     {
         try {
-            $response = Http::connectTimeout(0.3)->timeout(1)
-                ->get("{$this->baseUrl}/recommendations/{$userId}", [
-                    'limit' => $limit,
-                ]);
+            $response = Http::connectTimeout(1)->timeout(5)
+    ->get("{$this->baseUrl}/recommendations/{$userId}", [
+        'limit' => $limit,
+    ]);
 
             if ($response->failed()) {
                 Log::warning("Recommendation service returned an error for user {$userId}: ".$response->status());

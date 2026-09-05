@@ -458,47 +458,51 @@
                         <input type="text" name="product_name" placeholder="Product Name" required class="input-compact">
                     </div>
                     <div>
-                        <select name="category_id" class="input-compact" required>
-                            <option value="">Select Category</option>
-                            @foreach($categories as $category)
-                                <option value="{{ $category->category_id }}">{{ $category->category_name }}</option>
-                            @endforeach
-                        </select>
+                        <select name="category_id" id="category_id" class="input-compact" required data-addable>
+    <option value="">Select Category</option>
+    @foreach($categories as $category)
+        <option value="{{ $category->category_id }}">{{ $category->category_name }}</option>
+    @endforeach
+    <option value="__add_new__">+ Add another Category</option>
+</select>
                     </div>
                     <div>
-                        <select name="brand_id" class="input-compact" required>
-                            <option value="">Select Brand</option>
-                            @foreach($brands as $brand)
-                                <option value="{{ $brand->brand_id }}">{{ $brand->brand_name }}</option>
-                            @endforeach
-                        </select>
+                        <select name="brand_id" id="brand_id" class="input-compact" required data-addable>
+    <option value="">Select Brand</option>
+    @foreach($brands as $brand)
+        <option value="{{ $brand->brand_id }}">{{ $brand->brand_name }}</option>
+    @endforeach
+    <option value="__add_new__">+ Add another Brand</option>
+</select>
                     </div>
 
                     <div>
-    <select name="shoe_type_id" class="input-compact" required>
-        <option value="">Select Shoe Type</option>
 
-        @foreach($shoeTypes as $shoeType)
-            <option value="{{ $shoeType->shoe_type_id }}">
-                {{ $shoeType->shoe_type_name }}
-            </option>
-        @endforeach
+    <select name="shoe_type_id" id="shoe_type_id" class="input-compact" required data-addable>
+    <option value="">Select Shoe Type</option>
+    @foreach($shoeTypes as $shoeType)
+    <option value="{{ $shoeType->shoe_type_id }}">{{ $shoeType->shoe_type_name }}</option>
+@endforeach
+    <option value="__add_new__">+ Add another Shoe Type</option>
+</select>
 
-    </select>
 </div>
 
                     <div>
-                        <div class="file-upload-wrapper">
-                            <div class="relative flex-1">
-                                <input type="file" name="images[]" multiple accept="image/*"
-                                       id="productImages" onchange="updateFileNames(this)">
-                                <label for="productImages" class="file-upload-btn">
-                                    <i class="fas fa-cloud-upload-alt"></i> Choose Images
-                                </label>
-                            </div>
-                            <span class="file-upload-filename empty" id="fileDisplay">No files selected</span>
-                        </div>
-                    </div>
+    <div class="file-upload-wrapper">
+        <div class="relative flex-1">
+            <input type="file" name="images[]" multiple accept="image/*"
+                   id="productImages" onchange="handleFileSelect(this)">
+            <label for="productImages" class="file-upload-btn">
+                <i class="fas fa-cloud-upload-alt"></i> Choose Images
+            </label>
+        </div>
+        <span class="file-upload-filename empty" id="fileDisplay">No files selected</span>
+    </div>
+
+    <!-- Preview grid with remove buttons -->
+    <div id="imagePreviewGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-3"></div>
+</div>
                     <div class="md:col-span-2">
                         <textarea name="product_description" placeholder="Description (optional)" rows="2" class="input-compact"></textarea>
                     </div>
@@ -680,6 +684,31 @@
         </div>
     </div>
 
+    <!-- ===== ADD NEW (Brand/Category/ShoeType) MODAL ===== -->
+<div id="addNewModal" style="display:none;" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white w-full max-w-md p-6 rounded-xl shadow-lg">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500">
+                <i class="fas fa-plus-circle text-xl"></i>
+            </div>
+            <h2 class="text-lg font-bold text-gray-800" id="addNewModalTitle">Add New</h2>
+        </div>
+
+        <div id="addNewModalErrors" class="hidden bg-red-50 border-l-4 border-red-500 text-red-700 text-sm p-3 rounded-lg mb-4"></div>
+
+        <div id="addNewModalFields" class="space-y-3"></div>
+
+        <div class="mt-6 flex justify-end gap-3">
+            <button type="button" onclick="closeAddNewModal()" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+                Cancel
+            </button>
+            <button type="button" onclick="submitAddNew()" id="addNewSubmitBtn" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">
+                Add
+            </button>
+        </div>
+    </div>
+</div>
+
     <script>
         function openDeleteModal(id) {
             document.getElementById('deleteForm').action = '/admin/products/' + id;
@@ -709,17 +738,198 @@
             }
         });
 
-        // Update file name display
-        function updateFileNames(input) {
-            const display = document.getElementById('fileDisplay');
-            if (input.files.length === 0) {
-                display.textContent = 'No files selected';
-                display.className = 'file-upload-filename empty';
-                return;
-            }
-            const names = Array.from(input.files).map(f => f.name).join(', ');
-            display.textContent = names;
-            display.className = 'file-upload-filename';
+        
+        let selectedFiles = [];
+
+function handleFileSelect(input) {
+    // Append newly chosen files to what's already selected
+    selectedFiles = selectedFiles.concat(Array.from(input.files));
+    syncFileInput();
+    renderPreviews();
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    syncFileInput();
+    renderPreviews();
+}
+
+function syncFileInput() {
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach(file => dataTransfer.items.add(file));
+    document.getElementById('productImages').files = dataTransfer.files;
+
+    const display = document.getElementById('fileDisplay');
+    if (selectedFiles.length === 0) {
+        display.textContent = 'No files selected';
+        display.className = 'file-upload-filename empty';
+    } else {
+        display.textContent = selectedFiles.length + ' file(s) selected';
+        display.className = 'file-upload-filename';
+    }
+}
+
+function renderPreviews() {
+    const grid = document.getElementById('imagePreviewGrid');
+    grid.innerHTML = '';
+
+    selectedFiles.forEach((file, index) => {
+        const url = URL.createObjectURL(file);
+
+        const card = document.createElement('div');
+        card.className = 'relative border rounded-lg overflow-hidden bg-white shadow-sm';
+        card.innerHTML = `
+            <img src="${url}" class="w-full h-24 object-cover">
+            <button type="button" onclick="removeFile(${index})"
+                    class="absolute top-1 right-1 w-6 h-6 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center text-xs shadow">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+        const addNewConfig = {
+    brand_id: {
+        title: 'Add New Brand',
+        url: '{{ route('admin.brands.store') }}',
+        fields: [
+            { name: 'brand_name', label: 'Brand Name', placeholder: 'e.g., Nike, Adidas', required: true },
+        ],
+    },
+    category_id: {
+        title: 'Add New Category',
+        url: '{{ route('admin.categories.store') }}',
+        fields: [
+            { name: 'category_name', label: 'Category Name', placeholder: 'e.g., Running Shoes', required: true },
+            { name: 'category_description', label: 'Description', placeholder: 'Optional', required: false },
+        ],
+    },
+    shoe_type_id: {
+        title: 'Add New Shoe Type',
+        url: '{{ route('admin.shoe-types.store') }}',
+        fields: [
+            { name: 'shoe_type_name', label: 'Shoe Type Name', placeholder: 'e.g., Sneakers, Boots', required: true },
+            { name: 'description', label: 'Description', placeholder: 'Optional', required: false },
+        ],
+    },
+};
+
+let addNewActiveSelect = null;
+
+document.querySelectorAll('select[data-addable]').forEach(select => {
+    select.dataset.lastValue = select.value;
+
+    select.addEventListener('change', function () {
+        if (this.value === '__add_new__') {
+            openAddNewModal(this);
+        } else {
+            this.dataset.lastValue = this.value;
         }
+    });
+});
+
+function openAddNewModal(selectEl) {
+    addNewActiveSelect = selectEl;
+    const config = addNewConfig[selectEl.id];
+
+    document.getElementById('addNewModalTitle').textContent = config.title;
+    document.getElementById('addNewModalErrors').classList.add('hidden');
+    document.getElementById('addNewModalErrors').innerHTML = '';
+
+    const fieldsContainer = document.getElementById('addNewModalFields');
+    fieldsContainer.innerHTML = config.fields.map(f => `
+        <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">${f.label}${f.required ? ' <span class="text-red-500">*</span>' : ''}</label>
+            <input type="text" name="${f.name}" placeholder="${f.placeholder}" ${f.required ? 'required' : ''} class="input-compact">
+        </div>
+    `).join('');
+
+    document.getElementById('addNewModal').style.display = 'flex';
+}
+
+function closeAddNewModal() {
+    if (addNewActiveSelect) {
+        addNewActiveSelect.value = addNewActiveSelect.dataset.lastValue;
+    }
+    document.getElementById('addNewModal').style.display = 'none';
+    addNewActiveSelect = null;
+}
+
+function submitAddNew() {
+    if (!addNewActiveSelect) return;
+
+    const config = addNewConfig[addNewActiveSelect.id];
+    const payload = {};
+    let valid = true;
+
+    document.querySelectorAll('#addNewModalFields input').forEach(input => {
+        if (input.required && !input.value.trim()) valid = false;
+        payload[input.name] = input.value.trim();
+    });
+
+    if (!valid) {
+        showAddNewError('Please fill in all required fields.');
+        return;
+    }
+
+    const token = document.querySelector('#addToCartForm') // fallback not needed
+        ? null : null;
+    const csrfToken = document.querySelector('input[name="_token"]').value;
+
+    const submitBtn = document.getElementById('addNewSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Adding...';
+
+    fetch(config.url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+        },
+        body: JSON.stringify(payload),
+    })
+    .then(async res => {
+        const data = await res.json();
+        if (!res.ok) throw data;
+        return data;
+    })
+    .then(data => {
+        const option = document.createElement('option');
+        option.value = data.id;
+        option.textContent = data.name;
+
+        const sentinel = addNewActiveSelect.querySelector('option[value="__add_new__"]');
+        addNewActiveSelect.insertBefore(option, sentinel);
+
+        addNewActiveSelect.value = data.id;
+        addNewActiveSelect.dataset.lastValue = data.id;
+
+        document.getElementById('addNewModal').style.display = 'none';
+        addNewActiveSelect = null;
+    })
+    .catch(err => {
+        const message = err.errors
+            ? Object.values(err.errors).flat().join(' ')
+            : (err.message || 'Something went wrong. Please try again.');
+        showAddNewError(message);
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Add';
+    });
+}
+
+function showAddNewError(message) {
+    const errBox = document.getElementById('addNewModalErrors');
+    errBox.textContent = message;
+    errBox.classList.remove('hidden');
+}
+
+document.getElementById('addNewModal').addEventListener('click', function (e) {
+    if (e.target === this) closeAddNewModal();
+});
+
     </script>
 @endsection

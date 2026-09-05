@@ -18,7 +18,7 @@
             window.visualViewport?.addEventListener('resize', setViewportHeight, { passive: true });
         })();
     </script>
-    <link rel="icon" type="image/png" href="{{ asset('images/achilles logo foot.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/achilles logo foot.png') }}?v=3">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">

@@ -2,6 +2,8 @@
 
 namespace App\Traits;
 
+use Illuminate\Validation\ValidationException;
+
 trait HasCaseInsensitiveUniqueName
 {
     /**
@@ -28,11 +30,9 @@ trait HasCaseInsensitiveUniqueName
         if ($query->exists()) {
             $label = str($nameColumn)->replace('_', ' ')->title();
 
-            abort(
-                back()
-                    ->withErrors([$nameColumn => "This {$label} already exists."])
-                    ->withInput()
-            );
+            throw ValidationException::withMessages([
+                $nameColumn => "This {$label} already exists.",
+            ]);
         }
     }
 }

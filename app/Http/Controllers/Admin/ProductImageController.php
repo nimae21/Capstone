@@ -18,9 +18,10 @@ class ProductImageController extends Controller
     {
         $request->validate([
             'images.*' => 'required|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
+            'color' => 'nullable|string|max:50',
         ]);
 
-        $this->imageService->storeMany($product, $request->file('images'));
+        $this->imageService->storeMany($product, $request->file('images'), $request->color);
 
         return back()->with('success', 'Images uploaded successfully.');
     }
@@ -37,5 +38,16 @@ class ProductImageController extends Controller
         $this->imageService->setPrimary($image);
 
         return back()->with('success', 'Primary image updated successfully.');
+    }
+
+    public function assignColor(Request $request, ProductImage $image)
+    {
+        $request->validate([
+            'color' => 'nullable|string|max:50',
+        ]);
+
+        $this->imageService->assignColor($image, $request->color);
+
+        return back()->with('success', 'Image color updated successfully.');
     }
 }

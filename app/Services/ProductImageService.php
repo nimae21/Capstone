@@ -14,7 +14,7 @@ class ProductImageService
      *
      * @param  UploadedFile[]  $images
      */
-    public function storeMany(Product $product, array $images): void
+    public function storeMany(Product $product, array $images, ?string $color = null): void
     {
         $displayOrder = $product->images()->max('display_order') ?? 0;
         $hasPrimary = $product->images()->where('is_primary', true)->exists();
@@ -24,6 +24,7 @@ class ProductImageService
 
             ProductImage::create([
                 'product_id' => $product->product_id,
+                'color' => $color,
                 'image_path' => $path,
                 'display_order' => ++$displayOrder,
                 'is_primary' => ! $hasPrimary && $index === 0,
@@ -51,5 +52,10 @@ class ProductImageService
             ->update(['is_primary' => false]);
 
         $image->update(['is_primary' => true]);
+    }
+
+    public function assignColor(ProductImage $image, ?string $color): void
+    {
+        $image->update(['color' => $color ?: null]);
     }
 }

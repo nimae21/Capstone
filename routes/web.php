@@ -206,6 +206,9 @@ Route::middleware(['auth', 'admin'])
         Route::patch('/product-images/{image}/primary', [ProductImageController::class, 'setPrimary'])
             ->name('products.images.primary');
 
+       Route::patch('/products/images/{image}/color', [ProductImageController::class, 'assignColor'])
+    ->name('products.images.assignColor');
+
         // Product Variants
         Route::get('/products/{product}/variants', [ProductVariantController::class, 'index'])
             ->name('products.variants.index');

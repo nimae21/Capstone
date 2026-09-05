@@ -25,24 +25,31 @@ class ShoeTypeController extends Controller
     }
 
     public function store(StoreShoeTypeRequest $request)
-    {
-        $this->abortIfDuplicateName(
-            ShoeType::class,
-            'shoe_type_name',
-            $request->shoe_type_name
-        );
+{
+    $this->abortIfDuplicateName(
+        ShoeType::class,
+        'shoe_type_name',
+        $request->shoe_type_name
+    );
 
-        ShoeType::create([
-            'shoe_type_name' => $request->shoe_type_name,
-            'description'    => $request->description,
-            'display_order'  => 0,
-            'is_active'      => true,
+    $shoeType = ShoeType::create([
+        'shoe_type_name' => $request->shoe_type_name,
+        'description'    => $request->description,
+        'display_order'  => 0,
+        'is_active'      => true,
+    ]);
+
+    if ($request->wantsJson()) {
+        return response()->json([
+            'id'   => $shoeType->shoe_type_id,
+            'name' => $shoeType->shoe_type_name,
         ]);
-
-        return redirect()
-            ->route('admin.shoe-types.index')
-            ->with('success', 'Shoe type created successfully.');
     }
+
+    return redirect()
+        ->route('admin.shoe-types.index')
+        ->with('success', 'Shoe type created successfully.');
+}
 
     public function edit(ShoeType $shoeType)
     {
