@@ -90,15 +90,15 @@
             opacity: 0.25;
         }
         .btn-sm-green {
-    background: #10b981;
-    color: white;
-    box-shadow: 0 2px 0 #047857;
-}
+            background: #10b981;
+            color: white;
+            box-shadow: 0 2px 0 #047857;
+        }
 
-.btn-sm-green:hover {
-    background: #059669;
-    color: white;
-}
+        .btn-sm-green:hover {
+            background: #059669;
+            color: white;
+        }
 
         .stat-card .stat-number {
             font-weight: 900 !important;
@@ -300,6 +300,59 @@
             min-width: 190px;
         }
 
+        /* ===== CUSTOM PAGINATION (self-contained - no dependency on the
+           framework's default pagination view, so spacing/overlap is fully
+           guaranteed rather than inherited from markup we don't control) ===== */
+        .users-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+            padding: 1.25rem 1rem;
+            border-top: 1px solid #f1f5f9;
+        }
+        .users-pagination > a,
+        .users-pagination > span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2.25rem;
+            height: 2.25rem;
+            padding: 0 0.6rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            color: #475569;
+            background: transparent;
+            border: 1px solid transparent;
+            transition: all 0.15s ease;
+        }
+        .users-pagination a:hover {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #dc2626;
+        }
+        .users-pagination .page-active {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border-color: #dc2626;
+        }
+        .users-pagination .page-arrow {
+            border: 1px solid #e2e8f0;
+            background: #fff;
+        }
+        .users-pagination .page-arrow.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            background: #f8fafc;
+        }
+        .users-pagination .page-dots {
+            color: #94a3b8;
+            padding: 0 0.3rem;
+        }
+
         @media (hover: none) {
             .card-3d:hover,
             .table-row-3d:hover {
@@ -360,6 +413,10 @@
                 display: none;
             }
 
+            /* Each row becomes its own bordered card, with margin on every
+               side (not just top/bottom) - this margin is what physically
+               guarantees the pagination bar below can never visually touch
+               the last row's buttons, regardless of viewport width. */
             .users-page .users-table tr {
                 margin: 0.75rem;
                 width: calc(100% - 1.5rem);
@@ -410,6 +467,7 @@
 
             .users-page .users-table .actions-cell > div {
                 justify-content: flex-start;
+                flex-wrap: wrap;
             }
 
             .users-page .users-table .btn-sm-3d {
@@ -432,14 +490,24 @@
             .users-page .users-table tr:has(td[colspan]) td::before {
                 display: none;
             }
+
+            .users-pagination {
+                gap: 0.2rem;
+                padding: 1rem 0.5rem;
+            }
+            .users-pagination > a,
+            .users-pagination > span {
+                min-width: 2rem;
+                height: 2rem;
+                font-size: 0.75rem;
+                padding: 0 0.4rem;
+            }
         }
     </style>
 @endsection
 
 @section('content')
     <div class="users-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-
-
 
         <!-- ===== HEADER ===== -->
         <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -459,25 +527,22 @@
         </div>
 
         @if(request('search'))
-    <div class="px-6 pt-4 text-sm text-gray-500">
-        Showing
-        <span class="font-semibold text-gray-700">
-            {{ $users->total() }}
-        </span>
-        result(s) for
-        <span class="font-semibold text-red-600">
-            "{{ request('search') }}"
-        </span>
+            <div class="px-6 pt-4 text-sm text-gray-500">
+                Showing
+                <span class="font-semibold text-gray-700">
+                    {{ $users->total() }}
+                </span>
+                result(s) for
+                <span class="font-semibold text-red-600">
+                    "{{ request('search') }}"
+                </span>
 
-        <a href="{{ route('admin.users.index') }}"
-           class="ml-2 text-red-600 hover:underline">
-            Clear
-        </a>
-    </div>
-@endif
-
-        
-        
+                <a href="{{ route('admin.users.index') }}"
+                   class="ml-2 text-red-600 hover:underline">
+                    Clear
+                </a>
+            </div>
+        @endif
 
         <!-- ===== STAT CARDS ===== -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
@@ -519,33 +584,28 @@
         <div class="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
             <div class="px-6 py-4 border-b border-gray-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
 
-    <h3 class="section-header text-gray-800">
-        All Users
-    </h3>
+                <h3 class="section-header text-gray-800">
+                    All Users
+                </h3>
 
-    <div class="user-toolbar flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div class="user-toolbar flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <form method="GET"
+                          action="{{ route('admin.users.index') }}"
+                          class="relative">
 
-        <form method="GET"
-              action="{{ route('admin.users.index') }}"
-              class="relative">
+                        <input
+                            type="text"
+                            name="search"
+                            value="{{ request('search') }}"
+                            placeholder="Search users..."
+                            class="w-80 pl-10 pr-4 py-2.5 rounded-xl border border-gray-200
+                                   focus:ring-2 focus:ring-red-500 focus:border-red-500
+                                   outline-none transition bg-white shadow-sm">
 
-            <input
-                type="text"
-                name="search"
-                value="{{ request('search') }}"
-                placeholder="Search users..."
-                class="w-80 pl-10 pr-4 py-2.5 rounded-xl border border-gray-200
-                       focus:ring-2 focus:ring-red-500 focus:border-red-500
-                       outline-none transition bg-white shadow-sm">
-                       
-
-            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-
-        </form>
-
-    </div>
-
-</div>
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    </form>
+                </div>
+            </div>
 
             <div class="overflow-x-auto custom-scroll">
                 <table class="users-table w-full text-sm">
@@ -555,11 +615,8 @@
                             <th class="px-6 py-3 text-left">Email</th>
                             <th class="px-6 py-3 text-left">Role</th>
                             <th class="px-6 py-3 text-left">Joined</th>
-                            <th class="px-6 py-3 text-left">
-    Status
-</th>   
+                            <th class="px-6 py-3 text-left">Status</th>
                             <th class="px-6 py-3 text-right">Actions</th>
-
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -567,52 +624,20 @@
                             <tr class="table-row-3d">
                                 <td data-label="Name" class="user-name-cell px-6 py-3 font-medium text-gray-800">
                                     <div class="flex items-center gap-3">
-
-    <div
-        class="w-11 h-11 rounded-full
-               bg-gradient-to-br
-               from-red-500
-               to-red-700
-               text-white
-               font-bold
-               flex
-               items-center
-               justify-center
-               shadow">
-
-        {{ strtoupper(substr($user->first_name,0,1)) }}{{ strtoupper(substr($user->last_name,0,1)) }}
-
-    </div>
-
-    <div>
-
-        <div class="flex items-center gap-2">
-
-            <span class="font-semibold text-gray-800">
-    {{ $user->full_name }}
-</span>
-
-            @if($user->id === auth()->id())
-
-                <span
-                    class="px-2 py-0.5
-                           rounded-full
-                           text-xs
-                           bg-blue-100
-                           text-blue-700
-                           font-semibold">
-
-                    You
-
-                </span>
-
-            @endif
-
-        </div>
-
-    </div>
-
-</div>
+                                        <div class="w-11 h-11 rounded-full bg-gradient-to-br from-red-500 to-red-700 text-white font-bold flex items-center justify-center shadow">
+                                            {{ strtoupper(substr($user->first_name,0,1)) }}{{ strtoupper(substr($user->last_name,0,1)) }}
+                                        </div>
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-semibold text-gray-800">{{ $user->full_name }}</span>
+                                                @if($user->id === auth()->id())
+                                                    <span class="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 font-semibold">
+                                                        You
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
 
                                 <td data-label="Email" class="user-email-cell px-6 py-3">
@@ -630,37 +655,32 @@
                                         </span>
                                     @endif
                                 </td>
-                                
+
                                 <td data-label="Joined" class="px-6 py-3 text-gray-600 text-xs">
                                     <div>
-
-    <div class="font-medium text-gray-700">
-
-        {{ $user->created_at->format('M d, Y') }}
-
-    </div>
-
-    <div class="text-xs text-gray-500">
-
-        {{ $user->created_at->diffForHumans() }}
-
-    </div>
-
-</div>
+                                        <div class="font-medium text-gray-700">
+                                            {{ $user->created_at->format('M d, Y') }}
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            {{ $user->created_at->diffForHumans() }}
+                                        </div>
+                                    </div>
                                 </td>
+
                                 <td data-label="Status" class="px-6 py-3">
-    @if($user->is_active)
-        <span class="role-badge bg-green-100 text-green-700">
-            <i class="fas fa-check-circle"></i>
-            Active
-        </span>
-    @else
-        <span class="role-badge bg-red-100 text-red-700">
-            <i class="fas fa-ban"></i>
-            Suspended
-        </span>
-    @endif
-</td>
+                                    @if($user->is_active)
+                                        <span class="role-badge bg-green-100 text-green-700">
+                                            <i class="fas fa-check-circle"></i>
+                                            Active
+                                        </span>
+                                    @else
+                                        <span class="role-badge bg-red-100 text-red-700">
+                                            <i class="fas fa-ban"></i>
+                                            Suspended
+                                        </span>
+                                    @endif
+                                </td>
+
                                 <td data-label="Actions" class="actions-cell px-6 py-3 text-right">
                                     @if($user->id !== auth()->id())
                                         <div class="flex flex-wrap justify-end gap-2">
@@ -697,35 +717,64 @@
                             </tr>
                         @empty
                             <tr>
-    <td colspan="6" class="px-6 py-12 text-center">
-
-        <div class="flex flex-col items-center">
-
-            <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-                <i class="fas fa-users text-2xl text-gray-400"></i>
-            </div>
-
-            <h4 class="text-lg font-semibold text-gray-700">
-                No users found
-            </h4>
-
-            <p class="text-sm text-gray-500 mt-1">
-                Try another search or clear the current filter.
-            </p>
-
-        </div>
-
-    </td>
-</tr>
+                                <td colspan="6" class="px-6 py-12 text-center">
+                                    <div class="flex flex-col items-center">
+                                        <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                                            <i class="fas fa-users text-2xl text-gray-400"></i>
+                                        </div>
+                                        <h4 class="text-lg font-semibold text-gray-700">
+                                            No users found
+                                        </h4>
+                                        <p class="text-sm text-gray-500 mt-1">
+                                            Try another search or clear the current filter.
+                                        </p>
+                                    </div>
+                                </td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
 
-            <!-- Pagination -->
+            <!-- ===== CUSTOM PAGINATION ===== -->
             @if($users->hasPages())
-                <div class="px-6 py-4 border-t border-gray-100 flex justify-center">
-                    {{ $users->appends(request()->query())->links() }}
+                <div class="users-pagination">
+                    {{-- Previous --}}
+                    @if ($users->onFirstPage())
+                        <span class="page-arrow disabled">
+                            <i class="fas fa-chevron-left" style="font-size:0.7rem;"></i>
+                        </span>
+                    @else
+                        <a href="{{ $users->appends(request()->query())->previousPageUrl() }}" class="page-arrow" rel="prev">
+                            <i class="fas fa-chevron-left" style="font-size:0.7rem;"></i>
+                        </a>
+                    @endif
+
+                    {{-- Page numbers, limited to 1 on each side of current + first/last --}}
+                    @foreach ($users->appends(request()->query())->onEachSide(1)->linkCollection() as $item)
+                        @if(is_string($item))
+                            <span class="page-dots">…</span>
+                        @else
+                            @foreach($item as $page => $url)
+                                @if ($page == $users->currentPage())
+                                    <span class="page-active">{{ $page }}</span>
+                                @else
+                                    <a href="{{ $url }}">{{ $page }}</a>
+                                @endif
+                            @endforeach
+                        @endif
+                    @endforeach
+
+                    {{-- Next --}}
+                    @if ($users->hasMorePages())
+                        <a href="{{ $users->appends(request()->query())->nextPageUrl() }}" class="page-arrow" rel="next">
+                            <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+                        </a>
+                    @else
+                        <span class="page-arrow disabled">
+                            <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
+                        </span>
+                    @endif
                 </div>
             @endif
         </div>
@@ -856,50 +905,28 @@ function confirmAction(form, action, userName)
     currentForm = form;
 
     const modal = document.getElementById('confirmModal');
-
     const title = document.getElementById('modalTitle');
-
     const message = document.getElementById('modalMessage');
-
     const icon = document.getElementById('modalIcon');
-
     const confirmBtn = document.getElementById('modalConfirmBtn');
 
     if(action === 'suspend')
     {
         title.textContent = 'Suspend User?';
-
-        message.textContent =
-            `${userName} will no longer be able to log in.`;
-
-        icon.className =
-            'w-16 h-16 rounded-full flex items-center justify-center text-2xl bg-red-100 text-red-600';
-
-        icon.innerHTML =
-            '<i class="fas fa-ban"></i>';
-
+        message.textContent = `${userName} will no longer be able to log in.`;
+        icon.className = 'w-16 h-16 rounded-full flex items-center justify-center text-2xl bg-red-100 text-red-600';
+        icon.innerHTML = '<i class="fas fa-ban"></i>';
         confirmBtn.textContent = 'Suspend';
-
-        confirmBtn.className =
-            'px-5 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold';
+        confirmBtn.className = 'px-5 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold';
     }
     else
     {
         title.textContent = 'Activate User?';
-
-        message.textContent =
-            `${userName} will be able to log in again.`;
-
-        icon.className =
-            'w-16 h-16 rounded-full flex items-center justify-center text-2xl bg-green-100 text-green-600';
-
-        icon.innerHTML =
-            '<i class="fas fa-check"></i>';
-
+        message.textContent = `${userName} will be able to log in again.`;
+        icon.className = 'w-16 h-16 rounded-full flex items-center justify-center text-2xl bg-green-100 text-green-600';
+        icon.innerHTML = '<i class="fas fa-check"></i>';
         confirmBtn.textContent = 'Activate';
-
-        confirmBtn.className =
-            'px-5 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold';
+        confirmBtn.className = 'px-5 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold';
     }
 
     modal.classList.remove('hidden');
@@ -922,34 +949,25 @@ document
     }
 });
 
-
-
 const toast = document.getElementById('toast');
 
 if(toast)
 {
     setTimeout(() => {
-
         toast.classList.remove('translate-x-[420px]');
         toast.classList.remove('opacity-0');
-
     },100);
 
     setTimeout(() => {
-
         hideToast();
-
     },3500);
 }
 
 function hideToast()
 {
     if(!toast) return;
-
     toast.classList.add('translate-x-[420px]');
     toast.classList.add('opacity-0');
 }
-
-
 
 </script>

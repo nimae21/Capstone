@@ -381,7 +381,7 @@
 
         /* Utility */
         .text-red { color: #e60023; }
-        
+
         /* ========== FLOATING TOOLTIP (appears above cursor on hover, hide mode only) ========== */
         .floating-tooltip {
             position: fixed;
@@ -403,12 +403,12 @@
             opacity: 0;
             transform: translateY(-8px);
         }
-        
+
         .floating-tooltip.visible {
             opacity: 1;
             transform: translateY(-12px);
         }
-        
+
         /* ensure tooltip doesn't cause any layout shift */
         body {
             overflow-x: hidden;
@@ -470,6 +470,10 @@
         <!-- Inventory – now with active highlighting -->
         <a href="{{ route('admin.inventory.index') }}" data-tooltip="Inventory" class="{{ request()->routeIs('admin.inventory.*') ? 'active' : '' }}">
             <i class="fas fa-warehouse"></i> <span>Inventory</span>
+        </a>
+        <!-- Activity Logs -->
+        <a href="{{ route('admin.logs.index') }}" data-tooltip="Activity Logs" class="{{ request()->routeIs('admin.logs.*') ? 'active' : '' }}">
+            <i class="fas fa-clipboard-list"></i> <span>Activity Logs</span>
         </a>
 
         <div class="sidebar-divider"></div>
@@ -640,7 +644,7 @@
 
             // ========== FLOATING TOOLTIP ==========
             let tooltipElement = null;
-            
+
             function createTooltipElement() {
                 if (tooltipElement) return tooltipElement;
                 const div = document.createElement('div');
@@ -649,7 +653,7 @@
                 tooltipElement = div;
                 return tooltipElement;
             }
-            
+
             function updateTooltipPosition(event, tooltip) {
                 if (!tooltip) return;
                 let x = event.clientX;
@@ -672,10 +676,10 @@
                 tooltip.style.left = leftPos + 'px';
                 tooltip.style.top = topPos + 'px';
             }
-            
+
             let activeTooltipTarget = null;
             let tooltipTimeout = null;
-            
+
             function showFloatingTooltip(target, event) {
                 if (!target) return;
                 let label = target.getAttribute('data-tooltip');
@@ -698,14 +702,14 @@
                 });
                 activeTooltipTarget = target;
             }
-            
+
             function hideFloatingTooltip() {
                 if (tooltipElement) {
                     tooltipElement.classList.remove('visible');
                 }
                 activeTooltipTarget = null;
             }
-            
+
             function attachFloatingTooltips() {
                 const navItems = document.querySelectorAll('#adminSidebar a, #adminSidebar .logout-btn');
                 navItems.forEach(item => {
@@ -747,11 +751,11 @@
                     item.addEventListener('mouseleave', mouseLeaveHandler);
                 });
             }
-            
+
             function refreshTooltipBinding() {
                 attachFloatingTooltips();
             }
-            
+
             const sidebarObserver = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
                     if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
@@ -762,7 +766,7 @@
                 });
             });
             sidebarObserver.observe(sidebar, { attributes: true });
-            
+
             window.addEventListener('resize', function() {
                 if (!isDesktop()) {
                     hideFloatingTooltip();
@@ -773,14 +777,14 @@
                 }
                 refreshTooltipBinding();
             });
-            
+
             if (toggleBtn) toggleBtn.addEventListener('click', toggleSidebar);
             if (mobileToggle) mobileToggle.addEventListener('click', toggleMobile);
             document.addEventListener('click', handleClickOutside);
             window.addEventListener('resize', handleResize);
-            
+
             attachFloatingTooltips();
-            
+
             // Final initialization – ensures state is correct after all content loads
             setTimeout(() => {
                 initSidebarState();
@@ -792,7 +796,7 @@
                     hideFloatingTooltip();
                 }
             }, 50);
-            
+
             // Also call init immediately after this script to catch any edge cases
             initSidebarState();
         })();
