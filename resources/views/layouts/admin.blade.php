@@ -803,4 +803,4 @@
     </script>
     @stack('scripts')
 </body>
-</html> w to a
+</html>
