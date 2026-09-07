@@ -184,7 +184,7 @@
                                     {{ $order->created_at->format('M d, Y H:i') }}
                                 </td>
                                 <td class="px-6 py-3 text-right">
-                                    <a href="{{ route('admin.orders.show', $order->order_id) }}" class="btn-sm-blue">
+                                    <a href="{{ route('admin.orders.show', ['order' => $order->order_id, 'return_to' => request()->fullUrl()]) }}" class="btn-sm-blue">
                                         <i class="fas fa-eye mr-1"></i> View
                                     </a>
                                 </td>

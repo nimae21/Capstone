@@ -160,6 +160,14 @@
 @endsection
 
 @section('content')
+@php
+    $returnTo = request('return_to');
+    $returnHost = $returnTo ? parse_url($returnTo, PHP_URL_HOST) : null;
+    $currentHost = request()->getHost();
+    $backUrl = $returnTo && (! $returnHost || $returnHost === $currentHost)
+        ? $returnTo
+        : url()->previous();
+@endphp
 <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-12 relative overflow-hidden">
     
     <!-- Cinematic Background Elements -->
@@ -172,7 +180,7 @@
         
         <!-- Back Button -->
         <div class="mb-8">
-            <a href="{{ url()->previous() }}" class="inline-flex items-center gap-2 text-red-600 hover:text-red-700 font-semibold transition-all hover:translate-x-[-4px]">
+            <a href="{{ $backUrl }}" class="inline-flex items-center gap-2 text-red-600 hover:text-red-700 font-semibold transition-all hover:translate-x-[-4px]">
                 <i class="fas fa-arrow-left"></i> Back
             </a>
         </div>

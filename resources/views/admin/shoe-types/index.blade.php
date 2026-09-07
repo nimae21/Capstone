@@ -281,7 +281,7 @@
                 </div>
 
                 <div class="flex gap-2">
-                    <a href="{{ route('admin.shoe-types.edit', $shoeType->shoe_type_id) }}" class="btn-sm-3d btn-sm-blue">
+                    <a href="{{ route('admin.shoe-types.edit', ['shoeType' => $shoeType->shoe_type_id, 'return_to' => request()->fullUrl()]) }}" class="btn-sm-3d btn-sm-blue">
                         <i class="fas fa-edit"></i> Edit
                     </a>
 

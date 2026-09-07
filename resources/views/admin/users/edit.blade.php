@@ -251,7 +251,7 @@
                     <button type="submit" class="btn-create-3d px-6 py-2 flex-1 text-center">
                         <i class="fas fa-save mr-2"></i> Save Changes
                     </button>
-                    <a href="{{ route('admin.users.index') }}" class="btn-secondary px-6 py-2 flex-1 text-center">
+                    <a href="{{ request('return_to', route('admin.users.index')) }}" class="btn-secondary px-6 py-2 flex-1 text-center">
                         <i class="fas fa-times mr-2"></i> Cancel
                     </a>
                 </div>

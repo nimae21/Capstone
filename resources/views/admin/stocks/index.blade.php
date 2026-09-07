@@ -233,7 +233,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10">
         <!-- Back to Variants Link -->
         <div class="mb-6">
-            <a href="{{ route('admin.products.variants.index', $variant->product_id) }}" class="back-link">
+            <a href="{{ request('return_to', route('admin.products.variants.index', $variant->product_id)) }}" class="back-link">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 Back to Variants
             </a>
@@ -264,7 +264,7 @@
                 <div class="size-switcher" data-color="{{ Str::slug($color) }}" {{ $color === $variant->color ? '' : 'hidden' }}>
                     @foreach($colorVariants as $colorVariant)
                         @php $availableStock = $colorVariant->stocks->sum('remaining_quantity'); @endphp
-                        <a href="{{ route('admin.stocks.index', $colorVariant->product_variant_id) }}" class="size-switcher-button {{ $colorVariant->product_variant_id === $variant->product_variant_id ? 'current' : '' }}">
+                        <a href="{{ route('admin.stocks.index', ['variant' => $colorVariant->product_variant_id, 'return_to' => request()->fullUrl()]) }}" class="size-switcher-button {{ $colorVariant->product_variant_id === $variant->product_variant_id ? 'current' : '' }}">
                             <span>Size {{ $colorVariant->size }}</span>
                             <span class="size-switcher-stock">{{ $availableStock }} in stock</span>
                         </a>
@@ -357,7 +357,7 @@
                                     <td class="px-6 py-3 text-gray-600">{{ $stock->deliver_date }}</td>
                                     <td class="px-6 py-3 text-right">
                                         <div class="flex gap-2 justify-end">
-                                            <a href="{{ route('admin.stocks.edit', $stock->stock_id) }}" class="btn-sm-3d btn-sm-blue">
+                                            <a href="{{ route('admin.stocks.edit', ['stock' => $stock->stock_id, 'return_to' => request()->fullUrl()]) }}" class="btn-sm-3d btn-sm-blue">
                                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                                 Edit
                                             </a>

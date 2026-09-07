@@ -100,7 +100,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 relative z-10">
 
         <!-- Back Button -->
-        <a href="{{ route('admin.orders.index') }}" class="btn-back">
+        <a href="{{ request('return_to', route('admin.orders.index')) }}" class="btn-back">
             <i class="fas fa-arrow-left"></i> Back to Orders
         </a>
 

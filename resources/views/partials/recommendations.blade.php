@@ -229,7 +229,7 @@
 
         <div class="rec-grid">
             @foreach($recommendations as $product)
-                <a href="{{ route('product.show', $product->product_id) }}" class="rec-card">
+                <a href="{{ route('product.show', ['id' => $product->product_id, 'return_to' => request()->fullUrl()]) }}" class="rec-card">
 
                     <div class="rec-image-wrap">
                         @if($product->images->first())

@@ -59,7 +59,7 @@ body {
 
 <div class="max-w-xl mx-auto px-4 py-10">
 
-    <a href="{{ route('admin.categories.index') }}" class="text-sm text-gray-500 hover:text-red-600">
+    <a href="{{ request('return_to', route('admin.categories.index')) }}" class="text-sm text-gray-500 hover:text-red-600">
         ← Back
     </a>
 

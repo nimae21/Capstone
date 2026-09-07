@@ -25,7 +25,7 @@ class AdminOrderController extends Controller
         $query->where('sale_type', $request->sale_type);
     }
 
-    $orders = $query->latest()->paginate(20);
+    $orders = $query->latest()->paginate(20)->withQueryString();
 
     $stats = [
         'total_orders'  => Order::count(),

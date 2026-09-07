@@ -684,7 +684,7 @@
                                 <td data-label="Actions" class="actions-cell px-6 py-3 text-right">
                                     @if($user->id !== auth()->id())
                                         <div class="flex flex-wrap justify-end gap-2">
-                                            <a href="{{ route('admin.users.edit', $user->id) }}" class="btn-sm-3d btn-sm-blue whitespace-nowrap">
+                                            <a href="{{ route('admin.users.edit', ['user' => $user->id, 'return_to' => request()->fullUrl()]) }}" class="btn-sm-3d btn-sm-blue whitespace-nowrap">
                                                 <i class="fas fa-edit"></i>
                                                 <span>Edit</span>
                                             </a>

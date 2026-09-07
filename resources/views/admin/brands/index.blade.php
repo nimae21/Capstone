@@ -556,7 +556,7 @@
 </div>
                     </div>
                     <div class="brand-actions">
-                        <a href="{{ route('admin.brands.edit', $brand->brand_id) }}" class="btn-sm-3d btn-sm-blue">
+                        <a href="{{ route('admin.brands.edit', ['brand' => $brand->brand_id, 'return_to' => request()->fullUrl()]) }}" class="btn-sm-3d btn-sm-blue">
                             <i class="fas fa-edit"></i> Edit
                         </a>
                         @if($brand->is_active)

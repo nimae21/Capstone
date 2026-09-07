@@ -607,7 +607,7 @@ class="input-compact">
 
                     <div class="category-actions">
 
-    <a href="{{ route('admin.categories.edit', $category->category_id) }}"
+    <a href="{{ route('admin.categories.edit', ['category' => $category->category_id, 'return_to' => request()->fullUrl()]) }}"
        class="btn-sm-3d btn-sm-blue">
         <i class="fas fa-edit"></i> Edit
     </a>

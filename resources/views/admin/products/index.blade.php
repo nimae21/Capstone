@@ -673,7 +673,7 @@
                             </p>
                         </div>
                         <div class="product-actions">
-                            <a href="{{ route('admin.products.edit', $product->product_id) }}"
+                            <a href="{{ route('admin.products.edit', ['product' => $product->product_id, 'return_to' => request()->fullUrl()]) }}"
                                class="btn-sm-3d btn-sm-blue">
                                 <i class="fas fa-edit"></i> Edit
                             </a>
@@ -682,7 +682,7 @@
                                     class="btn-sm-3d btn-sm-red">
                                 <i class="fas fa-box-archive"></i> Archive
                             </button>
-                            <a href="{{ route('admin.products.variants.index', $product->product_id) }}"
+                            <a href="{{ route('admin.products.variants.index', ['product' => $product->product_id, 'return_to' => request()->fullUrl()]) }}"
                                class="btn-sm-3d btn-sm-green">
                                 <i class="fas fa-cubes"></i> Variants
                             </a>

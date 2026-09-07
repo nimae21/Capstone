@@ -14,7 +14,7 @@ class ShoeTypeController extends Controller
 
     public function index()
     {
-        $shoeTypes = ShoeType::orderBy('display_order')->paginate(10);
+        $shoeTypes = ShoeType::orderBy('display_order')->paginate(10)->withQueryString();
 
         return view('admin.shoe-types.index', [
             'shoeTypes'     => $shoeTypes,

@@ -43,7 +43,7 @@
                         {{ $product->brand->brand_name ?? '' }}
                     </p>
                     <p class="price">₱{{ number_format($price, 2) }}</p>
-                    <a href="{{ route('product.show', $product->product_id) }}" class="btn-card">
+                    <a href="{{ route('product.show', ['id' => $product->product_id, 'return_to' => request()->fullUrl()]) }}" class="btn-card">
                         View Product <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>

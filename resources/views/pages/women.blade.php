@@ -348,7 +348,7 @@
     $badgeText = $badges[array_rand($badges)];
 @endphp
         
-        <a href="{{ route('product.show', $product->product_id) }}" class="shoe-card" data-price="{{ $price }}" aria-label="View {{ $product->product_name }}">
+        <a href="{{ route('product.show', ['id' => $product->product_id, 'return_to' => request()->fullUrl()]) }}" class="shoe-card" data-price="{{ $price }}" aria-label="View {{ $product->product_name }}">
             <span class="shoe-badge">{{ $badgeText }}</span>
             <img class="shoe-image" src="{{ $image }}" alt="{{ $product->product_name }}">
             @if($brandName || $shoeTypeName)

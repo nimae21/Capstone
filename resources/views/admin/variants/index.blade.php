@@ -143,7 +143,7 @@ body::before {
 
     {{-- BACK BUTTON --}}
     <div class="mb-6">
-        <a href="{{ route('admin.products.index') }}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-red-600 transition-all hover:translate-x-[-2px]">
+        <a href="{{ request('return_to', route('admin.products.index')) }}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-red-600 transition-all hover:translate-x-[-2px]">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             Back to Products
         </a>
@@ -302,7 +302,7 @@ body::before {
                                         <span class="font-medium text-gray-700">{{ $variant->size }}</span>
                                     </div>
                                     <div class="flex gap-2">
-                                        <a href="{{ route('admin.variants.edit', $variant->product_variant_id) }}" class="btn-sm-3d btn-sm-blue px-3 py-1 text-xs">
+                                        <a href="{{ route('admin.variants.edit', ['variant' => $variant->product_variant_id, 'return_to' => request()->fullUrl()]) }}" class="btn-sm-3d btn-sm-blue px-3 py-1 text-xs">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                             Edit
                                         </a>
@@ -310,7 +310,7 @@ body::before {
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2h6m4-1l3 3m0 0l-3 3m3-3H9"/></svg>
                                             Archive
                                         </button>
-                                        <a href="{{ route('admin.stocks.index', $variant->product_variant_id) }}" class="btn-sm-3d btn-sm-green px-3 py-1 text-xs">
+                                        <a href="{{ route('admin.stocks.index', ['variant' => $variant->product_variant_id, 'return_to' => request()->fullUrl()]) }}" class="btn-sm-3d btn-sm-green px-3 py-1 text-xs">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                             Stock
                                         </a>

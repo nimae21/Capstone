@@ -137,7 +137,7 @@
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10">
         <!-- Back to Products Link -->
         <div class="mb-6">
-            <a href="{{ route('admin.products.index') }}" class="back-link">
+            <a href="{{ request('return_to', route('admin.products.index')) }}" class="back-link">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 Back to Products
             </a>
