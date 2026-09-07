@@ -339,6 +339,7 @@
             Forgot password?
         </a>
     @endif
+    </div>
         <!-- Submit Button -->
         <button type="submit" class="w-full bg-[#E60023] py-3.5 rounded-full font-extrabold text-sm text-white transition-all duration-200 hover:bg-[#C2001F] hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 shadow-[0_10px_22px_-10px_rgba(230,0,35,0.5)] relative overflow-hidden" id="premiumLoginBtn">
           <span>LOG IN →</span>
