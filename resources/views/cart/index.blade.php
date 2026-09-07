@@ -375,16 +375,20 @@
             });
         });
         
-        // Remove animation on cart item removal
-        const removeButtons = document.querySelectorAll('.cart-item form button[type="submit"]');
-        removeButtons.forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                const cartItem = this.closest('.cart-item');
-                if(cartItem) {
-                    cartItem.style.opacity = '0';
-                    cartItem.style.transform = 'translateX(100px)';
-                }
-            });
-        });
+        // Remove animation ONLY when clicking the Remove button
+const removeButtons = document.querySelectorAll(
+    '.cart-item form[action*="/remove"] button[type="submit"]'
+);
+
+removeButtons.forEach(btn => {
+    btn.addEventListener('click', function() {
+        const cartItem = this.closest('.cart-item');
+
+        if (cartItem) {
+            cartItem.style.opacity = '0';
+            cartItem.style.transform = 'translateX(100px)';
+        }
+    });
+});
     </script>
 @endsection

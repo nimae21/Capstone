@@ -232,11 +232,26 @@
                 <a href="{{ route('product.show', ['id' => $product->product_id, 'return_to' => request()->fullUrl()]) }}" class="rec-card">
 
                     <div class="rec-image-wrap">
-                        @if($product->images->first())
-                            <img src="{{ $product->images->first()->image_url }}" alt="{{ $product->product_name }}">
-                        @else
-                            <div class="rec-image-placeholder"><i class="fas fa-shoe-prints"></i></div>
-                        @endif
+                        @php
+    $image = $product->images->first();
+@endphp
+
+@if($image)
+    <img
+        src="{{ $image->image_url }}"
+        alt="{{ $product->product_name }}"
+        loading="lazy"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+    >
+
+    <div class="rec-image-placeholder" style="display: none;">
+        <i class="fas fa-shoe-prints"></i>
+    </div>
+@else
+    <div class="rec-image-placeholder">
+        <i class="fas fa-shoe-prints"></i>
+    </div>
+@endif
                         <span class="rec-badge">For You</span>
                     </div>
 
