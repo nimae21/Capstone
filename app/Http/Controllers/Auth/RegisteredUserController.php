@@ -32,19 +32,20 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
-            'middle_name' => ['nullable','string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
-            'suffix' => ['nullable',    'string', 'max:255'],
+            'suffix' => ['nullable', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => [
-    'required',
-    'confirmed',
-    Rules\Password::min(8)
-        ->letters()
-        ->mixedCase()
-        ->numbers()
-        ->symbols()
-],
+                'required',
+                'confirmed',
+                Rules\Password::min(8)
+                    ->letters()
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols(),
+            ],
+            'terms' => ['required', 'accepted'],
         ]);
 
         $user = User::create([
@@ -54,13 +55,19 @@ class RegisteredUserController extends Controller
             'suffix' => $request->suffix,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'user' ,
+            'role' => 'user',
+            'terms_accepted_at' => now(),
         ]);
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect(route('/home', absolute: false));
+        // NOTE: route() expects a *route name*, not a URL path.
+        // '/home' is not a registered route name, so route('/home', ...) throws
+        // a RouteNotFoundException on every successful registration.
+        // Use a plain path redirect (or redirect()->intended() if you have
+        // a named 'home'/'dashboard' route) instead.
+        return redirect('/home');
     }
 }

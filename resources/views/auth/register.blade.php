@@ -347,6 +347,39 @@
           </button>
         </div>
 
+        <!-- Terms & Conditions -->
+<div class="mt-2">
+    <label class="flex items-start gap-3 cursor-pointer text-sm text-[#4b4b5a]">
+        <input
+            type="checkbox"
+            id="terms"
+            name="terms"
+            value="1"
+            class="mt-1 accent-[#E60023] w-4 h-4 flex-shrink-0"
+        >
+
+        <span>
+            I agree to the
+            <button
+                type="button"
+                id="openTerms"
+                class="text-[#E60023] font-extrabold hover:underline"
+            >
+                Terms & Conditions
+            </button>
+            of ACHILLES.
+        </span>
+    </label>
+
+    <div
+        id="termsError"
+        class="error-message hidden"
+        style="margin-left: 1.75rem;"
+    >
+        You must agree to the Terms & Conditions before registering.
+    </div>
+</div>
+
         <!-- Submit Button -->
         <button type="submit" class="w-full bg-[#E60023] py-3.5 rounded-full font-extrabold text-sm text-white transition-all duration-200 hover:bg-[#C2001F] hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 shadow-[0_10px_22px_-10px_rgba(230,0,35,0.5)] relative overflow-hidden" id="premiumRegisterBtn">
           <span>REGISTER →</span>
@@ -357,6 +390,386 @@
           Already have an account? <a href="{{ route('login') }}" class="text-[#E60023] font-extrabold hover:underline">Login</a>
         </div>
       </form>
+
+      <!-- =========================================================
+     TERMS & CONDITIONS MODAL
+     ========================================================= -->
+<div
+    id="termsModal"
+    class="fixed inset-0 z-[100] hidden items-center justify-center p-4"
+    aria-hidden="true"
+>
+    <!-- Backdrop -->
+    <div
+        id="termsBackdrop"
+        class="absolute inset-0 bg-black/70 backdrop-blur-sm"
+    ></div>
+
+    <!-- Modal -->
+    <div
+        id="termsDialog"
+        class="relative z-10 w-full max-w-3xl max-h-[90vh] bg-white rounded-[28px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.55)] overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="termsTitle"
+    >
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 md:px-8 py-5 border-b border-black/5 bg-white">
+
+            <div>
+                <p class="text-[0.65rem] uppercase tracking-[0.15em] font-extrabold text-[#E60023]">
+                    ACHILLES
+                </p>
+
+                <h2
+                    id="termsTitle"
+                    class="text-2xl md:text-3xl font-extrabold text-[#111827]"
+                >
+                    Terms & Conditions
+                </h2>
+
+                <p class="text-xs text-gray-400 mt-1">
+                    Last updated: September 7, 2026
+                </p>
+            </div>
+
+            <button
+                type="button"
+                id="closeTerms"
+                class="w-10 h-10 rounded-full bg-gray-100 hover:bg-red-50 hover:text-[#E60023] flex items-center justify-center transition"
+                aria-label="Close Terms and Conditions"
+            >
+                <i class="fas fa-times"></i>
+            </button>
+
+        </div>
+
+        <!-- Scrollable Content -->
+        <div
+            id="termsContent"
+            class="px-6 md:px-8 py-6 overflow-y-auto max-h-[65vh] text-sm leading-7 text-[#4b5563]"
+        >
+
+            <p class="mb-5">
+                Welcome to ACHILLES. These Terms & Conditions govern your
+                access to and use of the ACHILLES website, online store,
+                products, services, and related features. By creating an
+                account or placing an order, you agree to comply with these
+                Terms & Conditions.
+            </p>
+
+            <!-- 1 -->
+            <section class="mb-6">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    1. About ACHILLES
+                </h3>
+
+                <p>
+                    ACHILLES is an online shoe retail platform that allows
+                    customers to browse footwear products, create an account,
+                    add products to a cart, and place orders through the
+                    platform.
+                </p>
+            </section>
+
+            <!-- 2 -->
+            <section class="mb-6">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    2. Account Registration
+                </h3>
+
+                <p class="mb-2">
+                    To use certain features of ACHILLES, you may be required
+                    to create an account. You agree to provide information
+                    that is accurate, complete, and up to date.
+                </p>
+
+                <p>
+                    You are responsible for maintaining the confidentiality
+                    of your account credentials and for activities performed
+                    through your account. You should notify ACHILLES if you
+                    believe your account has been accessed without your
+                    authorization.
+                </p>
+            </section>
+
+            <!-- 3 -->
+            <section class="mb-6">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    3. Products, Images, and Information
+                </h3>
+
+                <p class="mb-2">
+                    ACHILLES makes reasonable efforts to ensure that product
+                    names, descriptions, photographs, sizes, colors, prices,
+                    and availability displayed on the platform are accurate.
+                </p>
+
+                <p>
+                    However, colors may appear differently depending on your
+                    device or display settings. Product availability may also
+                    change before an order is confirmed.
+                </p>
+            </section>
+
+            <!-- 4 -->
+            <section class="mb-6">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    4. Prices
+                </h3>
+
+                <p>
+                    Product prices are displayed in Philippine Pesos (₱)
+                    unless otherwise stated. ACHILLES reserves the right to
+                    update prices, promotions, and product information at any
+                    time. Changes will not affect an order that has already
+                    been properly confirmed, except where correction is
+                    required because of an obvious pricing or system error.
+                </p>
+            </section>
+
+            <!-- 5 -->
+            <section class="mb-6">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    5. Orders and Order Confirmation
+                </h3>
+
+                <p class="mb-2">
+                    Adding an item to your cart does not guarantee that the
+                    product will remain available or that an order has been
+                    accepted.
+                </p>
+
+                <p>
+                    An order is subject to product availability, successful
+                    payment or payment verification where applicable, and
+                    other applicable order requirements. ACHILLES may cancel
+                    or decline an order when necessary, including in cases
+                    involving unavailable inventory, obvious pricing errors,
+                    suspected fraudulent activity, or technical errors.
+                </p>
+            </section>
+
+            <!-- 6 -->
+            <section class="mb-6">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    6. Payment
+                </h3>
+
+                <p>
+                    Customers are responsible for providing accurate payment
+                    information and completing payment through the payment
+                    methods made available by ACHILLES. Payment processing
+                    may be handled by third-party payment service providers.
+                    ACHILLES does not request or store your full payment card
+                    credentials through ordinary account registration.
+                </p>
+            </section>
+
+            <!-- 7 -->
+            <section class="mb-6">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    7. Shipping and Delivery
+                </h3>
+
+                <p class="mb-2">
+                    Delivery times may vary depending on the customer's
+                    location, courier availability, weather, holidays,
+                    operational conditions, and other circumstances beyond
+                    ACHILLES' reasonable control.
+                </p>
+
+                <p>
+                    Customers are responsible for providing a complete and
+                    accurate delivery address and contact information.
+                    ACHILLES is not responsible for delays caused by
+                    incorrect or incomplete information supplied by the
+                    customer.
+                </p>
+            </section>
+
+            <!-- 8 -->
+            <section class="mb-6">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    8. Cancellations, Returns, and Refunds
+                </h3>
+
+                <p class="mb-2">
+                    Cancellation, return, replacement, and refund requests
+                    are subject to ACHILLES' applicable store policies and
+                    the rights provided to consumers under Philippine law.
+                </p>
+
+                <p class="mb-2">
+                    Products that are defective, damaged, incorrect, or
+                    otherwise covered by applicable consumer protection
+                    requirements may qualify for an appropriate remedy,
+                    subject to verification and the applicable conditions.
+                </p>
+
+                <p>
+                    Customers may be required to provide order information,
+                    photographs, or other reasonable evidence when reporting
+                    a damaged, defective, or incorrect item.
+                </p>
+            </section>
+
+            <!-- 9 -->
+            <section class="mb-6">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    9. Customer Responsibilities
+                </h3>
+
+                <p>
+                    Customers agree not to use ACHILLES for unlawful
+                    activities, fraudulent transactions, unauthorized access,
+                    abuse of promotions, interference with the platform, or
+                    activities intended to disrupt or compromise the security
+                    of the service.
+                </p>
+            </section>
+
+            <!-- 10 -->
+            <section class="mb-6">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    10. Intellectual Property
+                </h3>
+
+                <p>
+                    Unless otherwise stated, ACHILLES' website design,
+                    branding, logos, text, graphics, product presentation,
+                    software, and other original content are owned by or
+                    licensed to ACHILLES and may not be copied, reproduced,
+                    modified, distributed, or commercially exploited without
+                    appropriate authorization.
+                </p>
+            </section>
+
+            <!-- 11 -->
+            <section class="mb-6">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    11. Privacy and Personal Information
+                </h3>
+
+                <p>
+                    ACHILLES may collect and process personal information
+                    necessary to operate the account, process orders,
+                    communicate with customers, provide customer support,
+                    and perform other legitimate business functions.
+                </p>
+
+                <p class="mt-2">
+                    Personal information will be handled in accordance with
+                    applicable Philippine data privacy laws and ACHILLES'
+                    Privacy Policy.
+                </p>
+            </section>
+
+            <!-- 12 -->
+            <section class="mb-6">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    12. Third-Party Services
+                </h3>
+
+                <p>
+                    ACHILLES may use third-party services such as payment
+                    processors, delivery providers, analytics services,
+                    hosting providers, or other technology providers.
+                    Their services may be governed by their own terms and
+                    privacy policies.
+                </p>
+            </section>
+
+            <!-- 13 -->
+            <section class="mb-6">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    13. Availability and Technical Issues
+                </h3>
+
+                <p>
+                    ACHILLES aims to keep the platform available and
+                    functional but does not guarantee uninterrupted access.
+                    Temporary interruptions may occur because of maintenance,
+                    technical failures, network problems, third-party
+                    services, or circumstances beyond reasonable control.
+                </p>
+            </section>
+
+            <!-- 14 -->
+            <section class="mb-6">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    14. Limitation of Responsibility
+                </h3>
+
+                <p>
+                    ACHILLES will take reasonable measures to operate the
+                    platform and fulfill confirmed orders. Nothing in these
+                    Terms & Conditions is intended to remove, restrict, or
+                    waive any consumer right or legal protection that cannot
+                    lawfully be excluded under applicable Philippine law.
+                </p>
+            </section>
+
+            <!-- 15 -->
+            <section class="mb-6">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    15. Changes to These Terms
+                </h3>
+
+                <p>
+                    ACHILLES may update these Terms & Conditions when
+                    necessary to reflect changes in the platform, services,
+                    business practices, or applicable legal requirements.
+                    Updated terms will be posted on the platform with a
+                    revised effective or update date.
+                </p>
+            </section>
+
+            <!-- 16 -->
+            <section class="mb-2">
+                <h3 class="text-base font-extrabold text-[#111827] mb-2">
+                    16. Contact and Customer Concerns
+                </h3>
+
+                <p>
+                    If you have questions regarding an order, product,
+                    cancellation, return, refund, account, or these Terms &
+                    Conditions, please contact ACHILLES through the customer
+                    support channels provided on the platform.
+                </p>
+            </section>
+
+            <div class="mt-8 p-4 rounded-2xl bg-red-50 border border-red-100">
+                <p class="text-xs text-gray-600 leading-6">
+                    By registering for an ACHILLES account, you acknowledge
+                    that you have read and understood these Terms &
+                    Conditions and agree to be bound by them, subject to
+                    applicable Philippine law and your rights as a consumer.
+                </p>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 md:px-8 py-4 border-t border-black/5 bg-gray-50 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+
+            <span class="text-xs text-gray-400">
+                Please review the terms before registering.
+            </span>
+
+            <button
+                type="button"
+                id="acceptTerms"
+                class="bg-[#E60023] text-white px-6 py-2.5 rounded-full text-sm font-extrabold hover:bg-[#C2001F] transition"
+            >
+                I Understand
+            </button>
+
+        </div>
+
+    </div>
+</div>
     </div>
   </div>
 
@@ -528,6 +941,17 @@
     }
 
     // =========================
+    // ELEMENT REFERENCES (declared once, used by validation + modal below)
+    // =========================
+    const termsModal = document.getElementById('termsModal');
+    const openTerms = document.getElementById('openTerms');
+    const closeTerms = document.getElementById('closeTerms');
+    const termsBackdrop = document.getElementById('termsBackdrop');
+    const acceptTerms = document.getElementById('acceptTerms');
+    const termsCheckbox = document.getElementById('terms');
+    const termsError = document.getElementById('termsError');
+
+    // =========================
     // FORM VALIDATION
     // =========================
     const form =
@@ -576,56 +1000,80 @@
 
     function validate() {
 
-        let isValid = true;
+    let isValid = true;
 
-        clearErrors();
+    clearErrors();
 
-        // EMAIL
-        const emailVal = emailInput.value.trim();
+    // =========================
+    // EMAIL
+    // =========================
+    const emailVal = emailInput.value.trim();
 
-        if (!emailVal || !/^\S+@\S+\.\S+$/.test(emailVal)) {
+    if (!emailVal || !/^\S+@\S+\.\S+$/.test(emailVal)) {
 
-            createError(
-                emailGroup,
-                'Valid email required'
-            );
+        createError(
+            emailGroup,
+            'Valid email required'
+        );
 
-            isValid = false;
-        }
-
-        // PASSWORD STRENGTH
-        const password = pwdInput.value;
-
-        const strongPassword =
-            /[a-z]/.test(password) &&
-            /[A-Z]/.test(password) &&
-            /[0-9]/.test(password) &&
-            /[^A-Za-z0-9]/.test(password) &&
-            password.length >= 8;
-
-        if (!strongPassword) {
-
-            createError(
-                passwordGroup,
-                'Password must contain uppercase, lowercase, number, symbol, and 8+ chars'
-            );
-
-            isValid = false;
-        }
-
-        // PASSWORD MATCH
-        if (pwdInput.value !== confirmPwdInput.value) {
-
-            createError(
-                confirmGroup,
-                'Passwords do not match'
-            );
-
-            isValid = false;
-        }
-
-        return isValid;
+        isValid = false;
     }
+
+    // =========================
+    // TERMS & CONDITIONS
+    // =========================
+    if (!termsCheckbox || !termsCheckbox.checked) {
+
+        if (termsError) {
+            termsError.classList.remove('hidden');
+        }
+
+        isValid = false;
+
+    } else {
+
+        if (termsError) {
+            termsError.classList.add('hidden');
+        }
+    }
+
+    // =========================
+    // PASSWORD STRENGTH
+    // =========================
+    const password = pwdInput.value;
+
+    const strongPassword =
+        /[a-z]/.test(password) &&
+        /[A-Z]/.test(password) &&
+        /[0-9]/.test(password) &&
+        /[^A-Za-z0-9]/.test(password) &&
+        password.length >= 8;
+
+    if (!strongPassword) {
+
+        createError(
+            passwordGroup,
+            'Password must contain uppercase, lowercase, number, symbol, and 8+ chars'
+        );
+
+        isValid = false;
+    }
+
+    // =========================
+    // PASSWORD MATCH
+    // =========================
+    if (pwdInput.value !== confirmPwdInput.value) {
+
+        createError(
+            confirmGroup,
+            'Passwords do not match'
+        );
+
+        isValid = false;
+    }
+
+    return isValid;
+}
 
     // =========================
     // FORM SUBMIT
@@ -653,6 +1101,70 @@
                  <span>CREATING ACCOUNT...</span>`;
         });
     }
+
+    // =========================================================
+    // TERMS & CONDITIONS MODAL
+    // =========================================================
+
+    function showTermsModal() {
+        if (!termsModal) return;
+
+        termsModal.classList.remove('hidden');
+        termsModal.classList.add('flex');
+        termsModal.setAttribute('aria-hidden', 'false');
+
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function hideTermsModal() {
+        if (!termsModal) return;
+
+        termsModal.classList.add('hidden');
+        termsModal.classList.remove('flex');
+        termsModal.setAttribute('aria-hidden', 'true');
+
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    if (openTerms) {
+        openTerms.addEventListener('click', function () {
+            showTermsModal();
+        });
+    }
+
+    if (closeTerms) {
+        closeTerms.addEventListener('click', function () {
+            hideTermsModal();
+        });
+    }
+
+    if (termsBackdrop) {
+        termsBackdrop.addEventListener('click', function () {
+            hideTermsModal();
+        });
+    }
+
+    if (acceptTerms) {
+        acceptTerms.addEventListener('click', function () {
+
+            if (termsCheckbox) {
+                termsCheckbox.checked = true;
+            }
+
+            if (termsError) {
+                termsError.classList.add('hidden');
+            }
+
+            hideTermsModal();
+        });
+    }
+
+    // ESC key closes modal
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && termsModal && !termsModal.classList.contains('hidden')) {
+            hideTermsModal();
+        }
+    });
 
 })();
 </script>
