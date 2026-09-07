@@ -29,6 +29,17 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 // paymongo webhook route
+Route::get('/debug-smtp', function () {
+    $start = microtime(true);
+    $conn = @fsockopen('smtp.gmail.com', 587, $errno, $errstr, 5);
+    $elapsed = microtime(true) - $start;
+    if ($conn) {
+        fclose($conn);
+        return "Connected in {$elapsed}s";
+    }
+    return "Failed after {$elapsed}s: [{$errno}] {$errstr}";
+});
+
 Route::post('/webhooks/paymongo', [PayMongoWebhookController::class, 'handle'])
     ->name('paymongo.webhook');
 // Landing page

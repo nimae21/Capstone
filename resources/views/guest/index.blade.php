@@ -639,7 +639,7 @@
         <h1>ACHILLES</h1>
         <div class="tagline">wear your weakness</div>
         <p>Curated collection of authentic performance footwear. Trusted by champions, designed for your everyday greatness. Step into our store and experience the difference.</p>
-        <button class="btn-primary" id="discoverBtn">Shop Now <i class="fas fa-arrow-right"></i></button>
+        <a href="{{ route('login') }}" class="btn-primary">Shop Now <i class="fas fa-arrow-right"></i></a>
     </div>
     <div class="hero-image reveal reveal-delay-1">
         <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600" alt="Achilles signature shoe">
