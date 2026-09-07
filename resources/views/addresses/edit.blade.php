@@ -69,31 +69,57 @@
                     @enderror
                 </div>
 
-                <button
-                    type="button"
-                    id="locateMe"
-                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
-                    📍 Use My Current Location
-                </button>
-                <p id="locationStatus" class="mt-2 text-sm text-gray-500" role="status" aria-live="polite"></p>
-
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        Pin Your Location
-                    </label>
-
-                    <div id="map" class="w-full h-96 rounded-lg border border-gray-300"></div>
-                </div>
-
                 <input type="hidden" name="latitude" id="latitude" value="{{ old('latitude', $address->latitude) }}">
                 <input type="hidden" name="longitude" id="longitude" value="{{ old('longitude', $address->longitude) }}">
 
-                <button
-                    type="button"
-                    id="findLocation"
-                    class="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-                    📍 Find Address on Map
-                </button>
+                <!-- Region -->
+                <div>
+                    <label for="region" class="block text-sm font-semibold text-gray-700 mb-2">Region <span class="text-red-500">*</span></label>
+                    <select
+                        name="region"
+                        id="region"
+                        required
+                        data-default="{{ old('region', $address->region) }}"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        <option value="">Select Region</option>
+                    </select>
+                    @error('region')
+                        <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <!-- Province -->
+                <div>
+                    <label for="province" class="block text-sm font-semibold text-gray-700 mb-2">Province <span class="text-red-500">*</span></label>
+                    <select
+                        name="province"
+                        id="province"
+                        required
+                        data-default="{{ old('province', $address->province) }}"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                        <option value="">Select Province</option>
+                    </select>
+                    @error('province')
+                        <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <!-- City -->
+                <div>
+                    <label for="city" class="block text-sm font-semibold text-gray-700 mb-2">City/Municipality <span class="text-red-500">*</span></label>
+                    <select
+                        name="city"
+                        id="city"
+                        required
+                        data-default="{{ old('city', $address->city) }}"
+                        disabled
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                        <option value="">Select City/Municipality</option>
+                    </select>
+                    @error('city')
+                        <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
+                    @enderror
+                </div>
 
                 <!-- Barangay -->
                 <div>
@@ -110,46 +136,6 @@
                     @error('barangay')
                         <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
                     @enderror
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Region</label>
-                    <select id="region" name="region" required data-default="{{ old('region', $address->region) }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                        <option value="">Select Region</option>
-                    </select>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="city" class="block text-sm font-semibold text-gray-700 mb-2">City/Municipality <span class="text-red-500">*</span></label>
-                        <select
-                            name="city"
-                            id="city"
-                            required
-                            data-default="{{ old('city', $address->city) }}"
-                            disabled
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
-                            <option value="">Select City/Municipality</option>
-                        </select>
-                        @error('city')
-                            <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label for="province" class="block text-sm font-semibold text-gray-700 mb-2">Province <span class="text-red-500">*</span></label>
-                        <select
-                            name="province"
-                            id="province"
-                            required
-                            data-default="{{ old('province', $address->province) }}"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
-                            <option value="">Select Province</option>
-                        </select>
-                        @error('province')
-                            <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
-                        @enderror
-                    </div>
                 </div>
 
                 <div>
@@ -196,7 +182,3 @@
     </div>
 </div>
 @endsection
-@push('scripts')
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="{{ asset('js/address-selector.js') }}?v={{ filemtime(public_path('js/address-selector.js')) }}"></script>
-@endpush

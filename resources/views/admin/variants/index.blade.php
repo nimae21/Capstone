@@ -136,6 +136,9 @@ body::before {
 @endsection
 
 @section('content')
+@php
+    $usSizes = ['7', '7.5', '8', '8.5', '9', '9.5', '10', '10.5', '11', '11.5', '12', '12.5', '13'];
+@endphp
 <div class="max-w-7xl mx-auto px-4 py-10 relative z-10">
 
     {{-- BACK BUTTON --}}
@@ -197,8 +200,13 @@ body::before {
 
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">First Size</label>
-                    <input type="number" name="size" class="input-premium" placeholder="e.g., 42" min="1" required>
-                    <p class="text-xs text-gray-400 mt-1">Add the initial size for this color</p>
+                    <select name="size" class="input-premium" required>
+                        <option value="">Select US size</option>
+                        @foreach($usSizes as $size)
+                            <option value="{{ $size }}" {{ old('size') === $size ? 'selected' : '' }}>{{ $size }}</option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-gray-400 mt-1">Choose a US size from 7 to 13.</p>
                 </div>
 
                 <button type="submit" class="w-full btn-add-variant py-2.5 flex items-center justify-center gap-2">
@@ -220,17 +228,23 @@ body::before {
 
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">Select Color</label>
-                    <select name="color" class="input-premium" required>
+                    <select name="color" id="existingColor" class="input-premium" required>
                         <option value="">-- Choose a color --</option>
                         @foreach($variants->groupBy('color') as $color => $items)
-                            <option value="{{ $color }}">{{ $color }}</option>
+                            <option value="{{ $color }}" data-used-sizes='@json($items->pluck("size")->values())'>{{ $color }}</option>
                         @endforeach
                     </select>
                 </div>
 
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1">New Size</label>
-                    <input type="number" name="size" class="input-premium" placeholder="e.g., 42" min="1" required>
+                    <select name="size" id="existingSize" class="input-premium" required disabled>
+                        <option value="">Choose a color first</option>
+                        @foreach($usSizes as $size)
+                            <option value="{{ $size }}">{{ $size }}</option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-gray-400 mt-1">Sizes already used by the selected color are unavailable.</p>
                 </div>
 
                 <button type="submit" class="w-full btn-add-variant py-2.5 flex items-center justify-center gap-2" style="background: linear-gradient(135deg, #2563eb, #1e40af);">
@@ -293,8 +307,8 @@ body::before {
                                             Edit
                                         </a>
                                         <button type="button" onclick="openDeleteVariant({{ $variant->product_variant_id }})" class="btn-sm-3d btn-sm-red px-3 py-1 text-xs">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            Delete
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2h6m4-1l3 3m0 0l-3 3m3-3H9"/></svg>
+                                            Archive
                                         </button>
                                         <a href="{{ route('admin.stocks.index', $variant->product_variant_id) }}" class="btn-sm-3d btn-sm-green px-3 py-1 text-xs">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
@@ -330,20 +344,20 @@ body::before {
 </div>
 @endif
 
-{{-- DELETE CONFIRMATION MODAL --}}
+{{-- ARCHIVE CONFIRMATION MODAL --}}
 <div id="deleteVariantModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
     <div class="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl transform transition-all">
         <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
         </div>
-        <h2 class="font-bold text-lg text-center">Delete Variant?</h2>
-        <p class="text-gray-500 text-sm text-center mt-2">This action cannot be undone. All stock data will be lost.</p>
+        <h2 class="font-bold text-lg text-center">Archive Variant?</h2>
+        <p class="text-gray-500 text-sm text-center mt-2">This will disable the variant from the catalog while preserving its stock records.</p>
         <form id="deleteVariantForm" method="POST" class="mt-4">
             @csrf
             @method('DELETE')
             <div class="flex justify-center gap-3">
                 <button type="button" onclick="closeDeleteVariant()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">Cancel</button>
-                <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">Delete</button>
+                <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">Archive</button>
             </div>
         </form>
     </div>
@@ -371,5 +385,34 @@ function openDeleteVariant(id) {
 function closeDeleteVariant() {
     document.getElementById('deleteVariantModal').style.display = 'none';
 }
+</script>
+<script>
+const existingColor = document.getElementById('existingColor');
+const existingSize = document.getElementById('existingSize');
+
+function updateAvailableSizes() {
+    const selectedOption = existingColor.options[existingColor.selectedIndex];
+    const usedSizes = selectedOption?.dataset.usedSizes
+        ? JSON.parse(selectedOption.dataset.usedSizes)
+        : [];
+
+    existingSize.disabled = !existingColor.value;
+    existingSize.value = '';
+
+    [...existingSize.options].forEach(option => {
+        if (!option.value) {
+            option.textContent = existingColor.value ? 'Select new US size' : 'Choose a color first';
+            option.disabled = false;
+            return;
+        }
+
+        const isUsed = usedSizes.map(String).includes(String(option.value));
+        option.disabled = isUsed;
+        option.textContent = isUsed ? `${option.value} (already added)` : option.value;
+    });
+}
+
+existingColor.addEventListener('change', updateAvailableSizes);
+updateAvailableSizes();
 </script>
 @endsection

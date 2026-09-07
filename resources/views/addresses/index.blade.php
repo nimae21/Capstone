@@ -13,8 +13,8 @@
                         <h1 class="text-3xl font-bold text-gray-900">My Addresses</h1>
                         <p class="text-gray-600 mt-2">Manage your delivery addresses</p>
                     </div>
-                    <a href="{{ route('addresses.create') }}" class="w-full sm:w-auto text-center bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition">
-                        <i class="fas fa-plus mr-2"></i> Add New Address
+                    <a href="{{ route('home') }}" class="inline-flex items-center rounded-lg bg-gray-200 px-4 py-2 font-semibold text-gray-800 transition hover:bg-gray-300">
+                        <i class="fas fa-arrow-left mr-2"></i> Back to Home
                     </a>
                 </div>
             </div>
@@ -82,16 +82,47 @@
                                             </button>
                                         </form>
                                     @endif
-                                    <form action="{{ route('addresses.destroy', $address->address_id) }}" method="POST" onsubmit="return confirm('Delete this address?');" class="flex-1">
+                                    <form action="{{ route('addresses.destroy', $address->address_id) }}" method="POST" class="flex-1">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded transition">
+                                        <button
+                                            type="button"
+                                            x-data
+                                            x-on:click.prevent="$dispatch('open-modal', 'confirm-address-deletion-{{ $address->address_id }}')"
+                                            class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded transition">
                                             <i class="fas fa-trash mr-1"></i> Delete
                                         </button>
                                     </form>
                                 </div>
                             </div>
                         </div>
+
+                        <x-modal name="confirm-address-deletion-{{ $address->address_id }}" focusable>
+                            <form method="POST" action="{{ route('addresses.destroy', $address->address_id) }}" class="p-6">
+                                @csrf
+                                @method('DELETE')
+
+                                <div class="flex items-center gap-3">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-500">
+                                        <i class="fas fa-exclamation-triangle text-xl"></i>
+                                    </div>
+                                    <h2 class="text-lg font-bold text-gray-900">Delete Address</h2>
+                                </div>
+
+                                <p class="mt-4 text-sm text-gray-600">
+                                    Are you sure you want to delete this address? This action cannot be undone.
+                                </p>
+
+                                <div class="mt-6 flex justify-end gap-3">
+                                    <button type="button" x-on:click="$dispatch('close')" class="rounded-lg bg-gray-200 px-4 py-2 font-semibold text-gray-800 transition hover:bg-gray-300">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" class="flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 font-semibold text-white transition hover:bg-red-600">
+                                        <i class="fas fa-trash-alt"></i> Yes, Delete
+                                    </button>
+                                </div>
+                            </form>
+                        </x-modal>
                     @endforeach
                 </div>
 

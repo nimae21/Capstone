@@ -150,6 +150,40 @@
     .shoe-card:hover .shoe-image {
         transform: scale(1.05);
     }
+
+    .shoe-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin: 0.85rem 1rem 0;
+        flex-wrap: wrap;
+    }
+
+    .shoe-meta .meta-brand {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #1e293b;
+    }
+
+    .shoe-meta .meta-dot {
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: #cbd5e1;
+        flex-shrink: 0;
+    }
+
+    .shoe-meta .meta-type {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #dc2626;
+        background: #fef2f2;
+        padding: 0.15rem 0.6rem;
+        border-radius: 1rem;
+        letter-spacing: 0.02em;
+    }
     
     .shoe-card h3 {
         font-size: 1.1rem;
@@ -276,6 +310,8 @@
     $price = $product->display_price ?? 0;
     $image = $product->images->first()?->image_url ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400';
     $description = $product->product_description ?? 'Premium performance footwear engineered for the relentless athlete.';
+    $brandName = $product->brand->brand_name ?? null;
+    $shoeTypeName = $product->shoeType->shoe_type_name ?? null;
 
     $badges = ['LIMITED EDITION', 'BESTSELLER', 'NEW DROP', 'PREMIUM'];
     $badgeText = $badges[array_rand($badges)];
@@ -284,6 +320,19 @@
         <a href="{{ route('product.show', $product->product_id) }}" class="shoe-card" data-category="{{ strtolower($category) }}" data-price="{{ round($salePrice) }}" data-discount="{{ $discountPercent }}" aria-label="View {{ $product->product_name }}">
             <span class="sale-badge">-{{ $discountPercent }}%</span>
             <img class="shoe-image" src="{{ $image }}" alt="{{ $product->product_name }}">
+            @if($brandName || $shoeTypeName)
+                <div class="shoe-meta">
+                    @if($brandName)
+                        <span class="meta-brand">{{ $brandName }}</span>
+                    @endif
+                    @if($brandName && $shoeTypeName)
+                        <span class="meta-dot"></span>
+                    @endif
+                    @if($shoeTypeName)
+                        <span class="meta-type">{{ $shoeTypeName }}</span>
+                    @endif
+                </div>
+            @endif
             <h3>{{ $product->product_name }}</h3>
             <div class="price">₱{{ number_format(round($salePrice), 2) }} <small>From ₱{{ number_format($price, 2) }}</small></div>
             <span class="btn-card">Shop Now <i class="fas fa-arrow-right ml-1"></i></span>

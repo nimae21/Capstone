@@ -596,5 +596,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 </script>
-@include('partials.recommendations')
 @endsection

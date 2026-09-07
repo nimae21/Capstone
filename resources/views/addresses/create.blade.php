@@ -108,84 +108,72 @@
     class="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
     📍 Find Address on Map
 </button>
-                <!-- Barangay -->
-                <div>
-                    <label for="barangay" class="block text-sm font-semibold text-gray-700 mb-2">Barangay <span class="text-red-500">*</span></label>
-                    <select
-    name="barangay"
-    id="barangay"
-    required
-    data-default="{{ old('barangay') }}"
-    disabled
-    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
 
-    <option value="">Select Barangay</option>
+    <!-- Region -->
+    <div>
+        <label for="region" class="block text-sm font-semibold text-gray-700 mb-2">Region <span class="text-red-500">*</span></label>
+        <select
+            id="region"
+            name="region"
+            required
+            data-default="{{ old('region') }}"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+            <option value="">Select Region</option>
+        </select>
+        @error('region')
+            <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
+        @enderror
+    </div>
 
-</select>
-                    @error('barangay')
-                        <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
-                    @enderror
-                </div>
+    <!-- Province -->
+    <div>
+        <label for="province" class="block text-sm font-semibold text-gray-700 mb-2">Province <span class="text-red-500">*</span></label>
+        <select
+            name="province"
+            id="province"
+            required
+            data-default="{{ old('province') }}"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+            <option value="">Select Province</option>
+        </select>
+        @error('province')
+            <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
+        @enderror
+    </div>
 
-                <!-- Region -->
-<div>
-    <label class="block text-sm font-semibold text-gray-700 mb-2">
-        Region
-    </label>
+    <!-- City -->
+    <div>
+        <label for="city" class="block text-sm font-semibold text-gray-700 mb-2">City/Municipality <span class="text-red-500">*</span></label>
+        <select
+            name="city"
+            id="city"
+            required
+            data-default="{{ old('city') }}"
+            disabled
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+            <option value="">Select City/Municipality</option>
+        </select>
+        @error('city')
+            <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
+        @enderror
+    </div>
 
-    <select
-        id="region"
-        name="region"
-        required
-        data-default="{{ old('region') }}"
-        class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-
-        <option value="">Select Region</option>
-
-    </select>
-</div>
-
-<!-- Province + City -->
-
-                <!-- City and Province in Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- City -->
-                    <div>
-                        <label for="city" class="block text-sm font-semibold text-gray-700 mb-2">City/Municipality <span class="text-red-500">*</span></label>
-                        <select
-    name="city"
-    id="city"
-    required
-    data-default="{{ old('city') }}"
-    disabled
-    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
-
-    <option value="">Select City/Municipality</option>
-
-</select>
-                        @error('city')
-                            <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <!-- Province -->
-                    <div>
-                        <label for="province" class="block text-sm font-semibold text-gray-700 mb-2">Province <span class="text-red-500">*</span></label>
-                        <select
-    name="province"
-    id="province"
-    required
-    data-default="{{ old('province') }}"
-    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
-
-    <option value="">Select Province</option>
-
-</select>
-                        @error('province')
-                            <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
-                        @enderror
-                    </div>
-                </div>
+    <!-- Barangay -->
+    <div>
+        <label for="barangay" class="block text-sm font-semibold text-gray-700 mb-2">Barangay <span class="text-red-500">*</span></label>
+        <select
+            name="barangay"
+            id="barangay"
+            required
+            data-default="{{ old('barangay') }}"
+            disabled
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+            <option value="">Select Barangay</option>
+        </select>
+        @error('barangay')
+            <span class="text-red-500 text-sm mt-1">{{ $message }}</span>
+        @enderror
+    </div>
 
                 <!-- Postal Code -->
                 <div>

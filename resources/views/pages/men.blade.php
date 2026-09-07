@@ -187,10 +187,45 @@
         transform: scale(1.03);
     }
 
+    /* ── Brand / Shoe Type meta row ── */
+    .shoe-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin: 0.85rem 1rem 0;
+        flex-wrap: wrap;
+    }
+
+    .shoe-meta .meta-brand {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #1e293b;
+    }
+
+    .shoe-meta .meta-dot {
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: #cbd5e1;
+        flex-shrink: 0;
+    }
+
+    .shoe-meta .meta-type {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #dc2626;
+        background: #fef2f2;
+        padding: 0.15rem 0.6rem;
+        border-radius: 1rem;
+        letter-spacing: 0.02em;
+    }
+
     .shoe-card h3 {
         font-size: 1.05rem;
         font-weight: 700;
-        margin: 1rem 1rem 0.3rem;
+        margin: 0.35rem 1rem 0.3rem;
         color: #1e293b;
         line-height: 1.3;
     }
@@ -466,6 +501,8 @@
     $price = $product->display_price ?? 0;
     $image = $product->images->first()?->image_url ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400';
     $description = $product->product_description ?? 'Premium performance footwear engineered for the relentless athlete.';
+    $brandName = $product->brand->brand_name ?? null;
+    $shoeTypeName = $product->shoeType->shoe_type_name ?? null;
 
     $badges = ['LIMITED EDITION', 'BESTSELLER', 'NEW DROP', 'PREMIUM'];
     $badgeText = $badges[array_rand($badges)];
@@ -477,6 +514,20 @@
                     <img class="shoe-image"
                          src="{{ $image }}"
                          alt="{{ $product->product_name }}">
+
+                    @if($brandName || $shoeTypeName)
+                        <div class="shoe-meta">
+                            @if($brandName)
+                                <span class="meta-brand">{{ $brandName }}</span>
+                            @endif
+                            @if($brandName && $shoeTypeName)
+                                <span class="meta-dot"></span>
+                            @endif
+                            @if($shoeTypeName)
+                                <span class="meta-type">{{ $shoeTypeName }}</span>
+                            @endif
+                        </div>
+                    @endif
 
                     <h3>{{ $product->product_name }}</h3>
                     <p class="desc">{{ Str::limit($description, 55) }}</p>

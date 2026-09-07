@@ -8,14 +8,15 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\ShoeType;
+use App\Services\ProductImageService;
 use Illuminate\Http\Request;
-use App\Services\ProductImageService;  
 
 class ProductController extends Controller
 {
     public function __construct(
         protected ProductImageService $imageService
     ) {}
+
     public function index(Request $request)
     {
         $search = trim($request->search);
@@ -23,7 +24,7 @@ class ProductController extends Controller
         $brand = $request->brand;
         $shoeType = $request->shoe_type;
 
-        $products = Product::with(['category', 'brand', 'shoeType', 'variants'])
+        $products = Product::with(['category', 'brand', 'shoeType', 'variants.stocks'])
             ->where('is_active', true)
 
             ->when($search, function ($query) use ($search) {
@@ -32,28 +33,28 @@ class ProductController extends Controller
                 $query->where(function ($q) use ($search) {
                     $q->whereRaw('LOWER(product_name) LIKE ?', ["%{$search}%"])
                         ->orWhereRaw('LOWER(product_description) LIKE ?', ["%{$search}%"])
-                        ->orWhereHas('brand', fn($q) => $q->whereRaw('LOWER(brand_name) LIKE ?', ["%{$search}%"]))
-                        ->orWhereHas('category', fn($q) => $q->whereRaw('LOWER(category_name) LIKE ?', ["%{$search}%"]))
-                        ->orWhereHas('shoeType', fn($q) => $q->whereRaw('LOWER(shoe_type_name) LIKE ?', ["%{$search}%"]));
+                        ->orWhereHas('brand', fn ($q) => $q->whereRaw('LOWER(brand_name) LIKE ?', ["%{$search}%"]))
+                        ->orWhereHas('category', fn ($q) => $q->whereRaw('LOWER(category_name) LIKE ?', ["%{$search}%"]))
+                        ->orWhereHas('shoeType', fn ($q) => $q->whereRaw('LOWER(shoe_type_name) LIKE ?', ["%{$search}%"]));
                 });
             })
 
-            ->when($category, fn($query) => $query->where('category_id', $category))
-            ->when($brand, fn($query) => $query->where('brand_id', $brand))
-            ->when($shoeType, fn($query) => $query->where('shoe_type_id', $shoeType))
+            ->when($category, fn ($query) => $query->where('category_id', $category))
+            ->when($brand, fn ($query) => $query->where('brand_id', $brand))
+            ->when($shoeType, fn ($query) => $query->where('shoe_type_id', $shoeType))
 
             ->orderBy('product_name')
             ->paginate(5)
             ->withQueryString();
 
         return view('admin.products.index', [
-            'products'        => $products,
-            'categories'      => Category::where('is_active', true)->orderBy('category_name')->get(),
-            'brands'          => Brand::where('is_active', true)->orderBy('brand_name')->get(),
-            'shoeTypes'       => ShoeType::where('is_active', true)->orderBy('display_order')->get(),
-            'search'          => $search,
-            'totalProducts'   => Product::where('is_active', true)->count(),
-            'totalVariants'   => ProductVariant::count(),
+            'products' => $products,
+            'categories' => Category::where('is_active', true)->orderBy('category_name')->get(),
+            'brands' => Brand::where('is_active', true)->orderBy('brand_name')->get(),
+            'shoeTypes' => ShoeType::where('is_active', true)->orderBy('display_order')->get(),
+            'search' => $search,
+            'totalProducts' => Product::where('is_active', true)->count(),
+            'totalVariants' => ProductVariant::count(),
         ]);
     }
 
@@ -68,12 +69,12 @@ class ProductController extends Controller
         ]);
 
         $validated = $request->validate([
-            'product_name'        => 'required|string|max:255',
+            'product_name' => 'required|string|max:255',
             'product_description' => 'nullable|string',
-            'category_id'         => 'required|exists:categories,category_id',
-            'brand_id'            => 'required|exists:brands,brand_id',
-            'shoe_type_id'        => 'required|exists:shoe_types,shoe_type_id',
-            'images.*'            => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'category_id' => 'required|exists:categories,category_id',
+            'brand_id' => 'required|exists:brands,brand_id',
+            'shoe_type_id' => 'required|exists:shoe_types,shoe_type_id',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
         ]);
 
         $exists = Product::whereRaw(
@@ -90,11 +91,11 @@ class ProductController extends Controller
         try {
             // Only pass the columns that actually belong to the products table
             $product = Product::create([
-                'product_name'        => $validated['product_name'],
+                'product_name' => $validated['product_name'],
                 'product_description' => $validated['product_description'] ?? null,
-                'category_id'         => $validated['category_id'],
-                'brand_id'            => $validated['brand_id'],
-                'shoe_type_id'        => $validated['shoe_type_id'],
+                'category_id' => $validated['category_id'],
+                'brand_id' => $validated['brand_id'],
+                'shoe_type_id' => $validated['shoe_type_id'],
             ]);
 
             if ($request->hasFile('images')) {
@@ -108,19 +109,19 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'Failed to create product: ' . $e->getMessage());
+                ->with('error', 'Failed to create product: '.$e->getMessage());
         }
     }
 
     public function edit(Product $product)
     {
         return view('admin.products.edit', [
-            'product'    => $product,
+            'product' => $product,
             'categories' => Category::where('is_active', true)->get(),
-            'brands'     => Brand::where('is_active', true)->get(),
-            'shoeTypes'  => ShoeType::where('is_active', true)
-                                    ->orderBy('display_order')
-                                    ->get(),
+            'brands' => Brand::where('is_active', true)->get(),
+            'shoeTypes' => ShoeType::where('is_active', true)
+                ->orderBy('display_order')
+                ->get(),
         ]);
     }
 
@@ -135,14 +136,14 @@ class ProductController extends Controller
         ]);
 
         $validated = $request->validate([
-            'product_name'        => 'required|string|max:255',
+            'product_name' => 'required|string|max:255',
             'product_description' => 'nullable|string',
-            'category_id'         => 'required|exists:categories,category_id',
-            'brand_id'            => 'required|exists:brands,brand_id',
-            'shoe_type_id'        => 'required|exists:shoe_types,shoe_type_id',
-            'images'              => 'nullable',
-            'images.*'            => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-            'primary_image'       => 'nullable|integer',
+            'category_id' => 'required|exists:categories,category_id',
+            'brand_id' => 'required|exists:brands,brand_id',
+            'shoe_type_id' => 'required|exists:shoe_types,shoe_type_id',
+            'images' => 'nullable',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'primary_image' => 'nullable|integer',
         ]);
 
         $exists = Product::whereRaw(
@@ -155,7 +156,7 @@ class ProductController extends Controller
         if ($exists) {
             return back()
                 ->withErrors([
-                    'product_name' => 'This product already exists.'
+                    'product_name' => 'This product already exists.',
                 ])
                 ->withInput();
         }
@@ -170,7 +171,7 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             return back()
                 ->withInput()
-                ->with('error', 'Failed to update product: ' . $e->getMessage());
+                ->with('error', 'Failed to update product: '.$e->getMessage());
         }
     }
 

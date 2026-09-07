@@ -120,6 +120,9 @@
 @endsection
 
 @section('content')
+@php
+    $usSizes = ['7', '7.5', '8', '8.5', '9', '9.5', '10', '10.5', '11', '11.5', '12', '12.5', '13'];
+@endphp
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative z-10">
         <!-- Back to Manage Variants Link -->
         <div class="mb-6">
@@ -144,8 +147,13 @@
 
                 <div>
                     <label for="size" class="block text-sm font-semibold text-gray-700 mb-1">Size <span class="text-red-500">*</span></label>
-                    <input type="text" name="size" id="size" value="{{ old('size', $variant->size) }}" required
-                           class="input-premium" placeholder="e.g., 42, M, XL, 10.5">
+                    <select name="size" id="size" required class="input-premium">
+                        <option value="">Select US size</option>
+                        @foreach($usSizes as $size)
+                            <option value="{{ $size }}" {{ old('size', (string) $variant->size) === $size ? 'selected' : '' }}>{{ $size }}</option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-gray-400 mt-1">Choose a US size from 7 to 13.</p>
                 </div>
 
                 <div>

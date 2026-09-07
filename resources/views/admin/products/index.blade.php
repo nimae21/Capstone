@@ -341,6 +341,62 @@
             font-size: 0.875rem;
             color: #475569;
         }
+        .inventory-summary {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        .inventory-color {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            background: #ffffff;
+            padding: 0.75rem;
+        }
+        .inventory-color + .inventory-color {
+            margin-top: 0.65rem;
+        }
+        .inventory-color-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .inventory-color-name {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-weight: 700;
+            color: #334155;
+        }
+        .inventory-color-dot {
+            width: 0.65rem;
+            height: 0.65rem;
+            border-radius: 9999px;
+            background: #dc2626;
+        }
+        .inventory-size-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+        .inventory-size {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.4rem;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 0.75rem;
+        }
+        .inventory-size strong {
+            color: #111827;
+        }
+        .inventory-size.out {
+            color: #b91c1c;
+            background: #fef2f2;
+        }
         .product-card .product-actions {
             display: flex;
             gap: 0.5rem;
@@ -624,7 +680,7 @@
                             <button type="button"
                                     onclick="openDeleteModal({{ $product->product_id }})"
                                     class="btn-sm-3d btn-sm-red">
-                                <i class="fas fa-trash-alt"></i> Delete
+                                <i class="fas fa-box-archive"></i> Archive
                             </button>
                             <a href="{{ route('admin.products.variants.index', $product->product_id) }}"
                                class="btn-sm-3d btn-sm-green">
@@ -638,6 +694,49 @@
                             {{ $product->product_description }}
                         </div>
                     @endif
+                    <div class="product-body inventory-summary">
+                        @php
+                            $variantsByColor = $product->variants->groupBy('color');
+                            $totalStock = $product->variants->sum(fn ($variant) => $variant->stocks->sum('remaining_quantity'));
+                        @endphp
+
+                        <div class="flex items-center justify-between gap-3 mb-3">
+                            <p class="font-bold text-gray-800">
+                                <i class="fas fa-layer-group text-red-500 mr-2"></i>Inventory
+                            </p>
+                            <span class="text-xs font-semibold text-gray-500">
+                                {{ $product->variants->count() }} {{ Str::plural('size', $product->variants->count()) }} · {{ $totalStock }} in stock
+                            </span>
+                        </div>
+
+                        @if($variantsByColor->isNotEmpty())
+                            <div class="space-y-2">
+                                @foreach($variantsByColor as $color => $colorVariants)
+                                    <div class="inventory-color">
+                                        <div class="inventory-color-header">
+                                            <span class="inventory-color-name">
+                                                <span class="inventory-color-dot"></span>
+                                                {{ $color ?: 'No color' }}
+                                            </span>
+                                            <span class="text-xs text-gray-500">
+                                                {{ $colorVariants->count() }} {{ Str::plural('size', $colorVariants->count()) }}
+                                            </span>
+                                        </div>
+                                        <div class="inventory-size-list">
+                                            @foreach($colorVariants as $variant)
+                                                @php $stock = $variant->stocks->sum('remaining_quantity'); @endphp
+                                                <span class="inventory-size {{ $stock === 0 ? 'out' : '' }}">
+                                                    Size {{ $variant->size }}: <strong>{{ $stock }}</strong>
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <p class="text-sm text-gray-400">No variants added yet.</p>
+                        @endif
+                    </div>
                 </div>
             @empty
                 <div class="text-center py-10 text-gray-400">
@@ -659,17 +758,17 @@
 
     </div>
 
-    <!-- ===== DELETE MODAL ===== -->
+    <!-- ===== ARCHIVE MODAL ===== -->
     <div id="deleteModal" style="display:none;" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div class="bg-white w-full max-w-md p-6 rounded-xl shadow-lg">
             <div class="flex items-center gap-3 mb-4">
                 <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-500">
                     <i class="fas fa-exclamation-triangle text-xl"></i>
                 </div>
-                <h2 class="text-lg font-bold text-gray-800">Confirm Delete</h2>
+                <h2 class="text-lg font-bold text-gray-800">Archive Product</h2>
             </div>
             <p class="text-sm text-gray-600">
-                Are you sure you want to delete this product? This action cannot be undone.
+                Are you sure you want to archive this product? It will be disabled from the catalog, but its variants and stock records will be kept.
             </p>
             <form id="deleteForm" method="POST" class="mt-6 flex justify-end gap-3">
                 @csrf
@@ -678,7 +777,7 @@
                     Cancel
                 </button>
                 <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition flex items-center gap-2">
-                    <i class="fas fa-trash-alt"></i> Yes, Delete
+                    <i class="fas fa-box-archive"></i> Yes, Archive
                 </button>
             </form>
         </div>

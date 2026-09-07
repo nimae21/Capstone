@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ProductVariantController extends Controller
 {
@@ -16,7 +17,7 @@ class ProductVariantController extends Controller
     {
         $variants = ProductVariant::where('product_id', $product->product_id)
             ->where('is_active', true)
-            ->orderBy('size')
+            ->orderByRaw('CAST(size AS DECIMAL(4,1))')
             ->get();
 
         return view('admin.variants.index', compact('product', 'variants'));
@@ -28,7 +29,7 @@ class ProductVariantController extends Controller
     public function store(Request $request, Product $product)
     {
         $request->validate([
-            'size'  => 'required|integer|min:1',
+            'size' => ['required', Rule::in(self::availableSizes())],
             'color' => 'required|string|max:50',
         ]);
 
@@ -48,7 +49,7 @@ class ProductVariantController extends Controller
         }
 
         $product->variants()->create([
-            'size'  => $request->size,
+            'size' => $request->size,
             'color' => $color,
         ]);
 
@@ -71,7 +72,7 @@ class ProductVariantController extends Controller
     public function update(Request $request, ProductVariant $variant)
     {
         $request->validate([
-            'size'  => 'required|integer|min:1',
+            'size' => ['required', Rule::in(self::availableSizes())],
             'color' => 'required|string|max:50',
         ]);
 
@@ -92,7 +93,7 @@ class ProductVariantController extends Controller
         }
 
         $variant->update([
-            'size'  => $request->size,
+            'size' => $request->size,
             'color' => $color,
         ]);
 
@@ -114,5 +115,18 @@ class ProductVariantController extends Controller
             'success',
             'Variant archived successfully.'
         );
+    }
+
+    private static function availableSizes(): array
+    {
+        return collect(range(14, 26, 1))
+            ->map(function (int $size): string {
+                $value = $size / 2;
+
+                return fmod($value, 1) === 0.0
+                    ? (string) (int) $value
+                    : number_format($value, 1, '.', '');
+            })
+            ->all();
     }
 }

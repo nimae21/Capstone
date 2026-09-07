@@ -7,6 +7,8 @@ use App\Models\CartItem;
 use App\Models\ProductVariant;
 use App\Services\ActivityTrackingService;
 use App\Services\StockService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -96,7 +98,7 @@ class CartController extends Controller
     /**
      * Increase quantity
      */
-    public function increase($id)
+    public function increase(Request $request, $id): JsonResponse|RedirectResponse
     {
         $item = CartItem::with('cart', 'variant')->findOrFail($id);
 
@@ -110,13 +112,13 @@ class CartController extends Controller
 
         $item->increment('quantity');
 
-        return back()->with('success', 'Cart quantity updated.');
+        return $this->quantityUpdateResponse($request, $item, 'Cart quantity updated.');
     }
 
     /**
      * Decrease quantity
      */
-    public function decrease($id)
+    public function decrease(Request $request, $id): JsonResponse|RedirectResponse
     {
         $item = CartItem::with('cart')->findOrFail($id);
 
@@ -126,12 +128,31 @@ class CartController extends Controller
 
             $item->delete();
 
-            return back()->with('success', 'Item removed from cart.');
+            return $this->quantityUpdateResponse($request, $item, 'Item removed from cart.');
         }
 
         $item->decrement('quantity');
 
-        return back()->with('success', 'Cart quantity updated.');
+        return $this->quantityUpdateResponse($request, $item, 'Cart quantity updated.');
+    }
+
+    private function quantityUpdateResponse(Request $request, CartItem $item, string $message): JsonResponse|RedirectResponse
+    {
+        if (! $request->expectsJson()) {
+            return back()->with('success', $message);
+        }
+
+        $cart = $item->cart()->with('items')->first();
+        $quantity = $item->exists ? $item->quantity : 0;
+        $itemSubtotal = $item->exists ? $item->price * $quantity : 0;
+
+        return response()->json([
+            'quantity' => $quantity,
+            'item_subtotal' => $itemSubtotal,
+            'cart_total' => $cart?->items->sum(fn (CartItem $cartItem): float|int => $cartItem->price * $cartItem->quantity) ?? 0,
+            'cart_count' => $cart?->items->sum('quantity') ?? 0,
+            'message' => $message,
+        ]);
     }
 
     /**

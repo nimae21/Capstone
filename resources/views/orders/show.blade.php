@@ -270,7 +270,7 @@
                                     <p class="text-gray-500">{{ $order->created_at->format('M d, Y H:i A') }}</p>
                                 </div>
                             </div>
-                            @if($order->status === 'cancelled')
+                            @if($order->status === OrderStatus::Cancelled)
 
 <div class="flex gap-3">
     <div class="flex-shrink-0 w-3 h-3 bg-red-600 rounded-full mt-1.5"></div>
@@ -318,11 +318,15 @@
                     <!-- Action Buttons -->
                     <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
 
-   @if($order->status->isCancellable())
-    <form action="{{ route('orders.cancel', $order->order_id) }}" ...>
-        <button ...>Cancel Order</button>
-    </form>
-@endif
+                    @if($order->status->isCancellable())
+                        <form action="{{ route('orders.cancel', $order->order_id) }}" method="POST" class="mb-3" onsubmit="return confirm('Are you sure you want to cancel this order?');">
+                            @csrf
+                            @method('PUT')
+                            <button type="submit" class="block w-full rounded-lg bg-red-600 py-3 font-bold text-white transition hover:bg-red-700">
+                                <i class="fas fa-times-circle mr-2"></i> Cancel Order
+                            </button>
+                        </form>
+                    @endif
 
     <a href="{{ route('orders.index') }}"
        class="block w-full bg-gray-900 hover:bg-black text-white font-bold py-3 rounded-lg text-center mb-3">

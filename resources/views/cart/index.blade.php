@@ -156,7 +156,7 @@
                                         $total += $subtotal;
                                     @endphp
                                     
-                                    <div class="cart-item bg-white rounded-xl p-4 sm:p-5 border border-gray-100 shadow-sm hover:shadow-xl transition-all">
+                                    <div class="cart-item bg-white rounded-xl p-4 sm:p-5 border border-gray-100 shadow-sm hover:shadow-xl transition-all" data-cart-item data-stock="{{ $availableStock }}">
                                         <div class="flex flex-col gap-4 sm:flex-row sm:gap-5">
                                             <!-- Product Image -->
                                             <div class="w-full h-48 sm:w-28 sm:h-28 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl shrink-0 flex items-center justify-center overflow-hidden shadow-md">
@@ -184,7 +184,7 @@
                                             <!-- Quantity Control -->
                                             <div class="flex flex-row items-center justify-between gap-3 sm:flex-col sm:items-center sm:gap-2">
                                                 <div class="flex items-center gap-2 bg-gray-100 rounded-full p-1 shadow-inner">
-                                                    <form action="{{ route('cart.decrease', $item->cart_item_id) }}" method="POST" class="inline">
+                                                    <form action="{{ route('cart.decrease', $item->cart_item_id) }}" method="POST" class="inline" data-quantity-form>
                                                         @csrf
                                                         @method('PATCH')
                                                         <button type="submit" class="quantity-btn w-8 h-8 bg-white hover:bg-red-500 hover:text-white rounded-full text-gray-700 font-bold transition-all shadow-sm" {{ $item->quantity <= 1 ? 'disabled' : '' }}>
@@ -192,9 +192,9 @@
                                                         </button>
                                                     </form>
                                                     
-                                                    <span class="font-bold text-gray-900 w-8 text-center text-lg">{{ $item->quantity }}</span>
+                                                    <span class="quantity-value font-bold text-gray-900 w-8 text-center text-lg">{{ $item->quantity }}</span>
                                                     
-                                                    <form action="{{ route('cart.increase', $item->cart_item_id) }}" method="POST" class="inline">
+                                                    <form action="{{ route('cart.increase', $item->cart_item_id) }}" method="POST" class="inline" data-quantity-form>
                                                         @csrf
                                                         @method('PATCH')
                                                         <button type="submit" class="quantity-btn w-8 h-8 bg-white hover:bg-red-500 hover:text-white rounded-full text-gray-700 font-bold transition-all shadow-sm" {{ $item->quantity >= $availableStock ? 'disabled' : '' }}>
@@ -214,7 +214,7 @@
 
                                             <!-- Subtotal -->
                                             <div class="flex flex-row items-center justify-between gap-3 sm:flex-col sm:items-end sm:justify-between sm:min-w-[100px]">
-                                                <p class="font-bold text-gray-900 text-lg">₱{{ number_format($subtotal, 2) }}</p>
+                                                <p class="subtotal-value font-bold text-gray-900 text-lg">₱{{ number_format($subtotal, 2) }}</p>
                                                 <p class="text-xs text-gray-400 mt-1">Subtotal</p>
                                             </div>
                                         </div>
@@ -242,7 +242,7 @@
                             <div class="space-y-4 mb-6 pb-6 border-b border-gray-200">
     <div class="flex justify-between text-gray-600">
         <span>Subtotal:</span>
-        <span class="font-semibold">₱{{ number_format($total, 2) }}</span>
+        <span id="cartSubtotal" class="font-semibold">₱{{ number_format($total, 2) }}</span>
     </div>
     <div class="flex justify-between text-gray-600">
         <span>Shipping:</span>
@@ -253,7 +253,7 @@
     <div class="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent my-2"></div>
     <div class="flex justify-between text-xl font-bold">
         <span>Total:</span>
-        <span class="text-red-600 text-2xl">₱{{ number_format($total, 2) }}</span>
+        <span id="cartTotal" class="text-red-600 text-2xl">₱{{ number_format($total, 2) }}</span>
     </div>
 </div>
 
@@ -301,7 +301,7 @@
 
     <script>
         // Add loading state to forms
-        document.querySelectorAll('form').forEach(form => {
+        document.querySelectorAll('form:not([data-quantity-form])').forEach(form => {
             form.addEventListener('submit', function(e) {
                 const btn = this.querySelector('button[type="submit"]');
                 if(btn && btn.disabled) {
@@ -309,6 +309,68 @@
                 } else if(btn && !btn.disabled) {
                     btn.disabled = true;
                     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Processing...';
+                }
+            });
+        });
+
+        function formatCurrency(value) {
+            return `₱${Number(value).toLocaleString('en-PH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            })}`;
+        }
+
+        document.querySelectorAll('[data-quantity-form]').forEach(form => {
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const cartItem = this.closest('[data-cart-item]');
+                const buttons = cartItem.querySelectorAll('[data-quantity-form] button');
+                buttons.forEach(button => button.disabled = true);
+
+                try {
+                    const response = await fetch(this.action, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        },
+                        body: new FormData(this),
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.message || 'Unable to update cart quantity.');
+                    }
+
+                    if (data.quantity === 0) {
+                        cartItem.remove();
+                        window.location.reload();
+                        return;
+                    }
+
+                    cartItem.querySelector('.quantity-value').textContent = data.quantity;
+                    cartItem.querySelector('.subtotal-value').textContent = formatCurrency(data.item_subtotal);
+                    document.getElementById('cartSubtotal').textContent = formatCurrency(data.cart_total);
+                    document.getElementById('cartTotal').textContent = formatCurrency(data.cart_total);
+
+                    const currentQuantity = Number(data.quantity);
+                    const availableStock = Number(cartItem.dataset.stock);
+                    const decreaseButton = cartItem.querySelector('[data-quantity-form] button');
+                    const increaseButton = cartItem.querySelectorAll('[data-quantity-form] button')[1];
+                    decreaseButton.disabled = currentQuantity <= 1;
+                    increaseButton.disabled = currentQuantity >= availableStock;
+                } catch (error) {
+                    alert(error.message);
+                } finally {
+                    if (cartItem.isConnected) {
+                        const currentQuantity = Number(cartItem.querySelector('.quantity-value').textContent);
+                        const availableStock = Number(cartItem.dataset.stock);
+                        buttons[0].disabled = currentQuantity <= 1;
+                        buttons[1].disabled = currentQuantity >= availableStock;
+                    }
                 }
             });
         });
