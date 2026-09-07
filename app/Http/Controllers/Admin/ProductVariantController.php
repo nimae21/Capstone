@@ -5,11 +5,16 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\ProductImageService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class ProductVariantController extends Controller
 {
+    public function __construct(
+        protected ProductImageService $imageService
+    ) {}
+
     /**
      * Display all variants of a product.
      */
@@ -19,6 +24,8 @@ class ProductVariantController extends Controller
             ->where('is_active', true)
             ->orderByRaw('CAST(size AS DECIMAL(4,1))')
             ->get();
+
+        $product->load('images');
 
         return view('admin.variants.index', compact('product', 'variants'));
     }
@@ -31,6 +38,7 @@ class ProductVariantController extends Controller
         $request->validate([
             'size' => ['required', Rule::in(self::availableSizes())],
             'color' => 'required|string|max:50',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
         ]);
 
         $color = ucwords(strtolower(trim($request->color)));
@@ -52,6 +60,10 @@ class ProductVariantController extends Controller
             'size' => $request->size,
             'color' => $color,
         ]);
+
+        if ($request->hasFile('image')) {
+            $this->imageService->storeMany($product, [$request->file('image')], $color);
+        }
 
         return redirect()
             ->route('admin.products.variants.index', $product->product_id)

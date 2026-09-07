@@ -132,6 +132,14 @@ body::before {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(220,38,38,0.3);
 }
+
+.color-image-assignment {
+    margin: 0 0 1rem;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
 </style>
 @endsection
 
@@ -189,7 +197,7 @@ body::before {
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('admin.products.variants.store', $product->product_id) }}" class="space-y-4">
+            <form method="POST" action="{{ route('admin.products.variants.store', $product->product_id) }}" enctype="multipart/form-data" class="space-y-4">
                 @csrf
 
                 <div>
@@ -207,6 +215,12 @@ body::before {
                         @endforeach
                     </select>
                     <p class="text-xs text-gray-400 mt-1">Choose a US size from 7 to 13.</p>
+                </div>
+
+                <div>
+                    <label for="colorImage" class="block text-sm font-semibold text-gray-700 mb-1">Color Image <span class="text-xs font-normal text-gray-400">(optional)</span></label>
+                    <input type="file" name="image" id="colorImage" accept="image/jpeg,image/png,image/webp,image/gif" class="input-premium">
+                    <p class="text-xs text-gray-400 mt-1">This image will be assigned to the new color.</p>
                 </div>
 
                 <button type="submit" class="w-full btn-add-variant py-2.5 flex items-center justify-center gap-2">
@@ -291,6 +305,48 @@ body::before {
                                 <h3 class="font-bold text-lg text-gray-800">{{ $color }}</h3>
                             </div>
                             <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{{ $items->count() }} size(s)</span>
+                        </div>
+
+                        <div class="color-image-assignment">
+                            @php
+                                $assignedImages = $product->images->where('color', $color);
+                            @endphp
+                            @if($product->images->isNotEmpty())
+                                <form method="POST"
+                                      id="assign-image-{{ Str::slug($color) }}"
+                                      action="{{ route('admin.products.images.assignColor', $product->images->first()->image_id) }}"
+                                      class="flex flex-col gap-2 sm:flex-row sm:items-end"
+                                      data-default-action="{{ route('admin.products.images.assignColor', $product->images->first()->image_id) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="color" value="{{ $color }}">
+                                    <div class="flex-1">
+                                        <label for="image-for-{{ Str::slug($color) }}" class="block text-xs font-semibold text-gray-600 mb-1">Color Image</label>
+                                        <select name="image_id" id="image-for-{{ Str::slug($color) }}" class="input-premium text-sm py-2" required>
+                                            <option value="">Choose an existing product image</option>
+                                            @foreach($product->images as $image)
+                                                <option value="{{ $image->image_id }}"
+                                                        data-action="{{ route('admin.products.images.assignColor', $image->image_id) }}"
+                                                        {{ $assignedImages->contains('image_id', $image->image_id) ? 'selected' : '' }}>
+                                                    Image {{ $loop->iteration }}{{ $image->color ? ' - ' . $image->color : ' - General' }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn-sm-3d btn-sm-blue whitespace-nowrap">
+                                        <i class="fas fa-image"></i> Assign Image
+                                    </button>
+                                </form>
+                                @if($assignedImages->isNotEmpty())
+                                    <p class="mt-2 text-xs text-green-600">
+                                        <i class="fas fa-check-circle mr-1"></i> Image assigned to {{ $color }}
+                                    </p>
+                                @else
+                                    <p class="mt-2 text-xs text-gray-400">No image assigned to this color yet.</p>
+                                @endif
+                            @else
+                                <p class="text-xs text-gray-500">Upload product images first to assign one to this color.</p>
+                            @endif
                         </div>
 
                         {{-- SIZES LIST --}}
@@ -418,5 +474,16 @@ function updateAvailableSizes() {
 
 existingColor.addEventListener('change', updateAvailableSizes);
 updateAvailableSizes();
+
+document.querySelectorAll('.color-image-assignment form').forEach(form => {
+    const imageSelect = form.querySelector('select[name="image_id"]');
+
+    imageSelect.addEventListener('change', () => {
+        const selectedImage = imageSelect.options[imageSelect.selectedIndex];
+        form.action = selectedImage.dataset.action || form.dataset.defaultAction;
+    });
+
+    imageSelect.dispatchEvent(new Event('change'));
+});
 </script>
 @endsection
