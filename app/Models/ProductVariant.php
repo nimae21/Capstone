@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\LogsActivity;
 
 class ProductVariant extends Model
 {      
-    use HasFactory;
+    use HasFactory, LogsActivity;
     protected $primaryKey = 'product_variant_id';
 
     protected $fillable = [

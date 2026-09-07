@@ -662,45 +662,37 @@
     @endif
 </td>
                                 <td data-label="Actions" class="actions-cell px-6 py-3 text-right">
-                                    <div class="flex gap-2 justify-end flex-wrap">
-                                        @if($user->id !== auth()->id())
-    <a href="{{ route('admin.users.edit', $user->id) }}" class="btn-sm-3d btn-sm-blue">
-        <i class="fas fa-edit"></i> Edit
-    </a>
-@endif
-                                        @if($user->id !== auth()->id())
-                                                <form
-    action="{{ route('admin.users.toggle-status', $user) }}"
-    method="POST"
-    class="inline"
->
-    @csrf
-    @method('PATCH')
+                                    @if($user->id !== auth()->id())
+                                        <div class="flex flex-wrap justify-end gap-2">
+                                            <a href="{{ route('admin.users.edit', $user->id) }}" class="btn-sm-3d btn-sm-blue whitespace-nowrap">
+                                                <i class="fas fa-edit"></i>
+                                                <span>Edit</span>
+                                            </a>
 
-    @if($user->is_active)
-        <button
-    type="button"
-    onclick="confirmAction(this.form, 'suspend', '{{ $user->full_name }}')"
-    class="btn-sm-3d btn-sm-red">
+                                            <form action="{{ route('admin.users.toggle-status', $user) }}" method="POST" class="inline">
+                                                @csrf
+                                                @method('PATCH')
 
-    <i class="fas fa-ban</i>
-    Suspend
-
-</button>
-    @else
-        <button
-    type="button"
-    onclick="confirmAction(this.form, 'Activate', '{{ $user->full_name }}')"
-    class="btn-sm-3d btn-sm-green"
-        >
-            <i class="fas fa-check"></i>
-            Activate
-        </button>
-    @endif
-</form>
-                                            
-                                        @endif
-                                    </div>
+                                                @if($user->is_active)
+                                                    <button type="button"
+                                                            onclick="confirmAction(this.form, 'suspend', @js($user->full_name))"
+                                                            class="btn-sm-3d btn-sm-red whitespace-nowrap">
+                                                        <i class="fas fa-ban"></i>
+                                                        <span>Suspend</span>
+                                                    </button>
+                                                @else
+                                                    <button type="button"
+                                                            onclick="confirmAction(this.form, 'activate', @js($user->full_name))"
+                                                            class="btn-sm-3d btn-sm-green whitespace-nowrap">
+                                                        <i class="fas fa-check"></i>
+                                                        <span>Activate</span>
+                                                    </button>
+                                                @endif
+                                            </form>
+                                        </div>
+                                    @else
+                                        <span class="text-xs text-gray-400">Current account</span>
+                                    @endif
                                 </td>
                             </tr>
                         @empty

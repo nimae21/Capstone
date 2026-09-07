@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\LogsActivity;
 
 class ShoeType extends Model
 {
+    use LogsActivity;
     protected $primaryKey = 'shoe_type_id';
 
 protected $fillable = [

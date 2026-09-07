@@ -5,11 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\OrderStatus;
 use App\Enums\SaleType;
+use App\Traits\LogsActivity;
 
 
 
 class Order extends Model
 {
+    use LogsActivity;
     protected $primaryKey = 'order_id';
     protected $casts = [
     'status' => OrderStatus::class,

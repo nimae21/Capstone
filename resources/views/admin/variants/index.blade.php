@@ -231,7 +231,7 @@ body::before {
                     <select name="color" id="existingColor" class="input-premium" required>
                         <option value="">-- Choose a color --</option>
                         @foreach($variants->groupBy('color') as $color => $items)
-                            <option value="{{ $color }}" data-used-sizes='@json($items->pluck("size")->values())'>{{ $color }}</option>
+                            <option value="{{ $color }}" data-used-sizes="{{ $items->pluck('size')->implode(',') }}">{{ $color }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -391,9 +391,13 @@ const existingColor = document.getElementById('existingColor');
 const existingSize = document.getElementById('existingSize');
 
 function updateAvailableSizes() {
+    if (!existingColor || !existingSize) {
+        return;
+    }
+
     const selectedOption = existingColor.options[existingColor.selectedIndex];
     const usedSizes = selectedOption?.dataset.usedSizes
-        ? JSON.parse(selectedOption.dataset.usedSizes)
+        ? selectedOption.dataset.usedSizes.split(',').map(size => size.trim())
         : [];
 
     existingSize.disabled = !existingColor.value;

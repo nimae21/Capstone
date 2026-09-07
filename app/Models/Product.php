@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\LogsActivity;
 
 class Product extends Model
 {
+    use LogsActivity;
     protected $primaryKey = 'product_id';
 
     protected $fillable = [

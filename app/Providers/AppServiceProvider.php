@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Models\Cart;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Auth\Events\{Login, Logout, Failed, Registered};
+use App\Listeners\LogAuthenticationActivity;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Event::listen(Login::class, [LogAuthenticationActivity::class, 'handleLogin']);
+    Event::listen(Logout::class, [LogAuthenticationActivity::class, 'handleLogout']);
+    Event::listen(Failed::class, [LogAuthenticationActivity::class, 'handleFailed']);
+    Event::listen(Registered::class, [LogAuthenticationActivity::class, 'handleRegistered']);
         View::composer(['layouts.pages', 'layouts.app'], function ($view) {
             $cartCount = 0;
 
@@ -35,4 +42,5 @@ class AppServiceProvider extends ServiceProvider
             $view->with('cartCount', $cartCount);
         });
     }
+    
 }
