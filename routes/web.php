@@ -168,7 +168,7 @@ Route::middleware(['auth', 'admin'])
             ->name('dashboard');
 
         //logs
-        Route::get('/logs', [ActivityLogController::class, 'index'])->name('admin.logs.index');
+        Route::get('/logs', [ActivityLogController::class, 'index'])->name('logs.index');
         // Categories
         Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
         Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
