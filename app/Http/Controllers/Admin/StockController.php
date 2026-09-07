@@ -25,24 +25,24 @@ class StockController extends Controller
     {
         $validated = $request->validate([
             'received_quantity' => 'required|integer|min:1',
-            'price'             => 'required|numeric|min:0.01',
-            'deliver_date'      => 'required|date',
+            'price' => 'required|numeric|min:0.01',
+            'deliver_date' => 'required|date|before_or_equal:today',
         ]);
 
         DB::transaction(function () use ($validated, $variant) {
 
             $stock = Stock::create([
                 'product_variant_id' => $variant->product_variant_id,
-                'received_quantity'  => $validated['received_quantity'],
+                'received_quantity' => $validated['received_quantity'],
                 'remaining_quantity' => $validated['received_quantity'],
-                'price'              => $validated['price'],
-                'deliver_date'       => $validated['deliver_date'],
+                'price' => $validated['price'],
+                'deliver_date' => $validated['deliver_date'],
             ]);
 
             StockMovement::create([
                 'stock_id' => $stock->stock_id,
                 'quantity' => $validated['received_quantity'],
-                'type'     => 'in',
+                'type' => 'in',
             ]);
         });
 
@@ -62,8 +62,8 @@ class StockController extends Controller
     public function update(Request $request, Stock $stock)
     {
         $validated = $request->validate([
-            'price'        => 'required|numeric|min:0.01',
-            'deliver_date' => 'required|date',
+            'price' => 'required|numeric|min:0.01',
+            'deliver_date' => 'required|date|before_or_equal:today',
         ]);
 
         $stock->update($validated);

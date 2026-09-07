@@ -11,11 +11,24 @@ class StockService
 {
     /**
      * Total remaining stock across all active batches for a variant.
+     *
+     * Uses the already-loaded `stocks` relation when available (e.g. after
+     * `Product::with('variants.stocks')`) instead of firing a fresh query —
+     * calling ->stocks() here would silently bypass eager loading and cause
+     * one DB round-trip per variant, which is fine for a handful of variants
+     * but becomes a real bottleneck once you're rendering a page (like POS)
+     * that lists many products/variants at once.
      */
     public function availableQuantity(ProductVariant $variant): int
     {
+        if ($variant->relationLoaded('stocks')) {
+            return (int) $variant->stocks
+                ->where('is_archived', false)
+                ->sum('remaining_quantity');
+        }
+
         return (int) $variant->stocks()
-            
+            ->where('is_archived', false)
             ->sum('remaining_quantity');
     }
 
@@ -28,6 +41,11 @@ class StockService
      * Deduct quantity using FIFO (oldest delivery date first), spreading
      * across multiple batches if needed. Locks rows to prevent a race
      * condition where two concurrent checkouts oversell the same last unit.
+     *
+     * This intentionally always queries fresh with lockForUpdate() rather
+     * than trusting any pre-loaded relation — a locking read has to hit the
+     * database to actually take the lock, so there's no eager-load shortcut
+     * here the way there is for the read-only display methods above.
      *
      * @throws InsufficientStockException
      */
@@ -89,8 +107,21 @@ class StockService
         }
     }
 
+    /**
+     * Same eager-load-aware pattern as availableQuantity() — reads from the
+     * loaded collection when present instead of issuing a new query.
+     */
     public function currentPrice(ProductVariant $variant): float
     {
+        if ($variant->relationLoaded('stocks')) {
+            $stock = $variant->stocks
+                ->where('is_archived', false)
+                ->sortByDesc('deliver_date')
+                ->first();
+
+            return (float) ($stock->price ?? 0);
+        }
+
         $stock = $variant->stocks()
             ->where('is_archived', false)
             ->latest('deliver_date')

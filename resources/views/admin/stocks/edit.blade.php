@@ -163,7 +163,7 @@
 
                 <div>
                     <label for="deliver_date" class="block text-sm font-semibold text-gray-700 mb-1">Deliver Date <span class="text-red-500">*</span></label>
-                    <input type="date" name="deliver_date" id="deliver_date" value="{{ old('deliver_date', $stock->deliver_date) }}" required
+                    <input type="date" name="deliver_date" id="deliver_date" max="{{ now()->toDateString() }}" value="{{ old('deliver_date', $stock->deliver_date) }}" required
                            class="input-premium">
                 </div>
 

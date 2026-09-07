@@ -220,7 +220,7 @@
                     </div>
                     <div>
                         <label for="deliver_date" class="block text-sm font-semibold text-gray-700 mb-1">Deliver Date <span class="text-red-500">*</span></label>
-                        <input type="date" name="deliver_date" id="deliver_date" required
+                        <input type="date" name="deliver_date" id="deliver_date" max="{{ now()->toDateString() }}" required
                                class="input-premium">
                     </div>
                     <button type="submit" class="btn-3d-red w-full">
@@ -287,8 +287,11 @@
                                                 Edit
                                             </a>
                                             <button type="button"
-        onclick="openDeleteStock({{ $stock->stock_id }})"
-        class="btn-sm-3d btn-sm-red">
+                                                    onclick="openDeleteStock({{ $stock->stock_id }})"
+                                                    class="btn-sm-3d btn-sm-red">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13v6a2 2 0 01-2 2H6a2 2 0 01-2-2V5a2 2 0 012-2h6m4-1l3 3m0 0l-3 3m3-3H9"/></svg>
+                                                Archive
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -309,10 +312,10 @@
 
     <div class="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl text-center">
 
-        <h2 class="font-bold text-lg text-gray-800">Delete Stock?</h2>
+        <h2 class="font-bold text-lg text-gray-800">Archive Stock?</h2>
 
         <p class="text-sm text-gray-500 mt-2">
-            This action cannot be undone.
+            This hides the stock batch from active inventory. It can only be archived when no quantity remains.
         </p>
 
         <form id="deleteStockForm" method="POST" class="mt-4">
@@ -328,7 +331,7 @@
 
                 <button type="submit"
                         class="px-4 py-2 bg-red-500 text-white rounded-lg">
-                    Delete
+                    Archive
                 </button>
             </div>
         </form>
