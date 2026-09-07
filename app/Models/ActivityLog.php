@@ -45,7 +45,7 @@ class ActivityLog extends Model
      */
     public function getCategoryAttribute(): string
     {
-        return \Illuminate\Support\Str::before($this->action, '.');
+        return \Illuminate\Support\Str::before((string) $this->action, '.');
     }
 
     /**
@@ -53,7 +53,7 @@ class ActivityLog extends Model
      */
     public function getEventAttribute(): string
     {
-        return \Illuminate\Support\Str::after($this->action, '.');
+        return \Illuminate\Support\Str::after((string) $this->action, '.');
     }
 
     /**

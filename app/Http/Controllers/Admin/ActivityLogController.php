@@ -46,9 +46,15 @@ class ActivityLogController extends Controller
         // present in the table - split_part() is Postgres-specific, which is
         // fine since Supabase is Postgres (matches the rest of the codebase's
         // avoidance of MySQL-only functions).
-        $categories = ActivityLog::selectRaw("split_part(action, '.', 1) as category, COUNT(*) as total")
-            ->groupBy('category')
-            ->orderBy('category')
+        //
+        // Aliased as `category_name`, NOT `category` - the ActivityLog model
+        // defines a getCategoryAttribute() accessor, and Eloquent always
+        // routes $model->category through that accessor if it exists,
+        // regardless of what a raw select aliased the column as. Using a
+        // different alias avoids that collision entirely.
+        $categories = ActivityLog::selectRaw("split_part(action, '.', 1) as category_name, COUNT(*) as total")
+            ->groupBy('category_name')
+            ->orderBy('category_name')
             ->get();
 
         return view('admin.logs.index', [

@@ -135,9 +135,9 @@
             All
         </a>
         @foreach($categories as $cat)
-            <a href="{{ request()->fullUrlWithQuery(['category' => $cat->category]) }}"
-               class="category-tab {{ $activeCategory === $cat->category ? 'active' : '' }}">
-                {{ ucfirst(str_replace('_', ' ', $cat->category)) }}
+            <a href="{{ request()->fullUrlWithQuery(['category' => $cat->category_name]) }}"
+               class="category-tab {{ $activeCategory === $cat->category_name ? 'active' : '' }}">
+                {{ ucfirst(str_replace('_', ' ', $cat->category_name)) }}
                 <span class="count">({{ $cat->total }})</span>
             </a>
         @endforeach
