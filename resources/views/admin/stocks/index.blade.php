@@ -179,6 +179,53 @@
             background: linear-gradient(135deg, #94a3b8, #64748b);
             border-radius: 10px;
         }
+
+        .variant-switcher {
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .variant-switcher select {
+            min-width: 12rem;
+        }
+
+        .size-switcher {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .size-switcher-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.65rem;
+            background: #fff;
+            color: #334155;
+            padding: 0.45rem 0.7rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .size-switcher-button:hover,
+        .size-switcher-button.current {
+            border-color: #dc2626;
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        .size-switcher-stock {
+            color: #64748b;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
     </style>
 @endsection
 
@@ -196,6 +243,34 @@
         <div class="mb-8">
             <h1 class="text-3xl font-bold gradient-title">Stock Management</h1>
             <p class="text-gray-500 mt-1">Manage stocks for variant: <span class="font-semibold text-gray-700">{{ $variant->size }} / {{ $variant->color }}</span></p>
+        </div>
+
+        <!-- Quick switcher for sizes within each color -->
+        <div class="variant-switcher">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="font-bold text-gray-800">Switch Variant</h2>
+                    <p class="text-xs text-gray-500">Choose a color to view all of its sizes and stock.</p>
+                </div>
+                <label class="sr-only" for="variantColor">Choose color</label>
+                <select id="variantColor" class="input-premium sm:w-auto">
+                    @foreach($productVariants->groupBy('color') as $color => $colorVariants)
+                        <option value="{{ Str::slug($color) }}" {{ $color === $variant->color ? 'selected' : '' }}>{{ $color }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            @foreach($productVariants->groupBy('color') as $color => $colorVariants)
+                <div class="size-switcher" data-color="{{ Str::slug($color) }}" {{ $color === $variant->color ? '' : 'hidden' }}>
+                    @foreach($colorVariants as $colorVariant)
+                        @php $availableStock = $colorVariant->stocks->sum('remaining_quantity'); @endphp
+                        <a href="{{ route('admin.stocks.index', $colorVariant->product_variant_id) }}" class="size-switcher-button {{ $colorVariant->product_variant_id === $variant->product_variant_id ? 'current' : '' }}">
+                            <span>Size {{ $colorVariant->size }}</span>
+                            <span class="size-switcher-stock">{{ $availableStock }} in stock</span>
+                        </a>
+                    @endforeach
+                </div>
+            @endforeach
         </div>
 
         <!-- Two Column Layout: Add Stock Form + Quick Tip -->
@@ -377,6 +452,12 @@ function closeDeleteStock() {
 function closeSuccessModal() {
     document.getElementById('successModal').style.display = 'none';
 }
+
+document.getElementById('variantColor').addEventListener('change', function () {
+    document.querySelectorAll('.size-switcher').forEach(group => {
+        group.hidden = group.dataset.color !== this.value;
+    });
+});
 
 window.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('successModal');

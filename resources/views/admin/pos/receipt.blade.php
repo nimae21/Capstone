@@ -23,7 +23,7 @@
     </div>
     <hr>
     <p>Order #{{ $order->order_id }}<br>
-       {{ $order->created_at->format('M d, Y H:i A') }}<br>
+    {{ $order->created_at->format('M d, Y h:i A') }}<br>
        Cashier: {{ $order->user->full_name ?? 'Admin' }}</p>
     <hr>
     <table>

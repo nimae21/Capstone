@@ -18,7 +18,15 @@ class StockController extends Controller
             ->latest()
             ->get();
 
-        return view('admin.stocks.index', compact('variant', 'stocks'));
+        $productVariants = ProductVariant::query()
+            ->where('product_id', $variant->product_id)
+            ->where('is_active', true)
+            ->with(['stocks' => fn ($query) => $query->where('is_archived', false)])
+            ->orderBy('color')
+            ->orderByRaw('CAST(size AS DECIMAL(4,1))')
+            ->get();
+
+        return view('admin.stocks.index', compact('variant', 'stocks', 'productVariants'));
     }
 
     public function store(Request $request, ProductVariant $variant)
