@@ -60,8 +60,8 @@ Route::middleware(['auth', 'verified', 'isUser'])->group(function () {
     Route::get('/men', [PageController::class, 'men'])->name('men');
     Route::get('/women', [PageController::class, 'women'])->name('women');
     Route::get('/kids', [PageController::class, 'kids'])->name('kids');
-    Route::get('/sale', [PageController::class, 'sale'])->name('sale');
     Route::get('/new', [PageController::class, 'new'])->name('new');
+    Route::get('/search/suggestions', [PageController::class, 'searchSuggestions'])->middleware('throttle:60,1')->name('search.suggestions');
     Route::get('/search', [PageController::class, 'search'])->name('search');
 
     // All products listing (for back to shop button)

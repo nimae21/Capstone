@@ -227,67 +227,6 @@
         }
         
         /* ── Search ── */
-        .search-wrapper {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-        }
-        
-        .search-toggle {
-            background: transparent;
-            border: none;
-            font-size: 1.25rem;
-            color: #0a0a0f;
-            cursor: pointer;
-            padding: 0.3rem 0.6rem;
-            border-radius: 40px;
-            transition: 0.2s;
-        }
-        
-        .search-toggle:hover {
-            color: #e53e3e;
-            background: #f0f0f0;
-        }
-        
-        .search-input-wrap {
-            position: absolute;
-            right: 0;
-            top: 110%;
-            background: #fff;
-            border-radius: 40px;
-            box-shadow: 0 12px 36px rgba(0,0,0,0.12);
-            padding: 0.3rem 0.3rem 0.3rem 1.2rem;
-            display: none;
-            align-items: center;
-            gap: 0.4rem;
-            border: 1px solid #eee;
-            min-width: 220px;
-            z-index: 50;
-        }
-        .search-input-wrap.open { display: flex; }
-        .search-input-wrap input {
-            border: none;
-            outline: none;
-            font-family: inherit;
-            font-size: 0.9rem;
-            padding: 0.4rem 0;
-            background: transparent;
-            width: 140px;
-        }
-        .search-input-wrap button {
-            background: #e53e3e;
-            border: none;
-            color: #fff;
-            border-radius: 40px;
-            padding: 0.4rem 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .search-input-wrap button:hover {
-            background: #c53030;
-        }
-        
         /* ── Cart Button (unified) ── */
         .cart-btn {
             display: inline-flex;
@@ -571,16 +510,6 @@
             font-size: 0.65rem;
             font-weight: 700;
         }
-        .sale-badge {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: #e53e3e;
-            color: white;
-            padding: 0.2rem 0.8rem;
-            border-radius: 30px;
-            font-size: 0.7rem;
-        }
         .price {
             font-size: 1.4rem;
             font-weight: 800;
@@ -663,11 +592,6 @@
                 border-top: 1px solid #eee;
             }
             .navbar { padding: 0.75rem 1rem; }
-            .search-input-wrap {
-                min-width: 180px;
-                right: -20px;
-            }
-            .search-input-wrap input { width: 100px; }
         }
         @media (max-width: 600px) {
             .navbar {
@@ -772,6 +696,26 @@
         @media (prefers-reduced-motion: reduce) {
             .page-loader-logo, .page-loader-ring { animation: none; }
         }
+        .product-search { position: relative; width: clamp(180px, 20vw, 280px); min-width: 0; }
+        .product-search-field { display: flex; align-items: center; background: #f7f8fa; border: 1px solid #dce0e5; border-radius: 28px; overflow: hidden; }
+        .product-search-field:focus-within { border-color: #dc2626; box-shadow: 0 0 0 2px #dc262620; }
+        .product-search input { width: 100%; min-width: 0; padding: .65rem .85rem; font: inherit; font-size: .9rem; border: 0; outline: 0; background: transparent; }
+        .product-search button { border: 0; background: transparent; color: #dc2626; cursor: pointer; padding: .65rem .85rem; }
+        .product-search-results { position: absolute; top: calc(100% + .5rem); right: 0; width: max(100%, 280px); max-width: calc(100vw - 2rem); max-height: 60vh; overflow-y: auto; background: white; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 16px 40px #0002; z-index: 1100; }
+        .product-search-results[hidden] { display: none; }
+        .product-search-results p { padding: .8rem 1rem; margin: 0; color: #64748b; font-size: .85rem; }
+        .product-search-results ul { list-style: none; margin: 0; padding: 0; }
+        .product-search-results a { display: flex; gap: .75rem; align-items: center; padding: .75rem 1rem; color: #1e293b; text-decoration: none; white-space: normal; }
+        .product-search-results a:hover, .product-search-results a:focus-visible { background: #fef2f2; }
+        .product-search-results img, .search-image-placeholder { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; background: #f1f5f9; flex-shrink: 0; }
+        .search-image-placeholder { display: grid; place-items: center; }
+        @media (max-width: 1250px) { .navbar { flex-wrap: wrap; gap: 1rem; } .nav-icons { flex-wrap: wrap; } }
+        @media (max-width: 600px) {
+            .navbar .nav-icons { width: 100%; display: flex; flex-wrap: wrap; gap: .5rem; }
+            .product-search { flex: 1; width: auto; min-width: 140px; }
+            .product-search-results { width: 100%; min-width: 0; }
+            .product-search input { font-size: 16px; }
+        }
     </style>
     
     @yield('styles')
@@ -799,7 +743,6 @@
             <a href="{{ route('men') }}" class="nav-link {{ request()->routeIs('men') ? 'active' : '' }}">MEN</a>
             <a href="{{ route('women') }}" class="nav-link {{ request()->routeIs('women') ? 'active' : '' }}">WOMEN</a>
             <a href="{{ route('kids') }}" class="nav-link {{ request()->routeIs('kids') ? 'active' : '' }}">KIDS</a>
-            <a href="{{ route('sale') }}" class="nav-link {{ request()->routeIs('sale') ? 'active' : '' }}">SALE</a>
         </div>
         <div class="nav-icons">
             @auth
@@ -831,16 +774,16 @@
                 <a href="{{ route('register') }}" class="auth-btn">Register</a>
             @endauth
 
-            Search
-            <div class="search-wrapper">
-                <button class="search-toggle" id="searchToggle" aria-label="Search">
-                    <i class="fas fa-search"></i>
-                </button>
-                <div class="search-input-wrap" id="searchWrap">
-                    <input type="text" placeholder="Search products..." id="searchInput" />
-                    <button id="searchSubmit"><i class="fas fa-arrow-right"></i></button>
+            <form class="product-search" id="productSearch" action="{{ route('search') }}" method="GET" role="search" data-suggestions-url="{{ route('search.suggestions') }}">
+                <div class="product-search-field">
+                    <input type="search" name="q" id="productSearchInput" placeholder="Search shoes..." aria-label="Search shoes" value="{{ request()->routeIs('search') ? request('q') : '' }}" maxlength="100" autocomplete="off" aria-controls="productSearchResults" aria-expanded="false" required>
+                    <button type="submit" aria-label="Search"><i class="fas fa-search" aria-hidden="true"></i></button>
                 </div>
-            </div>
+                <div id="productSearchResults" class="product-search-results" hidden>
+                    <p id="productSearchStatus" role="status" aria-live="polite"></p>
+                    <ul id="productSearchList" aria-label="Matching shoes"></ul>
+                </div>
+            </form>
 
             <!-- Unified Cart Button -->
             <a href="{{ route('cart.index') }}" class="cart-btn">
@@ -861,43 +804,7 @@
     <!-- ════════════════════════════════════════ -->
     <!--  FOOTER                                -->
     <!-- ════════════════════════════════════════ -->
-    <footer>
-        <div class="container footer-grid">
-            <div class="footer-col">
-                <a href="{{ route('home') }}" class="logo">
-                    <img src="{{ asset('images/achilles logo.png') }}" 
-                         alt="Achilles Electronics and Computer Shop"
-                         class="site-logo">
-                </a>
-                <div class="social-icons">
-                    <i class="fab fa-instagram"></i>
-                    <i class="fab fa-x-twitter"></i>
-                    <i class="fab fa-tiktok"></i>
-                </div>
-            </div>
-            <div class="footer-col">
-                <h5>SHOP</h5>
-                <ul>
-                    <li><a href="{{ route('new') }}">New</a></li>
-                    <li><a href="{{ route('men') }}">Men</a></li>
-                    <li><a href="{{ route('women') }}">Women</a></li>
-                    <li><a href="{{ route('kids') }}">Kids</a></li>
-                    <li><a href="{{ route('sale') }}">Sale</a></li>
-                </ul>
-            </div>
-            <div class="footer-col">
-                <h5>SUPPORT</h5>
-                <ul>
-                    <li><a href="#">Contact</a></li>
-                    <li><a href="#">Size guide</a></li>
-                    <li><a href="#">Shipping</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="copyright">
-            <i class="far fa-copyright"></i> 2026 ACHILLES · built with <i class="fas fa-heart" style="color:#e53e3e;"></i> for capstone
-        </div>
-    </footer>
+    @include('partials.store-footer')
 
     <!-- ════════════════════════════════════════ -->
     <!--  SCRIPTS                               -->
@@ -933,12 +840,6 @@
                     showLoader();
                 }
             });
-
-           document.addEventListener('click', function(event) {
-    if (event.target.closest('#searchSubmit')) {
-        showLoader();
-    }
-});
 
             window.addEventListener('pageshow', () => loader.classList.remove('is-visible'));
         })();
@@ -980,49 +881,11 @@
                 });
             }
 
-            // ── Search Toggle ──
-            const toggle = document.getElementById('searchToggle');
-            const wrap = document.getElementById('searchWrap');
-            const input = document.getElementById('searchInput');
-            const submit = document.getElementById('searchSubmit');
-
-            if (toggle && wrap) {
-                toggle.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    wrap.classList.toggle('open');
-                    if (wrap.classList.contains('open')) {
-                        input.focus();
-                    }
-                });
-
-                document.addEventListener('click', function(e) {
-                    if (!wrap.contains(e.target) && e.target !== toggle) {
-                        wrap.classList.remove('open');
-                    }
-                });
-
-                const doSearch = function() {
-    const query = input.value.trim();
-    if (query) {
-        window.location.href = '{{ route('search') }}?q=' + encodeURIComponent(query);
-    }
-};
-
-                input.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') doSearch();
-                });
-                submit.addEventListener('click', doSearch);
-
-                document.addEventListener('keydown', function(e) {
-                    if (e.key === 'Escape' && wrap.classList.contains('open')) {
-                        wrap.classList.remove('open');
-                    }
-                });
-            }
 
         });
     </script>
 
+    <script src="{{ asset('js/product-search.js') }}" defer></script>
     @stack('scripts')
 </body>
 </html>

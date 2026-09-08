@@ -230,9 +230,6 @@
         .category-item.border-women {
             border-left: 4px solid #ec4899;
         }
-        .category-item.border-sale {
-            border-left: 4px solid #ef4444;
-        }
         .category-item.border-fresh {
             border-left: 4px solid #f59e0b;
         }
@@ -249,9 +246,6 @@
         }
         .badge-women {
             background: #ec4899;
-        }
-        .badge-sale {
-            background: #ef4444;
         }
         .badge-fresh {
             background: #f59e0b;
@@ -553,9 +547,6 @@ class="input-compact">
                     } elseif (str_contains($name, 'women') || str_contains($name, 'female') || str_contains($name, 'girl') || str_contains($name, 'lady')) {
                         $icon = '👠';
                         $type = 'women';
-                    } elseif (str_contains($name, 'sale') || str_contains($name, 'discount') || str_contains($name, 'offer')) {
-                        $icon = '🔥';
-                        $type = 'sale';
                     } elseif (str_contains($name, 'fresh') || str_contains($name, 'new') || str_contains($name, 'drop')) {
                         $icon = '✨';
                         $type = 'fresh';

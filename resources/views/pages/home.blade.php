@@ -6,7 +6,7 @@
 <style>
     body { background: #ffffff; }
     
-    .hero {
+    .container.hero {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 3rem;
@@ -68,6 +68,7 @@
     }
     
     .hero-features {
+        flex-wrap: wrap;
         display: flex;
         gap: 2rem;
         margin-top: 2rem;
@@ -87,7 +88,10 @@
         color: #dc2626;
     }
     
+    .hero-image { min-width: 0; text-align: center; }
     .hero-image img {
+        display: block;
+        margin: 0 auto;
         width: 100%;
         max-width: 500px;
         border-radius: 2rem;
@@ -99,12 +103,12 @@
         transform: scale(1.02);
     }
     
-    .features {
+    .features.container {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 2rem;
-        padding: 4rem 0;
-        margin: 2rem auto;
+        padding: 2rem 1.5rem;
+        margin: 2rem auto 4rem;
         background: #f8fafc;
         border-radius: 2rem;
     }
@@ -207,15 +211,17 @@
     }
     
     @media (max-width: 968px) {
-        .hero { grid-template-columns: 1fr; text-align: center; }
+        .container.hero { grid-template-columns: 1fr; text-align: center; }
         .hero-features { justify-content: center; }
-        .features { grid-template-columns: repeat(2, 1fr); }
+        .hero-content > div { justify-content: center; }
+        .hero-content > div { justify-content: center; }
+        .features.container { grid-template-columns: repeat(2, 1fr); }
         .category-grid { grid-template-columns: repeat(2, 1fr); }
         .hero-content h1 { font-size: 2.5rem; }
     }
     
     @media (max-width: 640px) {
-        .features { grid-template-columns: 1fr; }
+        .features.container { grid-template-columns: 1fr; }
         .category-grid { grid-template-columns: 1fr; }
     }
 </style>
@@ -225,13 +231,12 @@
 <div class="container hero">
     <div class="hero-content">
         <h1>RUN IN <span style="color:#dc2626;">Achilles</span></h1>
-        <p>Limitless performance meets cybernetic design. Ultra-responsive cushioning, premium materials, and free shipping worldwide.</p>
+        <p>Limitless performance meets cybernetic design. Ultra-responsive cushioning, premium materials, and comfort for your everyday stride.</p>
         <div style="display:flex; gap:1rem; flex-wrap:wrap;">
             <a href="{{ route('men') }}" class="btn-red">SHOP MEN</a>
             <a href="{{ route('women') }}" class="btn-outline">SHOP WOMEN</a>
         </div>
         <div class="hero-features">
-            <div><i class="fas fa-truck"></i> Free shipping</div>
             
             <div><i class="fas fa-shield-alt"></i> Authentic Guarantee</div>
         </div>
@@ -279,9 +284,9 @@
             <img src="https://images.unsplash.com/photo-1514989940723-e8e51635b782?w=600" alt="kids">
             <h3>KIDS</h3>
         </a>
-        <a href="{{ route('sale') }}" class="category-card">
-            <img src="https://images.unsplash.com/photo-1603808033192-082d6919d3e1?w=600" alt="sale">
-            <h3>SALE</h3>
+        <a href="{{ route('new') }}" class="category-card">
+            <img src="https://images.unsplash.com/photo-1603808033192-082d6919d3e1?w=600" alt="New arrivals">
+            <h3>NEW ARRIVALS</h3>
         </a>
     </div>
 </div>

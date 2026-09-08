@@ -101,14 +101,6 @@ class PageController extends Controller
         ], $this->filterOptions()));
     }
 
-    public function sale(Request $request)
-    {
-        return view('pages.sale', array_merge([
-            'products' => $this->getProductsByCategory(7, $request),
-            'recommendations' => $this->recommendationsForCurrentUser(),
-        ], $this->filterOptions()));
-    }
-
     public function new(Request $request)
     {
         return view('pages.new', array_merge([
@@ -138,6 +130,35 @@ class PageController extends Controller
            : collect();
 
         return view('product.show', compact('product', 'recommendations'));
+    }
+
+    public function searchSuggestions(Request $request)
+    {
+        $validated = $request->validate(['q' => ['nullable', 'string', 'max:100']]);
+        $query = trim($validated['q'] ?? '');
+
+        if (mb_strlen($query) < 2) {
+            return response()->json(['products' => []]);
+        }
+
+        $products = Product::with(['primaryImage', 'images'])
+            ->where('is_active', true)
+            ->whereRaw('LOWER(product_name) LIKE ?', ['%'.mb_strtolower($query).'%'])
+            ->orderBy('product_name')
+            ->orderBy('product_id')
+            ->limit(5)
+            ->get()
+            ->map(function (Product $product) {
+                $image = $product->primaryImage ?? $product->images->first();
+
+                return [
+                    'name' => $product->product_name,
+                    'image' => $image?->image_url,
+                    'url' => route('product.show', $product->product_id),
+                ];
+            });
+
+        return response()->json(['products' => $products]);
     }
 
     public function search(Request $request)
