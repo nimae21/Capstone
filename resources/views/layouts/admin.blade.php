@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-admin-theme-key="achilles.admin.theme.{{ auth()->id() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script src="{{ asset('js/admin-theme.js') . '?v=' . filemtime(public_path('js/admin-theme.js')) }}"></script>
     <title>@yield('title', 'Admin Dashboard') | Achilles</title>
     <script>
         (() => {
@@ -416,6 +417,7 @@
     </style>
 
     @yield('styles')
+    <link rel="stylesheet" href="{{ asset('css/admin-theme.css') . '?v=' . filemtime(public_path('css/admin-theme.css')) }}">
 </head>
 <body>
 
@@ -482,7 +484,7 @@
 
 
         <!-- Settings – active if route exists (optional) -->
-        <a href="#" data-tooltip="Settings" class="{{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
+        <a href="{{ route('admin.settings.index') }}" data-tooltip="Settings" class="{{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
             <i class="fas fa-sliders-h"></i> <span>Settings</span>
         </a>
 

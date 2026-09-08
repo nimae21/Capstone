@@ -198,7 +198,12 @@
                             <span class="text-xs text-gray-400">{{ $log->created_at->format('h:i A') }}</span>
                         </td>
                         <td class="font-semibold text-gray-800">
-                            {{ $log->user->full_name ?? ($log->user->email ?? 'System') }}
+                            @if ($log->user)
+                                <div>{{ $log->user->full_name ?: 'User' }}</div>
+                                <div class="text-xs text-gray-500 font-normal mt-1" style="overflow-wrap: anywhere;">{{ $log->user->email }}</div>
+                            @else
+                                System
+                            @endif
                         </td>
                         <td>
                             <span class="event-badge {{ $log->event }}">{{ $log->event }}</span>

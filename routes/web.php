@@ -165,6 +165,8 @@ Route::middleware(['auth', 'admin'])
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])
             ->name('dashboard');
 
+        Route::view('/settings', 'admin.settings.index')->name('settings.index');
+
         //logs
         Route::get('/logs', [ActivityLogController::class, 'index'])->name('logs.index');
         // Categories
