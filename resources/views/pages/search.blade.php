@@ -413,15 +413,13 @@
 
                 $shoeTypeName = $product->shoeType->shoe_type_name ?? null;
 
-                $badges = ['LIMITED EDITION', 'BESTSELLER', 'NEW DROP', 'PREMIUM'];
-                $badgeText = $badges[array_rand($badges)];
             @endphp
 
             <a href="{{ route('product.show', ['id' => $product->product_id, 'return_to' => request()->fullUrl()]) }}"
                class="shoe-card"
                aria-label="View {{ $product->product_name }}">
 
-                <span class="shoe-badge">{{ $badgeText }}</span>
+                @if ($product->is_new_arrival)<span class="shoe-badge">NEW</span>@endif
 
                 {{-- Product Image --}}
                 <img class="shoe-image"

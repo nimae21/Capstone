@@ -720,6 +720,7 @@
                 @else
                     <span class="product-img product-placeholder"><i class="fas fa-shoe-prints" aria-hidden="true"></i></span>
                 @endif
+                @include('partials.new-arrival-badge')
                 <span class="product-name">{{ $product->product_name }}</span>
                 <span class="product-price" style="display: block;">
                     @if ($product->display_price !== null)

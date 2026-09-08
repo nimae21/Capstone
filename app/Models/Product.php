@@ -17,7 +17,35 @@ class Product extends Model
     'product_name',
     'product_description',
     'is_active',
+    'new_arrival_until',
 ];
+
+    protected $casts = [
+        'new_arrival_until' => 'datetime',
+    ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Product $product) {
+            // Explicit null lets the admin opt out. Updates never renew the tag.
+            if (!array_key_exists('new_arrival_until', $product->getAttributes())) {
+                $product->new_arrival_until = now()->addDays(30)->endOfDay();
+            }
+        });
+    }
+
+    public function getIsNewArrivalAttribute(): bool
+    {
+        return (bool) $this->is_active
+            && $this->new_arrival_until !== null
+            && $this->new_arrival_until->isFuture();
+    }
+
+    public function scopeNewArrivals(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('products.is_active', true)
+            ->where('products.new_arrival_until', '>', now());
+    }
 
     public function category()
 {

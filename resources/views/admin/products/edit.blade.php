@@ -374,6 +374,14 @@
                     </select>
                 </div>
 
+
+                    <div class="">
+                        <label for="new_arrival_until" class="block text-sm font-semibold text-gray-700 mb-1">New Arrival until</label>
+                        <input type="date" id="new_arrival_until" name="new_arrival_until" class="input-premium"
+                            value="{{ old('new_arrival_until', $product->new_arrival_until?->format('Y-m-d')) }}" aria-describedby="arrival-help">
+                        <p id="arrival-help" class="text-xs text-gray-500 mt-1">The NEW tag lasts through this date ({{ config('app.timezone') }}). Clear the date to remove the tag. Editing or restocking does not renew it.</p>
+                        @error('new_arrival_until')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+                    </div>
                 <!-- Submit Button -->
                 <div class="pt-2">
                     <button type="submit" class="btn-3d-red w-full">

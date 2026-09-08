@@ -885,7 +885,7 @@
         });
     </script>
 
-    <script src="{{ asset('js/product-search.js') }}" defer></script>
+    <script src="{{ asset('js/product-search.js') . '?v=' . filemtime(public_path('js/product-search.js')) }}" defer></script>
     @stack('scripts')
 </body>
 </html>

@@ -8,6 +8,20 @@
     let timer;
     let controller;
     let revision = 0;
+    const recent = new Map();
+    const cacheLifetime = 60_000;
+    const requestTimeout = 4_000;
+
+    function fullResultsLink(query) {
+        const item = document.createElement('li');
+        const link = document.createElement('a');
+        const url = new URL(form.action, window.location.origin);
+        url.searchParams.set('q', query);
+        link.href = url.href;
+        link.textContent = 'View all results';
+        item.append(link);
+        list.append(item);
+    }
 
     function close() {
         clearTimeout(timer);
@@ -22,67 +36,84 @@
         panel.hidden = false;
         input.setAttribute('aria-expanded', 'true');
     }
+    function renderProducts(products, query) {
+        showStatus(products.length ? 'Matching shoes' : 'No products found. Try another shoe name.');
+        for (const product of products) {
+            const item = document.createElement('li');
+            const link = document.createElement('a');
+            link.href = product.url;
+            if (product.image) {
+                const image = document.createElement('img');
+                image.src = product.image;
+                image.alt = '';
+                image.addEventListener('error', () => { image.hidden = true; });
+                link.append(image);
+            } else {
+                const placeholder = document.createElement('span');
+                placeholder.className = 'search-image-placeholder';
+                placeholder.setAttribute('aria-hidden', 'true');
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-shoe-prints';
+                placeholder.append(icon);
+                link.append(placeholder);
+            }
+            const name = document.createElement('span');
+            name.textContent = product.name;
+            link.append(name);
+            item.append(link);
+            list.append(item);
+        }
+        if (products.length) fullResultsLink(query);
+    }
     function schedule() {
         close();
         const query = input.value.trim();
         if (query.length < 2) return;
+        const key = query.toLowerCase();
+        const cached = recent.get(key);
+        if (cached && cached.expires > Date.now()) {
+            renderProducts(cached.products, query);
+            return;
+        }
+        recent.delete(key);
         const current = revision;
         showStatus('Searching...');
         timer = setTimeout(async () => {
-            controller = new AbortController();
+            const request = new AbortController();
+            controller = request;
+            const deadline = setTimeout(() => {
+                if (revision !== current) return;
+                // Invalidate late responses even if a transport ignores abort.
+                revision++;
+                request.abort();
+                showStatus('Suggestions are taking too long. Press Enter or view all results.');
+                fullResultsLink(query);
+            }, requestTimeout);
             try {
                 const url = new URL(form.dataset.suggestionsUrl, window.location.origin);
                 url.searchParams.set('q', query);
                 const response = await fetch(url, {
-                    signal: controller.signal,
+                    signal: request.signal,
                     headers: { Accept: 'application/json' },
                     credentials: 'same-origin',
                 });
                 if (!response.ok) throw new Error('Search unavailable');
                 const data = await response.json();
                 if (revision !== current) return;
-                showStatus(data.products.length ? 'Matching shoes' : 'No products found. Try another shoe name.');
-                for (const product of data.products) {
-                    const item = document.createElement('li');
-                    const link = document.createElement('a');
-                    link.href = product.url;
-                    if (product.image) {
-                        const image = document.createElement('img');
-                        image.src = product.image;
-                        image.alt = '';
-                        image.addEventListener('error', () => { image.hidden = true; });
-                        link.append(image);
-                    } else {
-                        const placeholder = document.createElement('span');
-                        placeholder.className = 'search-image-placeholder';
-                        placeholder.setAttribute('aria-hidden', 'true');
-                        const icon = document.createElement('i');
-                        icon.className = 'fas fa-shoe-prints';
-                        placeholder.append(icon);
-                        link.append(placeholder);
-                    }
-                    const name = document.createElement('span');
-                    name.textContent = product.name;
-                    link.append(name);
-                    item.append(link);
-                    list.append(item);
-                }
-                if (data.products.length) {
-                    const item = document.createElement('li');
-                    const all = document.createElement('a');
-                    const url = new URL(form.action, window.location.origin);
-                    url.searchParams.set('q', query);
-                    all.href = url.href;
-                    all.textContent = 'View all results';
-                    item.append(all);
-                    list.append(item);
-                }
+                if (!Array.isArray(data.products)) throw new Error('Invalid suggestions');
+                if (recent.size >= 30) recent.delete(recent.keys().next().value);
+                recent.set(key, { products: data.products, expires: Date.now() + cacheLifetime });
+                renderProducts(data.products, query);
             } catch (error) {
                 if (error.name !== 'AbortError' && revision === current) {
-                    showStatus('Suggestions are unavailable. Press Enter to search.');
+                    showStatus('Suggestions are unavailable. Press Enter or view all results.');
+                    fullResultsLink(query);
                 }
+            } finally {
+                clearTimeout(deadline);
+                if (controller === request) controller = null;
             }
-        }, 300);
+        }, 200);
     }
     input.addEventListener('input', schedule);
     input.addEventListener('focus', () => { if (panel.hidden) schedule(); });

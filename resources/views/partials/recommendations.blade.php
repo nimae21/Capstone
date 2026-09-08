@@ -256,6 +256,7 @@
                     </div>
 
                     <div class="rec-body">
+                        @include('partials.new-arrival-badge')
                         <p class="rec-brand">{{ $product->brand->brand_name ?? 'Achilles' }}</p>
                         <h3 class="rec-name">{{ $product->product_name }}</h3>
                         <div class="rec-price-row">

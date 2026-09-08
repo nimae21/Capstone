@@ -254,13 +254,14 @@
         </div>
         <div class="category-stats">
             <i class="fas fa-clock"></i>
-            <span>Fresh Drops This Week</span>
+            <span>Discover Our Latest Shoes</span>
         </div>
     </div>
     
     <div class="filter-bar" style="justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
 
     <form method="GET" style="display:flex; gap: 0.75rem; flex-wrap: wrap;">
+        <input type="hidden" name="sort" value="{{ request('sort') }}">
         <select name="brand" onchange="this.form.submit()" class="sort-select" style="padding: 0.5rem 1rem;">
             <option value="">All Brands</option>
             @foreach($brands as $brand)
@@ -289,7 +290,7 @@
     <div class="sort-select">
         <i class="fas fa-arrow-down-wide-short"></i>
         <select id="sortSelect" onchange="applySort(this.value)">
-            <option value="">Featured</option>
+            <option value="">Newest first</option>
             <option value="price-low-high" {{ request('sort') == 'price-low-high' ? 'selected' : '' }}>Price: Low to High</option>
             <option value="price-high-low" {{ request('sort') == 'price-high-low' ? 'selected' : '' }}>Price: High to Low</option>
         </select>
@@ -297,7 +298,7 @@
 </div>
     
     <div class="product-grid" id="productGrid">
-        @foreach($products as $product)
+        @forelse($products as $product)
         @php
     $price = $product->display_price ?? 0;
     $image = $product->images->first()?->image_url ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400';
@@ -305,12 +306,10 @@
     $brandName = $product->brand->brand_name ?? null;
     $shoeTypeName = $product->shoeType->shoe_type_name ?? null;
 
-    $badges = ['LIMITED EDITION', 'BESTSELLER', 'NEW DROP', 'PREMIUM'];
-    $badgeText = $badges[array_rand($badges)];
 @endphp
         
-        <a href="{{ route('product.show', ['id' => $product->product_id, 'return_to' => request()->fullUrl()]) }}" class="shoe-card" data-category="{{ strtolower($category) }}" data-price="{{ $price }}" aria-label="View {{ $product->product_name }}">
-            <span class="shoe-badge">JUST IN</span>
+        <a href="{{ route('product.show', ['id' => $product->product_id, 'return_to' => request()->fullUrl()]) }}" class="shoe-card" data-price="{{ $price }}" aria-label="View {{ $product->product_name }}">
+            @if ($product->is_new_arrival)<span class="shoe-badge">NEW</span>@endif
             <img class="shoe-image" src="{{ $image }}" alt="{{ $product->product_name }}">
             @if($brandName || $shoeTypeName)
                 <div class="shoe-meta">
@@ -329,57 +328,33 @@
             <p class="price">From ₱{{ number_format($price, 2) }}</p>
             <span class="btn-card">View Product <i class="fas fa-arrow-right ml-1"></i></span>
         </a>
-        @endforeach
+        @empty
+            <p style="grid-column: 1 / -1; padding: 2rem; text-align: center; color: #64748b;">No new arrivals match right now. Check back soon or explore our regular categories.</p>
+        @endforelse
     </div>
+    @if ($products->hasPages())
+        <nav aria-label="New arrivals pages" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1rem; margin-top: 2rem;">
+            @if (!$products->onFirstPage())
+                <a class="btn-card" href="{{ $products->previousPageUrl() }}" rel="prev">Previous</a>
+            @endif
+            <span>Page {{ $products->currentPage() }} of {{ $products->lastPage() }}</span>
+            @if ($products->hasMorePages())
+                <a class="btn-card" href="{{ $products->nextPageUrl() }}" rel="next">Next</a>
+            @endif
+        </nav>
+    @endif
     
 </div>
 
 @push('scripts')
 <script>
-    const filterTags = document.querySelectorAll('.filter-tag');
-    const sortSelect = document.getElementById('sortSelect');
-    const grid = document.getElementById('productGrid');
-    
-    function filterAndSort() {
-        const activeFilter = document.querySelector('.filter-tag.active')?.dataset.filter || 'all';
-        const sortValue = sortSelect.value;
-        
-        let cards = Array.from(grid.children);
-        
-        // Filter
-        cards.forEach(card => {
-            const category = card.dataset.category;
-            if (activeFilter === 'all' || category === activeFilter) {
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
-            }
-        });
-        
-        // Get visible cards for sorting
-        let visibleCards = cards.filter(card => card.style.display !== 'none');
-        
-        // Sort
-        if (sortValue === 'price-low-high') {
-            visibleCards.sort((a, b) => parseFloat(a.dataset.price) - parseFloat(b.dataset.price));
-        } else if (sortValue === 'price-high-low') {
-            visibleCards.sort((a, b) => parseFloat(b.dataset.price) - parseFloat(a.dataset.price));
-        }
-        // If 'newest' or empty, keep original order
-        
-        // Re-append in new order
-        visibleCards.forEach(card => grid.appendChild(card));
-    }
-    
-    filterTags.forEach(tag => {
-        tag.addEventListener('click', () => {
-            filterTags.forEach(t => t.classList.remove('active'));
-            tag.classList.add('active');
-            filterAndSort();
-        });
-    });
-    
-    sortSelect.addEventListener('change', filterAndSort);
+function applySort(value) {
+    const url = new URL(window.location.href);
+    if (value) url.searchParams.set('sort', value);
+    else url.searchParams.delete('sort');
+    url.searchParams.delete('page');
+    window.location.href = url.toString();
+}
 </script>
 @endpush
 @include('partials.recommendations')

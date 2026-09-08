@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductImage;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Stock;
 use App\Models\ShoeType;
 use App\Services\ActivityTrackingService;
@@ -29,7 +31,7 @@ class PageController extends Controller
     /**
      * Reusable, filterable product query for category pages.
      */
-    private function getProductsByCategory(int $categoryId, Request $request)
+    private function getProductsByCategory(?int $categoryId, Request $request)
 {
     $priceSubquery = Stock::selectRaw('MIN(stocks.price)')
         ->join('product_variants', 'product_variants.product_variant_id', '=', 'stocks.product_variant_id')
@@ -37,8 +39,13 @@ class PageController extends Controller
 
     $query = Product::with(['variants.stocks', 'images'])
         ->where('is_active', true)
-        ->where('category_id', $categoryId)
         ->addSelect(['display_price' => $priceSubquery]);
+
+    if ($categoryId === null) {
+        $query->newArrivals();
+    } else {
+        $query->where('category_id', $categoryId);
+    }
 
     if ($request->filled('brand')) {
         $query->where('brand_id', $request->brand);
@@ -51,6 +58,8 @@ class PageController extends Controller
     if ($request->filled('sort') && in_array($request->sort, ['price-low-high', 'price-high-low'])) {
         $direction = $request->sort === 'price-low-high' ? 'asc' : 'desc';
         $query->orderBy('display_price', $direction);
+    } elseif ($categoryId === null) {
+        $query->orderByDesc('products.created_at')->orderByDesc('products.product_id');
     } else {
         $query->orderBy('product_name');
     }
@@ -104,7 +113,7 @@ class PageController extends Controller
     public function new(Request $request)
     {
         return view('pages.new', array_merge([
-            'products' => $this->getProductsByCategory(7, $request),
+            'products' => $this->getProductsByCategory(null, $request),
             'recommendations' => $this->recommendationsForCurrentUser(),
         ], $this->filterOptions()));
     }
@@ -141,7 +150,16 @@ class PageController extends Controller
             return response()->json(['products' => []]);
         }
 
-        $products = Product::with(['primaryImage', 'images'])
+        // Select only the preview image instead of fetching every product image.
+        $previewImage = ProductImage::select('image_path')
+            ->whereColumn('product_images.product_id', 'products.product_id')
+            ->orderByDesc('is_primary')
+            ->orderBy('display_order')
+            ->orderBy('image_id')
+            ->limit(1);
+
+        $products = Product::select('product_id', 'product_name')
+            ->addSelect(['preview_image_path' => $previewImage])
             ->where('is_active', true)
             ->whereRaw('LOWER(product_name) LIKE ?', ['%'.mb_strtolower($query).'%'])
             ->orderBy('product_name')
@@ -149,11 +167,11 @@ class PageController extends Controller
             ->limit(5)
             ->get()
             ->map(function (Product $product) {
-                $image = $product->primaryImage ?? $product->images->first();
-
                 return [
                     'name' => $product->product_name,
-                    'image' => $image?->image_url,
+                    'image' => $product->preview_image_path !== null
+                        ? Storage::disk('supabase')->url($product->preview_image_path)
+                        : null,
                     'url' => route('product.show', $product->product_id),
                 ];
             });

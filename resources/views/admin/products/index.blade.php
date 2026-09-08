@@ -562,6 +562,14 @@
                     <div class="md:col-span-2">
                         <textarea name="product_description" placeholder="Description (optional)" rows="2" class="input-compact"></textarea>
                     </div>
+
+                    <div class="md:col-span-2">
+                        <label for="new_arrival_until" class="block text-sm font-semibold text-gray-700 mb-1">New Arrival until</label>
+                        <input type="date" id="new_arrival_until" name="new_arrival_until" class="input-compact"
+                            value="{{ old('new_arrival_until', now()->addDays(30)->format('Y-m-d')) }}" aria-describedby="arrival-help">
+                        <p id="arrival-help" class="text-xs text-gray-500 mt-1">Defaults to 30 days. The NEW tag lasts through this date ({{ config('app.timezone') }}). Clear the date to remove the tag. Editing or restocking does not renew it.</p>
+                        @error('new_arrival_until')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+                    </div>
                     <div class="md:col-span-2 flex justify-end">
                         <button type="submit" class="btn-create-3d flex items-center gap-2">
                             <i class="fas fa-plus-circle"></i> Create Product
@@ -663,6 +671,7 @@
                             <h4 class="font-bold text-gray-800 flex items-center gap-2">
                                 <i class="fas fa-tag text-red-500 text-sm"></i>
                                 {{ $product->product_name }}
+                                @include('partials.new-arrival-badge')
                             </h4>
                             <p class="text-xs text-gray-500 mt-0.5">
                                 {{ $product->category->category_name ?? 'Uncategorized' }}

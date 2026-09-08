@@ -216,9 +216,7 @@
             <div class="space-y-6">
                 <!-- Title & Brand -->
                 <div>
-                    <div class="inline-block px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs font-semibold mb-3">
-                        <i class="fas fa-tag mr-1"></i> New Arrival
-                    </div>
+                    @include('partials.new-arrival-badge')
                     <h1 class="text-3xl sm:text-4xl md:text-5xl font-black gradient-text mb-2 break-words">{{ $product->product_name }}</h1>
                     <p class="text-gray-500 text-sm">{{ $product->category->category_name ?? 'Uncategorized' }} | {{ $product->brand->brand_name ?? 'No Brand' }}</p>
                 </div>

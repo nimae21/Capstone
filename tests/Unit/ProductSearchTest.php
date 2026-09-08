@@ -53,6 +53,24 @@ class ProductSearchTest extends TestCase
         }
     }
 
+    public function test_suggestions_select_one_preview_image_in_a_single_query(): void
+    {
+        DB::table('products')->insert(['product_name' => 'Runner', 'is_active' => true]);
+        DB::table('product_images')->insert([
+            ['product_id' => 1, 'is_primary' => false, 'display_order' => 0, 'image_path' => 'other.jpg'],
+            ['product_id' => 1, 'is_primary' => true, 'display_order' => 5, 'image_path' => 'primary.jpg'],
+        ]);
+        $disk = \Mockery::mock();
+        $disk->shouldReceive('url')->once()->with('primary.jpg')->andReturn('https://images.example/primary.jpg');
+        \Illuminate\Support\Facades\Storage::shouldReceive('disk')->with('supabase')->andReturn($disk);
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $response = app(PageController::class)->searchSuggestions(Request::create('/search/suggestions', 'GET', ['q' => 'runner']));
+        $this->assertSame('https://images.example/primary.jpg', $response->getData(true)['products'][0]['image']);
+        $this->assertCount(1, DB::getQueryLog());
+        DB::disableQueryLog();
+    }
+
     public function test_suggestions_require_login_and_sale_route_is_removed(): void
     {
         $this->getJson('/search/suggestions?q=runner')->assertUnauthorized();
