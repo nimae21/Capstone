@@ -37,9 +37,6 @@ Route::post('/webhooks/paymongo', [PayMongoWebhookController::class, 'handle'])
 // Landing page
 Route::get('/', [GuestController::class, 'index'])->name('index');
 
-// Product detail (PUBLIC - no login needed)
-Route::get('/product/{id}', [PageController::class, 'showProduct'])
-    ->name('product.show');
 
 /*
 |--------------------------------------------------------------------------
@@ -58,6 +55,7 @@ Auth::routes(['verify' => true]);
 Route::middleware(['auth', 'verified', 'isUser'])->group(function () {
 
     // Pages
+    Route::get('/product/{id}', [PageController::class, 'showProduct'])->name('product.show');
     Route::get('/home', [PageController::class, 'home'])->name('home');
     Route::get('/men', [PageController::class, 'men'])->name('men');
     Route::get('/women', [PageController::class, 'women'])->name('women');

@@ -9,6 +9,7 @@ use App\Models\ProductVariant;
 use App\Models\Stock;
 use App\Models\StockMovement;
 use App\Models\User;
+use App\Services\ProductSales;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -23,16 +24,15 @@ class AdminDashboardController extends Controller
 | Top 5 Best-Selling Products (by quantity sold)
 |--------------------------------------------------------------------------
 */
-$topProducts = DB::table('order_items')
-    ->join('product_variants', 'product_variants.product_variant_id', '=', 'order_items.product_variant_id')
-    ->join('products', 'products.product_id', '=', 'product_variants.product_id')
+$topProducts = DB::query()->fromSub(ProductSales::totals(), 'sales')
+    ->join('products', 'products.product_id', '=', 'sales.product_id')
     ->select(
         'products.product_id',
         'products.product_name',
-        DB::raw('SUM(order_items.quantity) as total_sold')
+        'sales.total_sold'
     )
-    ->groupBy('products.product_id', 'products.product_name')
     ->orderByDesc('total_sold')
+    ->orderBy('products.product_id')
     ->take(5)
     ->get();
 

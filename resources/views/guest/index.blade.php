@@ -356,7 +356,7 @@
         }
         .category-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 1.8rem;
             margin-bottom: 4rem;
         }
@@ -459,7 +459,8 @@
         .product-card:hover .product-img {
             transform: scale(1.03);
         }
-        .product-card h3 {
+        .product-card .product-name {
+            display: block;
             font-size: 1.35rem;
             font-weight: 800;
             color: #1a1a1f;
@@ -614,6 +615,23 @@
             }
             
         }
+        button { font-family: inherit; }
+        button.btn-primary { border: 0; cursor: pointer; }
+        button.product-card { font: inherit; color: inherit; text-align: center; width: 100%; }
+        .product-placeholder { display: grid; place-items: center; background: #f4f4f6; font-size: 3rem; color: #858590; }
+        .empty-bestsellers { grid-column: 1 / -1; padding: 2rem; text-align: center; color: #6c6c78; }
+        .social-button { border: 0; background: transparent; font-size: inherit; cursor: pointer; }
+        :focus-visible { outline: 3px solid #E50914; outline-offset: 5px; }
+        body.modal-open { overflow: hidden; }
+        .landing-modal { margin: auto; width: min(520px, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto; border: 0; border-radius: 24px; padding: 2.5rem 2rem 2rem; color: #1a1a1f; box-shadow: 0 24px 80px #0003; }
+        .landing-modal::backdrop { background: rgba(15, 15, 20, .6); backdrop-filter: blur(4px); }
+        .modal-close { position: absolute; right: 1rem; top: .65rem; background: transparent; border: 0; font-size: 1.8rem; cursor: pointer; color: #6c6c78; }
+        .modal-icon { color: #E50914; font-size: 2rem; margin-bottom: 1rem; }
+        .landing-modal h2 { font-family: 'Space Grotesk', sans-serif; margin-bottom: .8rem; font-size: 1.7rem; }
+        .landing-modal p { color: #6c6c78; margin-bottom: 1rem; }
+        .modal-actions { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: 1.5rem; }
+        .modal-actions a { flex: 1; padding: .8rem 1rem; }
+        .draft-label { display: inline-block; background: #f5f5f7; color: #6c6c78; border-radius: 6px; padding: .2rem .6rem; font-size: .75rem; margin-bottom: 1rem; }
     </style>
 </head>
 <body>
@@ -639,7 +657,7 @@
         <h1>ACHILLES</h1>
         <div class="tagline">wear your weakness</div>
         <p>Curated collection of authentic performance footwear. Trusted by champions, designed for your everyday greatness. Step into our store and experience the difference.</p>
-        <a href="{{ route('login') }}" class="btn-primary">Shop Now <i class="fas fa-arrow-right"></i></a>
+        <button type="button" data-auth class="btn-primary">Shop Now <i class="fas fa-arrow-right"></i></button>
     </div>
     <div class="hero-image reveal reveal-delay-1">
         <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600" alt="Achilles signature shoe">
@@ -676,21 +694,17 @@
 <div class="container">
     <h2 class="section-title reveal"><i class="fas fa-compass"></i> Shop by Category</h2>
     <div class="category-grid">
-        <div class="category-card reveal" data-cat="MEN">
+        <div class="category-card reveal" data-auth role="button" tabindex="0" aria-label="Shop men">
             <img src="https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=600" alt="Men">
             <h3>MEN</h3>
         </div>
-        <div class="category-card reveal reveal-delay-1" data-cat="WOMEN">
+        <div class="category-card reveal reveal-delay-1" data-auth role="button" tabindex="0" aria-label="Shop women">
             <img src="https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600" alt="Women">
             <h3>WOMEN</h3>
         </div>
-        <div class="category-card reveal reveal-delay-2" data-cat="KIDS">
+        <div class="category-card reveal reveal-delay-2" data-auth role="button" tabindex="0" aria-label="Shop kids">
             <img src="https://images.unsplash.com/photo-1514989940723-e8e51635b782?w=600" alt="Kids">
             <h3>KIDS</h3>
-        </div>
-        <div class="category-card reveal reveal-delay-3" data-cat="LIMITED">
-            <img src="https://images.unsplash.com/photo-1603808033192-082d6919d3e1?w=600" alt="Limited">
-            <h3>LIMITED</h3>
         </div>
     </div>
 </div>
@@ -698,24 +712,27 @@
 <div class="container">
     <h2 class="section-title reveal"><i class="fas fa-fire"></i> Bestsellers</h2>
     <div class="featured-grid">
-        <div class="product-card reveal" data-product="Alpha Force">
-            <img class="product-img" src="https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=400" alt="Alpha Force">
-            <h3>Alpha Force</h3>
-            <div class="product-price">₱7,490</div>
-            <button class="btn-card quick-view">Quick View</button>
-        </div>
-        <div class="product-card reveal reveal-delay-1" data-product="Solace Run">
-            <img class="product-img" src="https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400" alt="Solace Run">
-            <h3>Solace Run</h3>
-            <div class="product-price">₱7,990</div>
-            <button class="btn-card quick-view">Quick View</button>
-        </div>
-        <div class="product-card reveal reveal-delay-2" data-product="Trail Master X">
-            <img class="product-img" src="https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=400" alt="Trail Master X">
-            <h3>Trail Master X</h3>
-            <div class="product-price">₱8,490</div>
-            <button class="btn-card quick-view">Quick View</button>
-        </div>
+        @forelse ($products as $product)
+            @php($image = $product->primaryImage ?? $product->images->first())
+            <button type="button" class="product-card reveal" data-auth aria-label="View {{ $product->product_name }}">
+                @if ($image)
+                    <img class="product-img" src="{{ $image->image_url }}" alt="{{ $product->product_name }}" loading="lazy">
+                @else
+                    <span class="product-img product-placeholder"><i class="fas fa-shoe-prints" aria-hidden="true"></i></span>
+                @endif
+                <span class="product-name">{{ $product->product_name }}</span>
+                <span class="product-price" style="display: block;">
+                    @if ($product->display_price !== null)
+                        From &#8369;{{ number_format($product->display_price, 2) }}
+                    @else
+                        Price coming soon
+                    @endif
+                </span>
+                <span class="btn-card">View Shoe</span>
+            </button>
+        @empty
+            <p class="empty-bestsellers">Our best sellers are on their way. Check back soon to discover our customers' favorites.</p>
+        @endforelse
     </div>
 </div>
 
@@ -731,35 +748,34 @@
 </div>
             <p>Authentic footwear store<br>for the relentless.</p>
             <div class="social-icons">
-                <i class="fab fa-instagram"></i>
-                <i class="fab fa-x-twitter"></i>
-                <i class="fab fa-tiktok"></i>
+                <button type="button" class="social-button" data-info="facebook" aria-label="Facebook"><i class="fab fa-facebook-f" aria-hidden="true"></i></button>
+                <button type="button" class="social-button" data-info="x-twitter" aria-label="X"><i class="fab fa-x-twitter" aria-hidden="true"></i></button>
+                <button type="button" class="social-button" data-info="tiktok" aria-label="TikTok"><i class="fab fa-tiktok" aria-hidden="true"></i></button>
             </div>
         </div>
         <div class="footer-col">
             <h5>EXPLORE</h5>
             <ul>
-                <li><a href="#">New Arrivals</a></li>
-                <li><a href="#">Men's</a></li>
-                <li><a href="#">Women's</a></li>
-                <li><a href="#">Accessories</a></li>
+                <li><a href="{{ route('login') }}" data-auth>Men's</a></li>
+                <li><a href="{{ route('login') }}" data-auth>Women's</a></li>
+                <li><a href="{{ route('login') }}" data-auth>Kids</a></li>
             </ul>
         </div>
         <div class="footer-col">
             <h5>SUPPORT</h5>
             <ul>
-                <li><a href="#">Help Center</a></li>
-                <li><a href="#">Size Guide</a></li>
-                <li><a href="#">Authenticity Check</a></li>
-                <li><a href="#">Track Order</a></li>
+                <li><a href="#info-modal" data-info="help">Help Center</a></li>
+                <li><a href="#info-modal" data-info="size">Size Guide</a></li>
+                <li><a href="#info-modal" data-info="authenticity">Authenticity Check</a></li>
+                <li><a href="#info-modal" data-info="tracking">Track Order</a></li>
             </ul>
         </div>
         <div class="footer-col">
             <h5>COMPANY</h5>
             <ul>
-                <li><a href="#">About Achilles</a></li>
-                <li><a href="#">Sustainability</a></li>
-                <li><a href="#">Press</a></li>
+                <li><a href="#info-modal" data-info="about">About Achilles</a></li>
+                <li><a href="#info-modal" data-info="sustainability">Sustainability</a></li>
+                <li><a href="#info-modal" data-info="press">Press</a></li>
             </ul>
         </div>
     </div>
@@ -768,6 +784,22 @@
     </div>
 </footer>
 
+<dialog id="auth-modal" class="landing-modal" aria-labelledby="auth-title" aria-describedby="auth-description">
+    <button type="button" class="modal-close" data-close aria-label="Close">&times;</button>
+    <div class="modal-icon"><i class="fas fa-shoe-prints" aria-hidden="true"></i></div>
+    <h2 id="auth-title">Your next pair awaits</h2>
+    <p id="auth-description">Log in or create an account to explore our shoes, find your size, and shop with Achilles.</p>
+    <div class="modal-actions auth-buttons">
+        <a class="nav-link" href="{{ route('login') }}">Log In</a>
+        <a class="nav-link" href="{{ route('register') }}">Register</a>
+    </div>
+</dialog>
+<dialog id="info-modal" class="landing-modal" aria-labelledby="info-title">
+    <button type="button" class="modal-close" data-close aria-label="Close">&times;</button>
+    <span class="draft-label">Draft information</span>
+    <h2 id="info-title"></h2>
+    <div id="info-content"></div>
+</dialog>
 <script>
     (function() {
         // cinematic mouse light
@@ -790,48 +822,61 @@
         }, { threshold: 0.1 });
         reveals.forEach(el => observer.observe(el));
 
-        // discover button
-        document.getElementById('discoverBtn')?.addEventListener('click', () => {
-            alert('Welcome to Achilles Footwear Store — explore our authentic collection.');
+        // Editable placeholder copy for footer information dialogs.
+        const information = {
+            help: ['Help Center', 'After logging in, browse a category, choose a shoe, and check the available sizes before adding it to your cart.', 'For order questions, keep your order number ready. Store contact details and support hours will be added here.'],
+            size: ['Size Guide', 'Measure each foot from heel to longest toe while standing and use the larger measurement.', 'Sizing varies by brand and model. Compare your measurement with the brand size chart before ordering. A detailed chart will be added here.'],
+            authenticity: ['Authenticity Check', 'Review the product details, labels, stitching, and packaging. Keep your receipt and original packaging for follow-up questions.', 'Prepare your order number and clear photos when asking about a product. Our verification process and contact details will be added here.'],
+            tracking: ['Track Order', 'Log in to the account used for your purchase and open My Orders to review your order status.', 'Courier tracking guidance will be added here. This popup does not look up an order.'],
+            about: ['About Achilles', 'Achilles is a family-owned footwear store built around a love of shoes and helping customers find their next pair.', 'Our store story, location, and opening hours will be added here.'],
+            sustainability: ['Sustainability', 'Help your shoes last longer: clean them according to their material, air-dry them, and store them in a cool, dry place.', 'Details about store packaging and any sustainability initiatives will be added here.'],
+            press: ['Press', 'This space will feature Achilles news, store announcements, and media resources.', 'A media contact and approved brand assets will be added here for press and collaboration inquiries.'],
+            facebook: ['Find us on Facebook', 'Our official Facebook page link will be added here. Follow Achilles for store news and footwear updates.'],
+            'x-twitter': ['Find us on X', 'Our official X profile link will be added here.'],
+            tiktok: ['Find us on TikTok', 'Our official TikTok profile link will be added here. Follow Achilles for shoe videos and store updates.'],
+        };
+        const authModal = document.getElementById('auth-modal');
+        const infoModal = document.getElementById('info-modal');
+        function openModal(modal) {
+            modal.showModal();
+            document.body.classList.add('modal-open');
+        }
+        document.querySelectorAll('[data-auth]').forEach(trigger => {
+            trigger.setAttribute('aria-haspopup', 'dialog');
+            trigger.addEventListener('click', event => {
+                event.preventDefault();
+                openModal(authModal);
+            });
+            if (trigger.getAttribute('role') === 'button') {
+                trigger.addEventListener('keydown', event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        trigger.click();
+                    }
+                });
+            }
         });
-
-        // category cards
-        document.querySelectorAll('.category-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const cat = card.querySelector('h3')?.innerText || 'category';
-                alert(`Browse ${cat} Please Log In First`);
+        document.querySelectorAll('[data-info]').forEach(trigger => {
+            trigger.setAttribute('aria-haspopup', 'dialog');
+            trigger.addEventListener('click', event => {
+                event.preventDefault();
+                const [title, ...paragraphs] = information[trigger.dataset.info];
+                document.getElementById('info-title').textContent = title;
+                document.getElementById('info-content').replaceChildren(...paragraphs.map(text => {
+                    const paragraph = document.createElement('p');
+                    paragraph.textContent = text;
+                    return paragraph;
+                }));
+                openModal(infoModal);
             });
         });
-
-        // quick view buttons
-        document.querySelectorAll('.quick-view').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const product = btn.closest('.product-card')?.querySelector('h3')?.innerText || 'item';
-                alert(`✨ ${product} —Please Log In First to view details and purchase.`);
+        document.querySelectorAll('.landing-modal').forEach(modal => {
+            modal.querySelector('[data-close]').addEventListener('click', () => modal.close());
+            modal.addEventListener('click', event => {
+                const bounds = modal.getBoundingClientRect();
+                if (event.target === modal && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) modal.close();
             });
-        });
-
-        // product card click
-        document.querySelectorAll('.product-card').forEach(card => {
-            card.addEventListener('click', (e) => {
-                if(e.target.classList.contains('quick-view')) return;
-                const name = card.querySelector('h3')?.innerText;
-                alert(`🛒 ${name} — Please Log In First`);
-            });
-        });
-
-        // social icons
-        document.querySelectorAll('.social-icons i').forEach(icon => {
-            icon.addEventListener('click', () => alert('Follow Achilles for exclusive drops and athlete editions.'));
-        });
-
-        // footer links
-        document.querySelectorAll('.footer-col a').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                alert('Full navigation — discover our authentic footwear collections.');
-            });
+            modal.addEventListener('close', () => document.body.classList.remove('modal-open'));
         });
     })();
 </script>
