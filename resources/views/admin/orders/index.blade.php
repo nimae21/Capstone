@@ -5,7 +5,6 @@
 @section('page-subtitle', 'Track and manage all customer orders.')
 
 @section('styles')
-    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Inter', sans-serif; }
@@ -91,7 +90,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 relative z-10">
         
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             <div class="stat-card p-6 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>

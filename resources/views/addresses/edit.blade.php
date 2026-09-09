@@ -16,7 +16,7 @@
         </div>
 
         <!-- Form Card -->
-        <div class="bg-white rounded-lg shadow-md p-8">
+        <div class="bg-white rounded-lg shadow-md p-4 sm:p-8">
             <form action="{{ route('addresses.update', $address->address_id) }}" method="POST" class="space-y-6">
                 @csrf
                 @method('PUT')

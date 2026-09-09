@@ -1,0 +1,72 @@
+/* Shared screen rules: loaded after each layout's page styles. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { min-width: 0; }
+img, video { max-width: 100%; }
+main, .main, .grid > *, .flex > *, .container, .hero-content, .hero-image { min-width: 0; }
+input, select, textarea { max-width: 100%; }
+button, a, input, select, textarea { touch-action: manipulation; }
+:focus-visible { outline: 3px solid #dc2626; outline-offset: 3px; }
+.table-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.table-scroll:focus-visible { outline-offset: -3px; }
+.user-dropdown[hidden] { display: none !important; }
+.user-dropdown:not([hidden]) { display: block; }
+.user-menu-trigger { display: flex; align-items: center; gap: .4rem; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+
+/* A stable small viewport avoids recentering auth cards as Chrome's bars move. */
+.auth-site { --app-height: 100svh; }
+.auth-site .min-h-screen { min-height: 100svh; }
+.auth-site .glass-card-clean { max-width: 100%; }
+
+@media (max-width: 768px) {
+    input:not([type='checkbox']):not([type='radio']), select, textarea { font-size: 16px !important; }
+    input:not([type='checkbox']):not([type='radio']):not([type='hidden']), select { min-height: 44px; }
+    button, .nav-link, .auth-btn, .cart-btn, .filter-tag, .user-dropdown a { min-height: 44px; }
+    .nav-link, .auth-btn, .cart-btn { display: inline-flex; align-items: center; justify-content: center; }
+    .store-site .navbar { position: relative; }
+    .store-site .nav-icons { min-width: 0; }
+    .store-site .user-dropdown { left: 0; right: auto; max-width: calc(100vw - 2rem); }
+    .store-site .hero-content h1 { font-size: clamp(2rem, 10vw, 3.2rem); overflow-wrap: anywhere; }
+    .store-site .section-title, .store-site .category-title { font-size: clamp(1.5rem, 7vw, 2.25rem); flex-wrap: wrap; }
+    .store-site .hero-features, .store-site .filter-bar { gap: .75rem; flex-wrap: wrap; }
+    .store-site .filter-bar { margin: 1rem; padding: 1rem; border-radius: 20px; }
+    .store-site .product-grid { padding: 1rem; gap: 1rem; }
+    .store-site .category-header { padding: 1.5rem 1rem 1rem; gap: .75rem; }
+    .store-site .cta-banner { margin: 1rem; padding: 2rem 1rem; border-radius: 24px; }
+    .store-site .hero-image { width: 100%; }
+    .store-site .auth-buttons { flex-wrap: wrap; }
+    .auth-site main { overflow-wrap: anywhere; }
+    .auth-site .glass-card-clean { padding: 1.25rem !important; border-radius: 24px !important; }
+    .auth-site .glass-card-clean .flex.justify-between { flex-wrap: wrap; gap: .75rem; }
+    .auth-site .password-toggle { width: 44px; height: 44px; }
+    .admin-site .main { min-width: 0; max-width: 100%; }
+    .admin-site .sidebar, .admin-site .sidebar.collapsed { width: min(280px, calc(100vw - 4rem)); height: 100dvh; overflow-y: auto; overscroll-behavior-y: contain; padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+    .admin-site .main .flex.justify-between { flex-wrap: wrap; gap: .75rem; }
+    .admin-site .main .overflow-x-auto { max-width: 100%; }
+    .admin-site .main h1 { font-size: clamp(1.6rem, 7vw, 2.25rem); overflow-wrap: anywhere; }
+    .admin-site .main .p-8 { padding: 1rem; }
+    .admin-site .pos-layout { min-height: 0; }
+    .admin-site .product-panel, .admin-site .cart-panel { min-width: 0; }
+}
+
+@media (max-width: 480px) {
+    .store-site .container { padding-left: 1rem; padding-right: 1rem; }
+    .store-site .hero { gap: 1.5rem; }
+    .store-site .hero-features { flex-direction: column; }
+    .auth-site .glass-card-clean h2 { font-size: 1.75rem !important; }
+}
+
+/* Device capability matters in Chrome desktop-site mode too. */
+@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+    .floating-orb, .particle-elegant, .animate-cinematic-zoom,
+    .animate-sweep-glide, .animate-grid-drift, .animate-lens-flare,
+    .animate-breathe-red, .glass-card-clean, .card-3d, .hero-image {
+        animation: none !important;
+        transform: none !important;
+    }
+    .auth-site .glass-card-clean { backdrop-filter: none; }
+    .auth-site .glass-card-clean::before { animation: none !important; }
+    .light-follow { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}

@@ -633,8 +633,10 @@
         .modal-actions a { flex: 1; padding: .8rem 1rem; }
         .draft-label { display: inline-block; background: #f5f5f7; color: #6c6c78; border-radius: 6px; padding: .2rem .6rem; font-size: .75rem; margin-bottom: 1rem; }
     </style>
+    <link rel="stylesheet" href="{{ asset('css/responsive.css') . '?v=' . filemtime(public_path('css/responsive.css')) }}">
+    <script src="{{ asset('js/responsive.js') . '?v=' . filemtime(public_path('js/responsive.js')) }}" defer></script>
 </head>
-<body>
+<body class="store-site">
 
 <div class="light-follow" id="lightFollow"></div>
 

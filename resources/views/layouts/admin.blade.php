@@ -6,19 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <script src="{{ asset('js/admin-theme.js') . '?v=' . filemtime(public_path('js/admin-theme.js')) }}"></script>
     <title>@yield('title', 'Admin Dashboard') | Achilles</title>
-    <script>
-        (() => {
-            const setViewportHeight = () => {
-                const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-                document.documentElement.style.setProperty('--app-height', height + 'px');
-            };
-
-            setViewportHeight();
-            window.addEventListener('resize', setViewportHeight, { passive: true });
-            window.addEventListener('orientationchange', setViewportHeight, { passive: true });
-            window.visualViewport?.addEventListener('resize', setViewportHeight, { passive: true });
-        })();
-    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="icon" type="image/png" href="{{ asset('images/achilles logo foot.png') }}?v=2">
     <!-- Google Fonts + Font Awesome -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -26,8 +14,6 @@
 
     <style>
         * {
-            margin: 0;
-            padding: 0;
             box-sizing: border-box;
         }
 
@@ -418,8 +404,10 @@
 
     @yield('styles')
     <link rel="stylesheet" href="{{ asset('css/admin-theme.css') . '?v=' . filemtime(public_path('css/admin-theme.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/responsive.css') . '?v=' . filemtime(public_path('css/responsive.css')) }}">
+    <script src="{{ asset('js/responsive.js') . '?v=' . filemtime(public_path('js/responsive.js')) }}" defer></script>
 </head>
-<body>
+<body class="admin-site">
 
     <!-- Mobile toggle button (always visible on small screens) -->
     <button class="menu-toggle" id="mobileMenuToggle">
@@ -503,7 +491,7 @@
             // before the rest of the page loads, to prevent flicker.
             var sidebar = document.getElementById('adminSidebar');
             if (sidebar) {
-                var stored = localStorage.getItem('achilles_sidebar_collapsed');
+                var stored = (() => { try { return localStorage.getItem('achilles_sidebar_collapsed'); } catch { return null; } })();
                 // Only apply on desktop (>=769px) – we'll also check on load,
                 // but we can safely set the class now; it will be overridden if on mobile.
                 var isDesktop = window.innerWidth >= 769;
@@ -536,6 +524,7 @@
 
             // localStorage key
             const STORAGE_KEY = 'achilles_sidebar_collapsed';
+            function readSidebarPreference() { try { return localStorage.getItem(STORAGE_KEY); } catch { return null; } }
 
             // Check if we are on desktop (min-width 769px)
             function isDesktop() {
@@ -561,13 +550,13 @@
                     const icon = toggleBtn?.querySelector('i');
                     if (icon) icon.className = 'fas fa-chevron-left';
                 }
-                localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0');
+                try { localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0'); } catch { /* Keep the menu usable when storage is unavailable. */ }
             }
 
             // Initialize from localStorage – but we already set the class immediately,
             // so we just need to sync the toggle icon and body class if not already set.
             function initSidebarState() {
-                const saved = localStorage.getItem(STORAGE_KEY);
+                const saved = readSidebarPreference();
                 const shouldCollapse = saved === '1';
                 // If the sidebar already has the class, make sure body class matches.
                 // But we trust the immediate script did it.
@@ -629,7 +618,7 @@
                     sidebar.classList.remove('mobile-open');
                     body.classList.remove('menu-open');
                     // Re‑apply saved collapsed state for desktop
-                    const saved = localStorage.getItem(STORAGE_KEY);
+                    const saved = readSidebarPreference();
                     const shouldCollapse = saved === '1';
                     // Use setCollapsed to ensure consistency
                     setCollapsed(shouldCollapse);

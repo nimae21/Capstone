@@ -5,19 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Achilles') }}</title>
-    <script>
-        (() => {
-            const setViewportHeight = () => {
-                const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-                document.documentElement.style.setProperty('--app-height', height + 'px');
-            };
-
-            setViewportHeight();
-            window.addEventListener('resize', setViewportHeight, { passive: true });
-            window.addEventListener('orientationchange', setViewportHeight, { passive: true });
-            window.visualViewport?.addEventListener('resize', setViewportHeight, { passive: true });
-        })();
-    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="icon" type="image/png" href="{{ asset('images/achilles logo foot.png') }}">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -26,41 +14,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     
-    <!-- Custom Tailwind config override -->
-    <script>
-        if (typeof tailwind !== 'undefined') {
-            tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        'sans': ['Inter', 'sans-serif'],
-                    },
-                    animation: {
-                        'blob': 'blob 7s infinite',
-                        'float': 'float 6s ease-in-out infinite',
-                        'cinematic': 'cinematicMove 20s ease infinite',
-                    },
-                    keyframes: {
-                        blob: {
-                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
-                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
-                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
-                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
-                        },
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
-                            '50%': { transform: 'translateY(-20px) rotate(2deg)' },
-                        },
-                        cinematicMove: {
-                            '0%, 100%': { transform: 'translate(0, 0)' },
-                            '50%': { transform: 'translate(5%, 5%)' },
-                        },
-                    },
-                },
-            },
-            };
-        }
-    </script>
+
+
 
     <!-- Global Cinematic Styles -->
     <style>
@@ -347,11 +302,13 @@
 
     <!-- Scripts -->
     
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     
     @yield('styles')
+    <link rel="stylesheet" href="{{ asset('css/responsive.css') . '?v=' . filemtime(public_path('css/responsive.css')) }}">
+    <script src="{{ asset('js/responsive.js') . '?v=' . filemtime(public_path('js/responsive.js')) }}" defer></script>
 </head>
-<body class="relative bg-black font-['Inter',sans-serif] antialiased overflow-x-hidden">
+<body class="auth-site relative bg-black font-['Inter',sans-serif] antialiased overflow-x-hidden">
     <div id="pageLoader" class="page-loader" role="status" aria-live="polite" aria-label="Loading">
         <div class="page-loader-content">
             <img src="{{ asset('images/achilles logo foot.png') }}" alt="Achilles" class="page-loader-logo">
@@ -372,7 +329,7 @@
         <div class="floating-orb w-80 h-80 top-10 left-[10%]"></div>
         <div class="floating-orb w-96 h-96 bottom-20 right-[5%] animation-delay-2000"></div>
         <div class="floating-orb w-56 h-56 top-[40%] left-[80%] animation-delay-5000"></div>
-        <div id="elegantParticles" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+        <div id="globalBackgroundParticles" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
     </div>
 
     <!-- MAIN CONTENT -->

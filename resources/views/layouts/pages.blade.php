@@ -5,19 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Achilles') }}</title>
-    <script>
-        (() => {
-            const setViewportHeight = () => {
-                const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-                document.documentElement.style.setProperty('--app-height', height + 'px');
-            };
-
-            setViewportHeight();
-            window.addEventListener('resize', setViewportHeight, { passive: true });
-            window.addEventListener('orientationchange', setViewportHeight, { passive: true });
-            window.visualViewport?.addEventListener('resize', setViewportHeight, { passive: true });
-        })();
-    </script>
     <link rel="icon" type="image/png" href="{{ asset('images/achilles logo foot.png') }}">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -474,7 +461,7 @@
         
         .product-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
             gap: 2rem;
             padding: 2rem 2rem 4rem;
         }
@@ -719,8 +706,10 @@
     </style>
     
     @yield('styles')
+    <link rel="stylesheet" href="{{ asset('css/responsive.css') . '?v=' . filemtime(public_path('css/responsive.css')) }}">
+    <script src="{{ asset('js/responsive.js') . '?v=' . filemtime(public_path('js/responsive.js')) }}" defer></script>
 </head>
-<body>
+<body class="store-site">
     <div id="pageLoader" class="page-loader" role="status" aria-live="polite" aria-label="Loading">
         <div class="page-loader-content">
             <img src="{{ asset('images/achilles logo foot.png') }}" alt="Achilles" class="page-loader-logo">
@@ -747,10 +736,12 @@
         <div class="nav-icons">
             @auth
                 <div class="user-menu" id="userMenu">
+                    <button type="button" class="user-menu-trigger" id="userMenuTrigger" aria-label="Account menu" aria-expanded="false" aria-controls="userDropdown">
                     <i class="fas fa-user-circle"></i>
                     <span>{{ Auth::user()->first_name }}</span>
                     <i class="fas fa-chevron-down" style="font-size:0.7rem; margin-left:4px;"></i>
-                    <div class="user-dropdown" id="userDropdown">
+                    </button>
+                    <div class="user-dropdown" id="userDropdown" hidden>
                         <a href="{{ route('profile.index') }}">
                             <i class="fas fa-user"></i> My Profile
                         </a>
@@ -844,45 +835,7 @@
             window.addEventListener('pageshow', () => loader.classList.remove('is-visible'));
         })();
 
-        document.addEventListener('DOMContentLoaded', function() {
 
-            // ── User Dropdown (click + hover fallback) ──
-            const userMenu = document.getElementById('userMenu');
-            const userDropdown = document.getElementById('userDropdown');
-
-            if (userMenu && userDropdown) {
-                // Click toggle (mobile/tablet)
-                userMenu.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const isOpen = userDropdown.style.display === 'block';
-                    userDropdown.style.display = isOpen ? 'none' : 'block';
-                });
-
-                // Click outside closes
-                document.addEventListener('click', function() {
-                    userDropdown.style.display = 'none';
-                });
-
-                // Prevent closing when clicking inside dropdown
-                userDropdown.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                });
-
-                // Hover for desktop (keep as fallback)
-                userMenu.addEventListener('mouseenter', function() {
-                    if (window.innerWidth > 768) {
-                        userDropdown.style.display = 'block';
-                    }
-                });
-                userMenu.addEventListener('mouseleave', function() {
-                    if (window.innerWidth > 768) {
-                        userDropdown.style.display = 'none';
-                    }
-                });
-            }
-
-
-        });
     </script>
 
     <script src="{{ asset('js/product-search.js') . '?v=' . filemtime(public_path('js/product-search.js')) }}" defer></script>

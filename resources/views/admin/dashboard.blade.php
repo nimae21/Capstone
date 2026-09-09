@@ -6,8 +6,6 @@
 
 @section('styles')
     <!-- Tailwind CSS + Google Fonts -->
-    <script src="https://cdn.tailwindcss.com">
-    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js">

@@ -4,8 +4,6 @@
 <!-- CINEMATIC FORGOT PASSWORD – SAME STYLE AS LOGIN/REGISTER -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-<script src="https://cdn.tailwindcss.com"></script>
-
 <style>
   /* ---------- CINEMATIC BACKGROUND ANIMATIONS (same as login) ---------- */
   @keyframes cinematicZoom {
@@ -284,7 +282,7 @@
     (function() {
       // ========== ELEGANT PARTICLES ==========
       const particleField = document.getElementById('elegantParticles');
-      if(particleField) {
+      if (particleField && window.matchMedia('(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)').matches) {
         for(let i=0; i<120; i++) {
           const p = document.createElement('div');
           p.classList.add('particle-elegant');
@@ -301,7 +299,7 @@
 
       // ========== SMOOTH PARALLAX ==========
       const bgShoe = document.querySelector('.animate-cinematic-zoom');
-      if(bgShoe) {
+      if (bgShoe && window.matchMedia('(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)').matches) {
         document.addEventListener('mousemove', (e) => {
           const x = (e.clientX / window.innerWidth) * 20 - 10;
           const y = (e.clientY / window.innerHeight) * 12 - 6;

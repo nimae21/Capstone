@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta charset="utf-8">
     <title>Receipt #{{ $order->order_id }}</title>
     <style>
-        body { font-family: 'Courier New', monospace; max-width: 380px; margin: 2rem auto; color: #1e293b; }
+        body { padding: 0 1rem; box-sizing: border-box; overflow-wrap: anywhere; font-family: 'Courier New', monospace; max-width: 380px; margin: 2rem auto; color: #1e293b; }
         .center { text-align: center; }
         hr { border: none; border-top: 1px dashed #94a3b8; margin: 1rem 0; }
         table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }

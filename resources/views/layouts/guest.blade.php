@@ -5,19 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Achilles') }}</title>
-    <script>
-        (() => {
-            const setViewportHeight = () => {
-                const height = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-                document.documentElement.style.setProperty('--app-height', height + 'px');
-            };
-
-            setViewportHeight();
-            window.addEventListener('resize', setViewportHeight, { passive: true });
-            window.addEventListener('orientationchange', setViewportHeight, { passive: true });
-            window.visualViewport?.addEventListener('resize', setViewportHeight, { passive: true });
-        })();
-    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="icon" type="image/png" href="{{ asset('images/achilles logo foot.png') }}?v=3">
 
     <!-- Fonts -->
@@ -28,35 +16,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        'sans': ['figtree', 'sans-serif'],
-                    },
-                    animation: {
-                        'spin-slow': 'spin 8s linear infinite',
-                        'float': 'float 6s ease-in-out infinite',
-                        'cinematic': 'cinematicMove 20s ease infinite',
-                        'pulse-slow': 'pulse 3s ease-in-out infinite',
-                    },
-                    keyframes: {
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
-                            '50%': { transform: 'translateY(-15px) rotate(2deg)' },
-                        },
-                        cinematicMove: {
-                            '0%, 100%': { transform: 'translate(0, 0)' },
-                            '50%': { transform: 'translate(3%, 3%)' },
-                        },
-                    },
-                },
-            },
-        }
-    </script>
+
 
     <style>
         :root {
@@ -80,7 +40,8 @@
 
         /* Custom smooth transitions */
         * {
-            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            transition-property: color, background-color, border-color, box-shadow;
+            transition-duration: 0.2s;
         }
         
         /* Gradient text utility */
@@ -100,8 +61,10 @@
     </style>
     
     @stack('styles')
+    <link rel="stylesheet" href="{{ asset('css/responsive.css') . '?v=' . filemtime(public_path('css/responsive.css')) }}">
+    <script src="{{ asset('js/responsive.js') . '?v=' . filemtime(public_path('js/responsive.js')) }}" defer></script>
 </head>
-<body class="font-sans antialiased">
+<body class="auth-site font-sans antialiased">
     <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gradient-to-br from-gray-50 via-white to-gray-100 relative overflow-hidden">
         
         <!-- Animated background -->
