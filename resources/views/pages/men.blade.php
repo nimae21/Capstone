@@ -435,6 +435,26 @@
     align-items: center;
 }
     }
+    .shoe-media { position: relative; aspect-ratio: 1 / 1; overflow: hidden; background: #f1f5f9; }
+    .shoe-media .shoe-image { display: block; height: 100%; }
+    .shoe-media.is-loading::after {
+        content: ''; position: absolute; inset: 0; pointer-events: none;
+        background: linear-gradient(100deg, #f1f5f9 20%, #fff 50%, #f1f5f9 80%);
+        background-size: 200% 100%;
+        animation: men-skeleton 1.4s ease-in-out infinite;
+    }
+    .shoe-media.is-loading .shoe-image { opacity: 0; }
+    .shoe-image-fallback {
+        position: absolute; inset: 0; display: grid; place-items: center;
+        color: #64748b; font-size: 0.875rem;
+    }
+    @keyframes men-skeleton {
+        from { background-position: 200% 0; }
+        to { background-position: -200% 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .shoe-media.is-loading::after { animation: none; }
+    }
 </style>
 @endsection
 
@@ -509,9 +529,11 @@
                 <a href="{{ route('product.show', ['id' => $product->product_id, 'return_to' => request()->fullUrl()]) }}" class="shoe-card" data-price="{{ $price }}" aria-label="View {{ $product->product_name }}">
                     @if ($product->is_new_arrival)<span class="shoe-badge">NEW</span>@endif
 
-                    <img class="shoe-image"
+                    <div class="shoe-media">
+                    <img class="shoe-image" loading="lazy" decoding="async" width="400" height="400"
                          src="{{ $image }}"
                          alt="{{ $product->product_name }}">
+                    </div>
 
                     @if($brandName || $shoeTypeName)
                         <div class="shoe-meta">
@@ -590,6 +612,29 @@
 
 @push('scripts')
 <script>
+    // Keep placeholders until lazy images finish, including cached and failed images.
+    document.querySelectorAll('#productGrid .shoe-media').forEach(media => {
+        const image = media.querySelector('img');
+        const finish = () => {
+            media.classList.remove('is-loading');
+            media.setAttribute('aria-busy', 'false');
+            if (!image.naturalWidth && !media.querySelector('.shoe-image-fallback')) {
+                image.style.visibility = 'hidden';
+                const fallback = document.createElement('span');
+                fallback.className = 'shoe-image-fallback';
+                fallback.textContent = 'Image unavailable';
+                media.appendChild(fallback);
+            }
+        };
+        image.addEventListener('load', finish, { once: true });
+        image.addEventListener('error', finish, { once: true });
+        if (image.complete) {
+            finish();
+        } else {
+            media.classList.add('is-loading');
+            media.setAttribute('aria-busy', 'true');
+        }
+    });
     // Apply sort and preserve pagination
     function applySort(value) {
         const url = new URL(window.location.href);
