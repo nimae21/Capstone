@@ -30,7 +30,8 @@
         .card-3d, .card-cinematic, .create-card, .panel, .stat-card,
         .product-card, .product-body, .brand-item, .category-item, .type-item,
         .product-panel, .cart-panel, .pos-product-card, .variant-group-card,
-        .color-image-assignment, .tips-box, .alert-item-3d, .diff-box,
+        .color-image-assignment, .tips-box, .tips-premium-gradient,
+        .inventory-color, .alert-item-3d, .diff-box,
         .bg-white, [class*="bg-white/"], .bg-gray-50, .bg-gray-100,
         .bg-gray-200, .bg-slate-50, .bg-slate-100, .bg-slate-200,
         .users-page .users-table tr
@@ -64,7 +65,7 @@
     html[data-admin-theme="dark"] :is(
         .border-gray-100, .border-gray-200, .border-gray-300,
         .border-slate-100, .border-slate-200, .border-slate-300,
-        .border-white, .cart-footer, .inventory-table td, .inventory-table th,
+        .border-white, .cart-footer, .inventory-summary, .inventory-table td, .inventory-table th,
         .orders-table td, .data-table td, .log-row td
     ) { border-color: var(--admin-border) !important; }
     html[data-admin-theme="dark"] :is(.divide-gray-100, .divide-gray-200, .divide-slate-200) > * + * {
@@ -83,7 +84,7 @@
     html[data-admin-theme="dark"] :is(
         input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
         select, textarea, .input-premium, .input-compact, .filter-input, .search-input,
-        .select-compact, .qty-control, .qty-btn, .variant-chip,
+        .select-compact, .qty-control, .qty-btn, .variant-chip, .inventory-size,
         .variant-switcher, .size-switcher-button, .file-upload-btn, .btn-secondary,
         .btn-sm-outline, .btn-outline, .category-tab:not(.active), .toggle-row,
         .users-pagination a, .users-pagination .page-arrow
@@ -101,6 +102,12 @@
         border-color: #f87171 !important;
         background: #532532 !important;
     }
+    html[data-admin-theme="dark"] .inventory-size.out {
+        background: #4c2030 !important;
+        color: #fecaca !important;
+        border-color: #7f3548 !important;
+    }
+    html[data-admin-theme="dark"] .inventory-size.out strong { color: #fecaca !important; }
     /* Preserve status distinctions with readable foreground/background pairs. */
     html[data-admin-theme="dark"] :is(.bg-red-50, .bg-red-100, .status-cancelled, .status.cancelled, .status-badge.cancelled, .event-badge.deleted, .event-badge.failed) { background: #4c2030 !important; color: #fecaca !important; }
     html[data-admin-theme="dark"] :is(.bg-green-50, .bg-green-100, .status-completed, .status.completed) { background: #123d35 !important; color: #a7f3d0 !important; }

@@ -198,6 +198,8 @@
             margin-top: 0.75rem;
         }
 
+        .size-switcher[hidden] { display: none; }
+
         .size-switcher-button {
             display: inline-flex;
             align-items: center;
@@ -254,16 +256,16 @@
                 <label class="sr-only" for="variantColor">Choose color</label>
                 <select id="variantColor" class="input-premium sm:w-auto">
                     @foreach($productVariants->groupBy('color') as $color => $colorVariants)
-                        <option value="{{ Str::slug($color) }}" {{ $color === $variant->color ? 'selected' : '' }}>{{ $color }}</option>
+                        <option value="{{ $color }}" {{ (string) $color === (string) $variant->color ? 'selected' : '' }}>{{ $color }}</option>
                     @endforeach
                 </select>
             </div>
 
             @foreach($productVariants->groupBy('color') as $color => $colorVariants)
-                <div class="size-switcher" data-color="{{ Str::slug($color) }}" {{ $color === $variant->color ? '' : 'hidden' }}>
+                <div class="size-switcher" data-color="{{ $color }}" {{ (string) $color === (string) $variant->color ? '' : 'hidden' }}>
                     @foreach($colorVariants as $colorVariant)
                         @php $availableStock = $colorVariant->stocks->sum('remaining_quantity'); @endphp
-                        <a href="{{ route('admin.stocks.index', ['variant' => $colorVariant->product_variant_id, 'return_to' => request()->fullUrl()]) }}" class="size-switcher-button {{ $colorVariant->product_variant_id === $variant->product_variant_id ? 'current' : '' }}">
+                        <a href="{{ route('admin.stocks.index', ['variant' => $colorVariant->product_variant_id, 'return_to' => request('return_to', route('admin.products.variants.index', $variant->product_id))]) }}" class="size-switcher-button {{ $colorVariant->product_variant_id === $variant->product_variant_id ? 'current' : '' }}" @if($colorVariant->product_variant_id === $variant->product_variant_id) aria-current="page" @endif>
                             <span>Size {{ $colorVariant->size }}</span>
                             <span class="size-switcher-stock">{{ $availableStock }} in stock</span>
                         </a>
@@ -436,6 +438,8 @@
 
 @endsection
 
+@push('scripts')
+<script src="{{ asset('js/stock-variant-switcher.js') . '?v=' . filemtime(public_path('js/stock-variant-switcher.js')) }}" defer></script>
 <script>
 function openDeleteStock(id) {
     document.getElementById('deleteStockForm').action =
@@ -452,12 +456,6 @@ function closeSuccessModal() {
     document.getElementById('successModal').style.display = 'none';
 }
 
-document.getElementById('variantColor').addEventListener('change', function () {
-    document.querySelectorAll('.size-switcher').forEach(group => {
-        group.hidden = group.dataset.color !== this.value;
-    });
-});
-
 window.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('successModal');
 
@@ -468,3 +466,4 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
+@endpush
