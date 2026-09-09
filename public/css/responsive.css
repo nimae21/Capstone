@@ -15,7 +15,8 @@ button, a, input, select, textarea { touch-action: manipulation; }
 /* A stable small viewport avoids recentering auth cards as Chrome's bars move. */
 .auth-site { --app-height: 100svh; }
 .auth-site .min-h-screen { min-height: 100svh; }
-.auth-site .glass-card-clean { max-width: 100%; }
+/* Card width limits belong to each form (login uses max-w-[460px]).
+   Keep those limits intact; w-full already shrinks cards on narrow screens. */
 
 @media (max-width: 768px) {
     input:not([type='checkbox']):not([type='radio']), select, textarea { font-size: 16px !important; }
