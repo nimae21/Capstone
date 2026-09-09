@@ -24,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        \App\Models\Order::observe(\App\Observers\MobileOrderObserver::class);
         Event::listen(Login::class, [LogAuthenticationActivity::class, 'handleLogin']);
     Event::listen(Logout::class, [LogAuthenticationActivity::class, 'handleLogout']);
     Event::listen(Failed::class, [LogAuthenticationActivity::class, 'handleFailed']);
