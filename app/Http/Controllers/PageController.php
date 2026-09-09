@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 use App\Models\ShoeType;
 use App\Services\ActivityTrackingService;
 use App\Services\RecommendationClient;
@@ -32,7 +33,14 @@ class PageController extends Controller
      */
     private function getProductsByCategory(?int $categoryId, Request $request)
 {
-    $query = Product::with(['variants.stocks', 'images'])
+    $query = Product::with([
+        'brand:brand_id,brand_name',
+        'shoeType:shoe_type_id,shoe_type_name',
+        // Cards need only the first image. This limit is applied per product.
+        'images' => fn ($images) => $images
+            ->select('image_id', 'product_id', 'image_path', 'display_order')
+            ->orderBy('image_id')->limit(1),
+    ])
         ->where('is_active', true)
         ->withDisplayPrice();
 
@@ -68,10 +76,12 @@ class PageController extends Controller
      */
     private function filterOptions(): array
     {
-        return [
-            'brands' => Brand::where('is_active', true)->orderBy('brand_name')->get(),
-            'shoeTypes' => ShoeType::where('is_active', true)->orderBy('display_order')->get(),
-        ];
+        return Cache::remember('catalog.filter-options.v1', now()->addMinutes(10), fn () => [
+            'brands' => Brand::where('is_active', true)->orderBy('brand_name')
+                ->get(['brand_id', 'brand_name']),
+            'shoeTypes' => ShoeType::where('is_active', true)->orderBy('display_order')
+                ->get(['shoe_type_id', 'shoe_type_name']),
+        ]);
     }
 
     private function recommendationsForCurrentUser(): Collection
