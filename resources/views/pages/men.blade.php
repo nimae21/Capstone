@@ -498,7 +498,7 @@
         <div class="product-grid" id="productGrid">
             @foreach($products as $product)
                 @php
-    $price = $product->display_price ?? 0;
+    $price = $product->display_price;
     $image = $product->images->first()?->image_url ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400';
     $description = $product->product_description ?? 'Premium performance footwear engineered for the relentless athlete.';
     $brandName = $product->brand->brand_name ?? null;
@@ -529,7 +529,7 @@
 
                     <h3>{{ $product->product_name }}</h3>
                     <p class="desc">{{ Str::limit($description, 55) }}</p>
-                    <p class="price">From ₱{{ number_format($price, 2) }}</p>
+                    @include('partials.product-card-price')
 
                     <span class="btn-view">
                         View Product <i class="fas fa-arrow-right"></i>

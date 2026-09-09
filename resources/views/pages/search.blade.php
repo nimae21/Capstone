@@ -404,7 +404,7 @@
                 /*
                  * Use the same price source as the fixed page.
                  */
-                $price = $product->display_price ?? 0;
+                $price = $product->display_price;
 
                 $description = $product->product_description
                     ?? 'Premium performance footwear engineered for the relentless athlete.';
@@ -455,9 +455,7 @@
                 </p>
 
                 {{-- Price --}}
-                <p class="price">
-                    From ₱{{ number_format($price, 2) }}
-                </p>
+                @include('partials.product-card-price')
 
                 {{-- View Product --}}
                 <span class="btn-view">

@@ -47,6 +47,12 @@ class Product extends Model
             ->where('products.new_arrival_until', '>', now());
     }
 
+    public function scopeWithDisplayPrice(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->addSelect(['display_price' => Stock::selectRaw('MIN(stocks.price)')
+            ->join('product_variants', 'product_variants.product_variant_id', '=', 'stocks.product_variant_id')
+            ->whereColumn('product_variants.product_id', 'products.product_id')]);
+    }
     public function category()
 {
     return $this->belongsTo(Category::class, 'category_id', 'category_id');

@@ -300,7 +300,7 @@
     <div class="product-grid" id="productGrid">
         @forelse($products as $product)
         @php
-    $price = $product->display_price ?? 0;
+    $price = $product->display_price;
     $image = $product->images->first()?->image_url ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400';
     $description = $product->product_description ?? 'Premium performance footwear engineered for the relentless athlete.';
     $brandName = $product->brand->brand_name ?? null;
@@ -325,7 +325,7 @@
                 </div>
             @endif
             <h3>{{ $product->product_name }}</h3>
-            <p class="price">From ₱{{ number_format($price, 2) }}</p>
+            @include('partials.product-card-price')
             <span class="btn-card">View Product <i class="fas fa-arrow-right ml-1"></i></span>
         </a>
         @empty

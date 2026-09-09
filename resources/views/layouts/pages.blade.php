@@ -706,6 +706,20 @@
     </style>
     
     @yield('styles')
+    <style>
+        .product-grid .shoe-card {
+            display: flex;
+            flex-direction: column;
+        }
+        .product-grid .shoe-card .product-card-price {
+            font-size: 1.25rem;
+            font-weight: 800;
+            line-height: 1.5;
+            color: #dc2626;
+            margin: auto 1rem 0.75rem;
+            padding-top: 0.25rem;
+        }
+    </style>
     <link rel="stylesheet" href="{{ asset('css/responsive.css') . '?v=' . filemtime(public_path('css/responsive.css')) }}">
     <script src="{{ asset('js/responsive.js') . '?v=' . filemtime(public_path('js/responsive.js')) }}" defer></script>
 </head>

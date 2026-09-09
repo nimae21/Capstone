@@ -94,8 +94,8 @@ function findMatchingItem(list, values, nameKey, filter = () => true) {
 }
 
 function updateMap(lat, lon) {
-    marker.setLatLng([lat, lon]);
-    map.setView([lat, lon], 17);
+    marker?.setLatLng([lat, lon]);
+    map?.setView([lat, lon], 17);
     latitude.value = lat;
     longitude.value = lon;
 }
@@ -302,6 +302,7 @@ async function fillAddressFromLocation(lat, lon) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    if (typeof L !== 'undefined') {
     map = L.map('map').setView([12.8797, 121.7740], 6);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
@@ -331,6 +332,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             setLocationStatus(error.message, true);
         }
     });
+
+    } else {
+        locateButton.disabled = true;
+        findButton.disabled = true;
+        document.getElementById('map').textContent = 'Map unavailable. You can still enter your address below.';
+    }
 
     try {
         addressDataPromise = loadAddressData();
@@ -439,4 +446,8 @@ locateButton.addEventListener('click', () => {
         maximumAge: 300000,
     });
         
+});
+
+document.addEventListener('address-modal-opened', () => {
+    requestAnimationFrame(() => map?.invalidateSize());
 });

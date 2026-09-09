@@ -35,7 +35,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('checkout.place-order') }}" method="POST" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <form id="checkoutForm" action="{{ route('checkout.place-order') }}" method="POST" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 @csrf
                 <!-- Main Form Column -->
                 <div class="lg:col-span-2 space-y-6">
@@ -47,66 +47,35 @@
                             <span class="bg-gradient-to-r from-black to-red-600 bg-clip-text text-transparent">Delivery Address</span>
                         </h2>
 
-                        <!-- Saved Addresses -->
-                        @if($addresses->count() > 0)
-                            <div class="mb-8">
-                                <p class="text-sm font-bold text-gray-600 uppercase tracking-wide mb-4">Saved Addresses</p>
-                                <div class="space-y-3">
-                                    @foreach($addresses as $address)
-                                        <label class="block cursor-pointer">
-                                            <div class="border-2 border-gray-200 rounded-xl p-4 hover:border-red-500 hover:bg-red-50 transition-all" id="addr-{{ $address->address_id }}">
-                                                <div class="flex items-start gap-3">
-                                                    
-    <input type="radio"
-name="address_id"
-    value="{{ $address->address_id }}"
-    {{ $address->is_default ? 'checked' : '' }} class="saved-address"
-
->
-                                                    <div class="flex-1">
-                                                        <p class="font-semibold text-gray-900">
-    {{ $address->full_name }}
-</p>
-
-<p class="text-sm text-gray-600 mt-1">
-    📞 {{ $address->phone_number }}
-</p>
-
-<p class="text-sm text-gray-500 mt-2">
-    {{ $address->street }},
-    {{ $address->barangay }},
-    {{ $address->city }},
-    {{ $address->province }},
-    {{ $address->postal_code }}
-</p>
-                                                        @if($address->is_default)
-                                                            <span class="inline-block mt-2 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-semibold">Default</span>
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </label>
-                                    @endforeach
-
-                                    <a href="{{ route('addresses.create') }}"
-   class="block border-2 border-dashed border-red-400 rounded-xl p-5 hover:bg-red-50 hover:border-red-600 transition">
-
-    <div class="flex items-center justify-center gap-3">
-
-        <i class="fas fa-plus-circle text-red-600 text-xl"></i>
-
-        <span class="font-semibold text-red-600">
-            Add New Address
-        </span>
-
-    </div>
-
-</a>
-                                </div>
-                                <hr class="my-8">
-                            </div>
+                        @php
+                            $selectedAddress = old('address_id', session('selected_address_id', $addresses->firstWhere('is_default', true)?->address_id ?? $addresses->first()?->address_id));
+                        @endphp
+                        <div id="checkoutAddressWarning" role="alert" tabindex="-1"
+                             class="checkout-notice checkout-warning" @if($addresses->isNotEmpty() && !$errors->has('address_id')) hidden @endif>
+                            {{ $errors->first('address_id') ?: 'Please add a delivery address before completing your order.' }}
+                        </div>
+                        @if(session('success'))
+                            <p class="checkout-notice checkout-success" role="status">{{ session('success') }}</p>
                         @endif
-
+                        <div class="space-y-3">
+                            @foreach($addresses as $address)
+                                <label class="checkout-address">
+                                    <input type="radio" name="address_id" value="{{ $address->address_id }}"
+                                           class="saved-address" @checked((string) $selectedAddress === (string) $address->address_id)>
+                                    <span>
+                                        <strong>{{ $address->full_name }}</strong>
+                                        <span class="checkout-address-detail">{{ $address->phone_number }}</span>
+                                        <span class="checkout-address-detail">{{ $address->street }}, {{ $address->barangay }}, {{ $address->city }}, {{ $address->province }}, {{ $address->postal_code }}</span>
+                                        @if($address->is_default)<span class="text-sm text-red-600">Default address</span>@endif
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <button type="button" id="addCheckoutAddress" class="checkout-add-address" aria-haspopup="dialog" aria-controls="checkoutAddressModal">
+                            <i class="fas fa-plus-circle" aria-hidden="true"></i> Add New Address
+                        </button>
+                        <noscript><a href="{{ route('addresses.create') }}">Add a delivery address</a></noscript>
+                    </div>
                     <div class="bg-white rounded-2xl p-5 sm:p-8 shadow-sm border border-gray-100">
     <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
         <i class="fas fa-shield-alt text-red-600"></i>
@@ -118,6 +87,7 @@ name="address_id"
     </p>
 </div>
 
+                </div>
                 <!-- Sidebar: Order Summary -->
                 <div>
                     <div class="bg-white rounded-2xl p-5 sm:p-8 shadow-sm border border-gray-100 lg:sticky lg:top-24">
@@ -171,4 +141,39 @@ name="address_id"
             </form>
         </div>
     </div>
+    <dialog id="checkoutAddressModal" class="checkout-address-modal" aria-labelledby="checkoutAddressTitle"
+            data-reopen="{{ old('return_to') === 'checkout' && ($errors->any() || session('error')) ? 'true' : 'false' }}">
+        <div class="checkout-modal-header">
+            <h2 id="checkoutAddressTitle">Add delivery address</h2>
+            <button type="button" data-close-address aria-label="Close address form" class="checkout-modal-close">&times;</button>
+        </div>
+        <p class="text-gray-600 mb-6">Save a new address and use it for this order. Fields marked * are required.</p>
+        <div id="checkoutAddressFormWarning" class="checkout-notice checkout-warning" role="alert" @if(!$errors->any() && !session('error')) hidden @endif>
+            @if($errors->any())
+                Please check the address details below.
+            @elseif(session('error'))
+                {{ session('error') }}
+            @endif
+        </div>
+        <form id="checkoutAddressForm" action="{{ route('addresses.store') }}" method="POST" class="space-y-6">
+            @csrf
+            <input type="hidden" name="return_to" value="checkout">
+            @include('addresses.fields')
+            <div class="checkout-modal-actions">
+                <button type="submit" id="saveCheckoutAddress" class="checkout-save-address">Save and use this address</button>
+                <button type="button" data-close-address class="checkout-cancel-address">Cancel</button>
+            </div>
+        </form>
+    </dialog>
 @endsection
+
+@section('styles')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="{{ asset('css/checkout.css') }}?v={{ filemtime(public_path('css/checkout.css')) }}">
+@endsection
+
+@push('scripts')
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ asset('js/address-selector.js') }}?v={{ filemtime(public_path('js/address-selector.js')) }}"></script>
+<script src="{{ asset('js/checkout-address.js') }}?v={{ filemtime(public_path('js/checkout-address.js')) }}"></script>
+@endpush

@@ -65,6 +65,30 @@ class NewArrivalTest extends TestCase
         });
     }
 
+    public function test_search_and_category_cards_share_prices_and_handle_missing_stock(): void
+    {
+        foreach ([1 => 'men', 2 => 'women', 5 => 'kids'] as $category => $page) {
+            $product = Product::create(['product_name' => 'Runner '.$category, 'category_id' => $category]);
+            $variant = DB::table('product_variants')->insertGetId(['product_id' => $product->product_id], 'product_variant_id');
+            DB::table('stocks')->insert([
+                ['product_variant_id' => $variant, 'price' => 2499.50],
+                ['product_variant_id' => $variant, 'price' => 3100],
+            ]);
+            $view = app(PageController::class)->$page(Request::create('/'.$page));
+            $this->assertEquals(2499.50, $view->getData()['products']->first()->display_price);
+            $this->assertStringContainsString('From ₱2,499.50', $view->render());
+        }
+        Product::create(['product_name' => 'Runner without stock']);
+        $view = app(PageController::class)->search(Request::create('/search', 'GET', ['q' => 'Runner']));
+        $this->assertCount(4, $view->getData()['products']);
+        $html = $view->render();
+        $this->assertSame(3, substr_count($html, 'From ₱2,499.50'));
+        $this->assertStringContainsString('Price unavailable', $html);
+        $this->assertStringNotContainsString('From ₱0.00', $html);
+
+        $sorted = app(PageController::class)->men(Request::create('/men', 'GET', ['sort' => 'price-high-low']));
+        $this->assertEquals(2499.50, $sorted->getData()['products']->first()->display_price);
+    }
     public function test_default_is_thirty_days_and_edits_do_not_renew_it(): void
     {
         $product = Product::create(['product_name' => 'Runner'])->fresh();

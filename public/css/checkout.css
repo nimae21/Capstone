@@ -1,0 +1,22 @@
+.checkout-notice { padding: 1rem; margin-bottom: 1rem; border-radius: .65rem; }
+.checkout-warning { background: #fff7ed; color: #9a3412; border: 1px solid #fdba74; }
+.checkout-success { background: #f0fdf4; color: #166534; border: 1px solid #86efac; }
+.checkout-notice[hidden] { display: none; }
+.checkout-address { display: flex; align-items: flex-start; gap: .8rem; border: 2px solid #e5e7eb; border-radius: .75rem; padding: 1rem; cursor: pointer; overflow-wrap: anywhere; }
+.checkout-address:has(input:checked) { border-color: #dc2626; background: #fef2f2; }
+.checkout-address input { margin-top: .3rem; accent-color: #dc2626; flex-shrink: 0; }
+.checkout-address-detail { display: block; color: #4b5563; font-size: .875rem; margin-top: .3rem; }
+.checkout-add-address { display: block; width: 100%; margin-top: 1rem; padding: 1rem; border: 2px dashed #ef4444; border-radius: .75rem; color: #b91c1c; font-weight: 600; cursor: pointer; }
+.checkout-add-address:hover { background: #fef2f2; }
+.checkout-address-modal { margin: auto; width: min(42rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); padding: 1.5rem; border: 0; border-radius: 1rem; color: #111827; background: white; overflow-y: auto; overscroll-behavior: contain; }
+.checkout-address-modal::backdrop { background: rgb(15 23 42 / .65); }
+.checkout-modal-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: .75rem; }
+.checkout-modal-header h2 { font-size: 1.5rem; font-weight: 700; }
+.checkout-modal-close { font-size: 2rem; line-height: 1; padding: .5rem; cursor: pointer; }
+.checkout-modal-actions { display: flex; flex-wrap: wrap; gap: .75rem; padding-top: 1rem; }
+.checkout-save-address, .checkout-cancel-address { flex: 1; padding: .85rem 1rem; border-radius: .6rem; font-weight: 600; cursor: pointer; }
+.checkout-save-address { color: white; background: #dc2626; }
+.checkout-save-address:disabled { opacity: .6; cursor: wait; }
+.checkout-cancel-address { background: #e5e7eb; color: #1f2937; }
+.checkout-address-modal #map { height: 16rem; }
+body:has(.checkout-address-modal[open]) { overflow: hidden; }

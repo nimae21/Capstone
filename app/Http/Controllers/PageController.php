@@ -7,7 +7,6 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
 use Illuminate\Support\Facades\Storage;
-use App\Models\Stock;
 use App\Models\ShoeType;
 use App\Services\ActivityTrackingService;
 use App\Services\RecommendationClient;
@@ -33,13 +32,9 @@ class PageController extends Controller
      */
     private function getProductsByCategory(?int $categoryId, Request $request)
 {
-    $priceSubquery = Stock::selectRaw('MIN(stocks.price)')
-        ->join('product_variants', 'product_variants.product_variant_id', '=', 'stocks.product_variant_id')
-        ->whereColumn('product_variants.product_id', 'products.product_id');
-
     $query = Product::with(['variants.stocks', 'images'])
         ->where('is_active', true)
-        ->addSelect(['display_price' => $priceSubquery]);
+        ->withDisplayPrice();
 
     if ($categoryId === null) {
         $query->newArrivals();
@@ -186,7 +181,7 @@ class PageController extends Controller
         $products = collect();
 
         if ($query !== '') {
-            $products = Product::with(['variants.stocks', 'images', 'brand', 'category'])
+            $products = Product::with(['variants.stocks', 'images', 'brand', 'category', 'shoeType'])->withDisplayPrice()
                 ->where('is_active', true)
                 ->whereRaw('LOWER(product_name) LIKE ?', ['%'.strtolower($query).'%'])
                 ->orderBy('product_name')

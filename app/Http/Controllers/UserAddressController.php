@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\UserAddress;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class UserAddressController extends Controller
 {
@@ -38,11 +39,19 @@ class UserAddressController extends Controller
         $validated['is_default'] = (bool) ($validated['is_default'] ?? false);
 
         try {
-            if ($validated['is_default']) {
-                auth()->user()->addresses()->update(['is_default' => false]);
-            }
+            $address = DB::transaction(function () use ($validated) {
+                if ($validated['is_default']) {
+                    auth()->user()->addresses()->update(['is_default' => false]);
+                }
 
-            auth()->user()->addresses()->create($validated);
+                return auth()->user()->addresses()->create($validated);
+            });
+
+            if ($request->input('return_to') === 'checkout') {
+                return redirect()->route('checkout.index')
+                    ->with('selected_address_id', $address->address_id)
+                    ->with('success', 'Address added and selected for this order.');
+            }
 
             return redirect()
                 ->route('addresses.index')
