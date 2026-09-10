@@ -323,7 +323,7 @@
                     @if($order->sale_type === \App\Enums\SaleType::Online && $order->status === OrderStatus::Pending
                         && $order->payment && !$order->payment->refund_status
                         && in_array($order->payment->status, ['pending', 'failed', 'expired'], true))
-                        <p class="text-sm text-gray-600 mb-3">Payment is not confirmed. If payment failed or the checkout expired, retry with a new checkout session.</p>
+                        <p class="text-sm text-gray-600 mb-3">Payment is not confirmed. After a failed payment, close the old PayMongo tab and use Retry Payment below to open a new checkout.</p>
                         <form action="{{ route('orders.retry-payment', $order->order_id) }}" method="POST" class="mb-3">
                             @csrf
                             <input type="hidden" name="checkout_session_id" value="{{ $order->payment->checkout_session_id }}">

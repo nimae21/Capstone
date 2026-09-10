@@ -53,8 +53,8 @@ class PayMongoWebhookController extends Controller
                 if ($payment) {
                     $context['order_id'] = $payment->order_id;
                     $context['checkout_session_id'] = $payment->checkout_session_id;
-                    // Reconcile the session: a later successful attempt takes precedence.
-                    $this->orderService->refreshCheckoutPayment($payment->order);
+                    // A signed failed event needs only a local write. Do not operate on
+                    // the provider attempt while its authentication page is finishing.
                     $this->orderService->markPaymentFailed($payment->checkout_session_id);
                 } else {
                     // Legacy/unrelated source payments cannot be safely mapped by customer or amount.

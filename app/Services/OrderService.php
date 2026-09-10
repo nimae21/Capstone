@@ -242,6 +242,11 @@ class OrderService
             }
             $session = $this->payMongoService->createCheckoutSession($current,
                 route('checkout.success', $current->order_id), route('checkout.cancel', $current->order_id));
+            if ($session['id'] === $payment->checkout_session_id
+                || in_array($session['id'], $payment->previous_checkout_session_ids ?? [], true)
+                || (!empty($session['payment_intent_id']) && $session['payment_intent_id'] === $payment->paymongo_payment_intent_id)) {
+                throw new \RuntimeException('PayMongo retry returned a previously used payment attempt.');
+            }
             $previous = $payment->previous_checkout_session_ids ?? [];
             if ($payment->checkout_session_id) {
                 $previous[] = $payment->checkout_session_id;
@@ -252,7 +257,10 @@ class OrderService
                 'paymongo_payment_intent_id' => $session['payment_intent_id'] ?? null,
                 'status' => 'pending', 'method' => 'pending',
             ]);
-            Log::info('PayMongo checkout retry created', $this->paymentContext($payment));
+            Log::info('PayMongo checkout retry created', array_merge($this->paymentContext($payment), [
+                'previous_checkout_session_id' => $expectedSessionId,
+                'payment_intent_id' => $payment->paymongo_payment_intent_id,
+            ]));
             return $session['checkout_url'];
         });
     }
