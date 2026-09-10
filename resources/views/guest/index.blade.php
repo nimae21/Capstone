@@ -9,6 +9,18 @@
     <!-- Google Fonts: Inter + Space Grotesk -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        footer .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-weight: 800;
+            font-size: 1.8rem;
+            cursor: pointer;
+            text-decoration: none;
+            color: #1a1a1f;
+            letter-spacing: -0.02em;
+            font-family: 'Space Grotesk', monospace;
+        }
         * {
             margin: 0;
             padding: 0;
@@ -88,96 +100,6 @@
         .reveal-delay-1 { transition-delay: 0.1s; }
         .reveal-delay-2 { transition-delay: 0.2s; }
         .reveal-delay-3 { transition-delay: 0.3s; }
-
-        /* navbar – clean glass */
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 2.5rem;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(229,9,20,0.2);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            transition: all 0.3s ease;
-        }
-        .navbar:hover {
-            border-bottom-color: #E50914;
-            box-shadow: 0 8px 25px -10px rgba(229,9,20,0.15);
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            font-weight: 800;
-            font-size: 1.8rem;
-            cursor: pointer;
-            text-decoration: none;
-            color: #1a1a1f;
-            letter-spacing: -0.02em;
-            font-family: 'Space Grotesk', monospace;
-        }
-        .logo i {
-            color: #E50914;
-            font-size: 1.9rem;
-            transition: transform 0.3s ease;
-        }
-        .logo:hover i {
-            transform: scale(1.05) rotate(3deg);
-        }
-
-        .auth-buttons {
-            display: flex;
-            gap: 0.8rem;
-        }
-        .nav-link {
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.85rem;
-            padding: 0.45rem 1.2rem;
-            border-radius: 40px;
-            transition: all 0.25s;
-            color: #1a1a1f;
-            background: transparent;
-            border: 1px solid #d0d5dd;
-            display: inline-block;
-            text-align: center;
-        }
-        .nav-link:first-child:hover {
-            border-color: #E50914;
-            background: rgba(229,9,20,0.05);
-            color: #E50914;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(229,9,20,0.1);
-        }
-        .nav-link:last-child {
-            background: #E50914;
-            border: none;
-            color: white;
-            position: relative;
-            overflow: hidden;
-        }
-        .nav-link:last-child::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: 0.5s;
-        }
-        .nav-link:last-child:hover::after {
-            left: 100%;
-        }
-        .nav-link:last-child:hover {
-            background: #b00710;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(229,9,20,0.25);
-        }
 
         /* hero section */
         .hero {
@@ -559,22 +481,6 @@
             font-size: 0.8rem;
         }
 
-
-.logo-image {
-    width: auto;
-    height: 50px;
-    object-fit: contain;
-    display: block;
-    flex-shrink: 0;
-}
-.site-logo {
-    display: block;
-    width: auto;
-    height: 50px;
-    max-width: 220px;
-    object-fit: contain;
-}
-
         @media (max-width: 1000px) {
             .category-grid, .featured-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -584,11 +490,6 @@
             }
             .tagline {
                 font-size: 1.4rem;
-            }
-            .navbar {
-                flex-direction: column;
-                gap: 0.8rem;
-                padding: 1rem;
             }
         }
         @media (max-width: 700px) {
@@ -635,22 +536,13 @@
     </style>
     <link rel="stylesheet" href="{{ asset('css/responsive.css') . '?v=' . filemtime(public_path('css/responsive.css')) }}">
     <script src="{{ asset('js/responsive.js') . '?v=' . filemtime(public_path('js/responsive.js')) }}" defer></script>
+    @include('partials.customer-header-assets')
 </head>
 <body class="store-site">
 
 <div class="light-follow" id="lightFollow"></div>
 
-<nav class="navbar">
-    <a href="#" class="logo">
-    <img src="{{ asset('images/achilles logo.png') }}" 
-         alt="Achilles Electronics and Computer Shop"
-         class="site-logo">
-</a>
-    <div class="auth-buttons">
-        <a class="nav-link" href="{{ route('login') }}">Login</a>
-        <a class="nav-link" href="{{ route('register') }}">Register</a>
-    </div>
-</nav>
+@include('partials.customer-header')
 
 <section class="hero container">
     <div class="hero-content reveal">

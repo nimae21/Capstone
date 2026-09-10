@@ -12,6 +12,8 @@ it('serves public pages with stable local styling', function (string $path) {
     $response->assertSee('name="viewport"', false)
         ->assertSee('css/responsive.css', false)
         ->assertSee('js/responsive.js', false)
+        ->assertSee('id="customerHeader"', false)
+        ->assertSee('css/customer-header.css', false)
         ->assertDontSee('cdn.tailwindcss.com', false)
         ->assertDontSee('setViewportHeight', false);
 })->with(['/', '/login', '/register', '/password/reset']);
@@ -19,6 +21,8 @@ it('serves public pages with stable local styling', function (string $path) {
 it('renders customer pages with the shared responsive assets', function (string $path) {
     $user = User::factory()->create(['role' => 'user', 'email_verified_at' => now()]);
     $this->actingAs($user)->get($path)->assertOk()
+        ->assertSee('id="customerHeader"', false)
+        ->assertSee('css/customer-header.css', false)
         ->assertSee('css/responsive.css', false)
         ->assertSee('js/responsive.js', false)
         ->assertDontSee('cdn.tailwindcss.com', false);
@@ -30,6 +34,7 @@ it('renders admin pages without the runtime css compiler', function (string $pat
     }
     $admin = User::factory()->create(['role' => 'admin', 'email_verified_at' => now()]);
     $this->actingAs($admin)->get($path)->assertOk()
+        ->assertDontSee('id="customerHeader"', false)
         ->assertSee('css/responsive.css', false)
         ->assertSee('js/responsive.js', false)
         ->assertDontSee('cdn.tailwindcss.com', false);

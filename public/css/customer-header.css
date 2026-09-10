@@ -1,0 +1,299 @@
+#customerHeader { font-family: "Space Grotesk", sans-serif; font-size: 16px; line-height: 1.5; color: #0a0a0f; text-align: left; letter-spacing: normal; }
+#customerHeader, #customerHeader * { box-sizing: border-box; }
+#customerHeader * { margin: 0; padding: 0; }
+#customerHeader{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 2.5rem;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(229,62,62,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+#customerHeader .logo{
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 800;
+            font-size: 1.8rem;
+            cursor: pointer;
+            text-decoration: none;
+            color: #0a0a0f;
+            flex-shrink: 0;
+        }
+#customerHeader .logo i{ color: #e53e3e; font-size: 2rem; }
+#customerHeader .site-logo{
+            display: block;
+            width: auto;
+            height: 44px;
+            max-width: 200px;
+            object-fit: contain;
+        }
+#customerHeader .nav-links{
+            display: flex;
+            gap: 2rem;
+            font-weight: 600;
+            flex-wrap: wrap;
+        }
+#customerHeader .nav-link{
+            text-decoration: none;
+            color: #0a0a0f;
+            padding-bottom: 0.3rem;
+            border-bottom: 2px solid transparent;
+            transition: 0.2s;
+            font-size: 0.95rem;
+        }
+#customerHeader .nav-link:hover, #customerHeader .nav-link.active{
+            border-bottom-color: #e53e3e;
+            color: #e53e3e;
+        }
+#customerHeader .nav-icons{
+            display: flex;
+            gap: 0.6rem;
+            font-size: 1.25rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+#customerHeader .user-menu{
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            padding: 0.45rem 1rem 0.45rem 0.75rem;
+            background: #f0f0f0;
+            border-radius: 40px;
+            transition: 0.2s;
+            border: none;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #0a0a0f;
+        }
+#customerHeader .user-menu:hover{
+            background: #e53e3e;
+            color: white;
+        }
+#customerHeader .user-menu i{
+            font-size: 1.2rem;
+        }
+#customerHeader .user-dropdown{
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 12px 36px rgba(0,0,0,0.12);
+            min-width: 190px;
+            display: none;
+            z-index: 100;
+            margin-top: 0.5rem;
+            padding: 0.4rem 0;
+            border: 1px solid #eee;
+            overflow: hidden;
+        }
+#customerHeader .user-menu:hover .user-dropdown, #customerHeader .user-dropdown:hover{
+            display: block;
+        }
+#customerHeader .user-dropdown a, #customerHeader .user-dropdown button{
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.65rem 1.2rem;
+            text-decoration: none;
+            color: #0a0a0f;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: 0.15s;
+        }
+#customerHeader .user-dropdown a:hover, #customerHeader .user-dropdown button:hover{
+            background: #f5f5f5;
+            color: #e53e3e;
+        }
+#customerHeader .user-dropdown i{
+            width: 1.2rem;
+            color: #888;
+        }
+#customerHeader .user-dropdown a:hover i, #customerHeader .user-dropdown button:hover i{
+            color: #e53e3e;
+        }
+#customerHeader .dropdown-divider{
+            height: 1px;
+            background: #eee;
+            margin: 0.2rem 1rem;
+        }
+#customerHeader .auth-btn{
+            padding: 0.45rem 1.2rem;
+            border-radius: 40px;
+            background: #f0f0f0;
+            color: #0a0a0f;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+#customerHeader .auth-btn:hover{
+            background: #e53e3e;
+            color: white;
+            transform: translateY(-2px);
+        }
+#customerHeader .cart-btn{
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.45rem 1.2rem;
+            border-radius: 40px;
+            background: #0a0a0f;
+            color: white;
+            font-weight: 600;
+            text-decoration: none;
+            transition: 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+#customerHeader .cart-btn:hover{
+            background: #e53e3e;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 18px -6px rgba(229,62,62,0.4);
+        }
+#customerHeader .cart-btn .cart-count{
+            background: #e53e3e;
+            color: #fff;
+            padding: 0 0.5rem;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            line-height: 1.6;
+            min-width: 24px;
+            text-align: center;
+        }
+#customerHeader .cart-btn:hover .cart-count{
+            background: #fff;
+            color: #e53e3e;
+        }
+@media (max-width: 1100px){#customerHeader .nav-links{ gap: 1.2rem; }
+#customerHeader{ padding: 0.75rem 1.5rem; }
+}
+@media (max-width: 900px){#customerHeader .nav-links{
+                order: 3;
+                width: 100%;
+                justify-content: center;
+                gap: 1rem;
+                padding-top: 0.5rem;
+                border-top: 1px solid #eee;
+            }
+#customerHeader{ padding: 0.75rem 1rem; }
+}
+@media (max-width: 600px){#customerHeader{
+                align-items: center;
+                padding: 0.65rem 0.75rem;
+                gap: 0.65rem;
+            }
+#customerHeader .logo{
+                min-width: 0;
+            }
+#customerHeader .site-logo{
+                height: 36px;
+                max-width: min(42vw, 160px);
+            }
+#customerHeader .nav-icons{
+                margin-left: auto;
+                gap: 0.25rem;
+                flex-shrink: 0;
+            }
+#customerHeader .nav-links{
+                order: 3;
+                justify-content: flex-start;
+                gap: 1.25rem;
+                width: calc(100% + 1.5rem);
+                margin: 0 -0.75rem -0.65rem;
+                padding: 0.6rem 0.75rem 0.65rem;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                scrollbar-width: none;
+            }
+#customerHeader .nav-links::-webkit-scrollbar{
+                display: none;
+            }
+#customerHeader .nav-link{
+                flex: 0 0 auto;
+                font-size: 0.8rem;
+            }
+#customerHeader .search-input-wrap{
+                left: auto;
+                right: 0;
+                width: min(calc(100vw - 1.5rem), 300px);
+                min-width: 0;
+            }
+#customerHeader .search-input-wrap input{
+                width: 100%;
+            }
+#customerHeader .nav-icons .auth-btn span{ display: none; }
+#customerHeader .cart-btn span{ display: none; }
+#customerHeader .cart-btn{ padding: 0.45rem 0.9rem; }
+#customerHeader .user-menu span{ display: none; }
+#customerHeader .user-menu{ padding: 0.45rem 0.7rem; }
+}
+#customerHeader .product-search{ position: relative; width: clamp(180px, 20vw, 280px); min-width: 0; }
+#customerHeader .product-search-field{ display: flex; align-items: center; background: #f7f8fa; border: 1px solid #dce0e5; border-radius: 28px; overflow: hidden; }
+#customerHeader .product-search-field:focus-within{ border-color: #dc2626; box-shadow: 0 0 0 2px #dc262620; }
+#customerHeader .product-search input{ width: 100%; min-width: 0; padding: .65rem .85rem; font: inherit; font-size: .9rem; border: 0; outline: 0; background: transparent; }
+#customerHeader .product-search button{ border: 0; background: transparent; color: #dc2626; cursor: pointer; padding: .65rem .85rem; }
+#customerHeader .product-search-results{ position: absolute; top: calc(100% + .5rem); right: 0; width: max(100%, 280px); max-width: calc(100vw - 2rem); max-height: 60vh; overflow-y: auto; background: white; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 16px 40px #0002; z-index: 1100; }
+#customerHeader .product-search-results .search-load-more{ display: block; width: 100%; padding: .8rem; font-weight: 600; }
+#customerHeader .product-search-results .search-load-more[hidden], #customerHeader .product-search-results .search-image-placeholder[hidden]{ display: none; }
+#customerHeader .search-skeleton{ display: flex; gap: .75rem; align-items: center; padding: .75rem 1rem; }
+#customerHeader .search-skeleton span{
+            background: linear-gradient(100deg, #f1f5f9 20%, #fff 50%, #f1f5f9 80%);
+            background-size: 200% 100%; animation: search-shimmer 1.4s infinite;
+            border-radius: 8px; width: 48px; height: 48px; flex-shrink: 0;
+        }
+#customerHeader .search-skeleton span + span{ width: 60%; height: 14px; }
+@keyframes search-shimmer{ from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce){#customerHeader .search-skeleton span{ animation: none; }
+}
+#customerHeader .product-search-results[hidden]{ display: none; }
+#customerHeader .product-search-results p{ padding: .8rem 1rem; margin: 0; color: #64748b; font-size: .85rem; }
+#customerHeader .product-search-results ul{ list-style: none; margin: 0; padding: 0; }
+#customerHeader .product-search-results a{ display: flex; gap: .75rem; align-items: center; padding: .75rem 1rem; color: #1e293b; text-decoration: none; white-space: normal; }
+#customerHeader .product-search-results a:hover, #customerHeader .product-search-results a:focus-visible{ background: #fef2f2; }
+#customerHeader .product-search-results img, #customerHeader .search-image-placeholder{ width: 48px; height: 48px; object-fit: cover; border-radius: 8px; background: #f1f5f9; flex-shrink: 0; }
+#customerHeader .search-image-placeholder{ display: grid; place-items: center; }
+@media (max-width: 1250px){#customerHeader{ flex-wrap: wrap; gap: 1rem; }
+#customerHeader .nav-icons{ flex-wrap: wrap; }
+}
+@media (max-width: 600px){#customerHeader .nav-icons{ width: 100%; display: flex; flex-wrap: wrap; gap: .5rem; }
+#customerHeader .product-search{ flex: 1; width: auto; min-width: 140px; }
+#customerHeader .product-search-results{ width: 100%; min-width: 0; }
+#customerHeader .product-search input{ font-size: 16px; }
+}
+
+#customerHeader .user-dropdown[hidden] { display: none !important; }
+#customerHeader .user-dropdown:not([hidden]) { display: block; }
+#customerHeader .user-menu-trigger { display: flex; align-items: center; gap: .4rem; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+#customerHeader .user-dropdown a.active { background: #f5f5f5; color: #e53e3e; }
+@media (max-width: 768px) {
+ #customerHeader { position: relative; }
+ #customerHeader .nav-icons { min-width: 0; }
+ #customerHeader .user-dropdown { left: 0; right: auto; max-width: calc(100vw - 2rem); }
+ #customerHeader button, #customerHeader .nav-link, #customerHeader .auth-btn, #customerHeader .cart-btn, #customerHeader .user-dropdown a { min-height: 44px; }
+ #customerHeader .nav-link, #customerHeader .auth-btn, #customerHeader .cart-btn { display: inline-flex; align-items: center; justify-content: center; }
+ #customerHeader input { font-size: 16px; min-height: 44px; }
+}
+#customerHeader .cart-btn .cart-count { display: inline-block; }

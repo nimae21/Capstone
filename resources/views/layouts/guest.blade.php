@@ -63,8 +63,10 @@
     @stack('styles')
     <link rel="stylesheet" href="{{ asset('css/responsive.css') . '?v=' . filemtime(public_path('css/responsive.css')) }}">
     <script src="{{ asset('js/responsive.js') . '?v=' . filemtime(public_path('js/responsive.js')) }}" defer></script>
+    @include('partials.customer-header-assets')
 </head>
 <body class="auth-site font-sans antialiased">
+    @include('partials.customer-header')
     <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gradient-to-br from-gray-50 via-white to-gray-100 relative overflow-hidden">
         
         <!-- Animated background -->

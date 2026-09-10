@@ -12,6 +12,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
+        footer .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 800;
+            font-size: 1.8rem;
+            cursor: pointer;
+            text-decoration: none;
+            color: #0a0a0f;
+            flex-shrink: 0;
+        }
         :root {
             --app-height: 100vh;
         }
@@ -39,218 +50,6 @@
             color: #0a0a0f;
             line-height: 1.5;
             min-height: var(--app-height);
-        }
-        
-        /* Navigation */
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 2.5rem;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(229,62,62,0.2);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-weight: 800;
-            font-size: 1.8rem;
-            cursor: pointer;
-            text-decoration: none;
-            color: #0a0a0f;
-            flex-shrink: 0;
-        }
-        
-        .logo i { color: #e53e3e; font-size: 2rem; }
-        .site-logo {
-            display: block;
-            width: auto;
-            height: 44px;
-            max-width: 200px;
-            object-fit: contain;
-        }
-        
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            font-weight: 600;
-            flex-wrap: wrap;
-        }
-        
-        .nav-link {
-            text-decoration: none;
-            color: #0a0a0f;
-            padding-bottom: 0.3rem;
-            border-bottom: 2px solid transparent;
-            transition: 0.2s;
-            font-size: 0.95rem;
-        }
-        
-        .nav-link:hover, .nav-link.active {
-            border-bottom-color: #e53e3e;
-            color: #e53e3e;
-        }
-        
-        .nav-icons {
-            display: flex;
-            gap: 0.6rem;
-            font-size: 1.25rem;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        
-        /* ── User Menu ── */
-        .user-menu {
-            position: relative;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            cursor: pointer;
-            padding: 0.45rem 1rem 0.45rem 0.75rem;
-            background: #f0f0f0;
-            border-radius: 40px;
-            transition: 0.2s;
-            border: none;
-            font-family: inherit;
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #0a0a0f;
-        }
-        
-        .user-menu:hover {
-            background: #e53e3e;
-            color: white;
-        }
-        
-        .user-menu i {
-            font-size: 1.2rem;
-        }
-        
-        .user-dropdown {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 12px 36px rgba(0,0,0,0.12);
-            min-width: 190px;
-            display: none;
-            z-index: 100;
-            margin-top: 0.5rem;
-            padding: 0.4rem 0;
-            border: 1px solid #eee;
-            overflow: hidden;
-        }
-        
-        .user-menu:hover .user-dropdown,
-        .user-dropdown:hover {
-            display: block;
-        }
-        
-        .user-dropdown a, .user-dropdown button {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            padding: 0.65rem 1.2rem;
-            text-decoration: none;
-            color: #0a0a0f;
-            width: 100%;
-            text-align: left;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: 0.15s;
-        }
-        
-        .user-dropdown a:hover, .user-dropdown button:hover {
-            background: #f5f5f5;
-            color: #e53e3e;
-        }
-        
-        .user-dropdown i {
-            width: 1.2rem;
-            color: #888;
-        }
-        .user-dropdown a:hover i, .user-dropdown button:hover i {
-            color: #e53e3e;
-        }
-        .dropdown-divider {
-            height: 1px;
-            background: #eee;
-            margin: 0.2rem 1rem;
-        }
-        
-        /* ── Auth Buttons ── */
-        .auth-btn {
-            padding: 0.45rem 1.2rem;
-            border-radius: 40px;
-            background: #f0f0f0;
-            color: #0a0a0f;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: 0.2s;
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .auth-btn:hover {
-            background: #e53e3e;
-            color: white;
-            transform: translateY(-2px);
-        }
-        
-        /* ── Search ── */
-        /* ── Cart Button (unified) ── */
-        .cart-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.6rem;
-            padding: 0.45rem 1.2rem;
-            border-radius: 40px;
-            background: #0a0a0f;
-            color: white;
-            font-weight: 600;
-            text-decoration: none;
-            transition: 0.2s;
-            border: none;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-        
-        .cart-btn:hover {
-            background: #e53e3e;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 18px -6px rgba(229,62,62,0.4);
-        }
-        
-        .cart-btn .cart-count {
-            background: #e53e3e;
-            color: #fff;
-            padding: 0 0.5rem;
-            border-radius: 40px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            line-height: 1.6;
-            min-width: 24px;
-            text-align: center;
-        }
-        .cart-btn:hover .cart-count {
-            background: #fff;
-            color: #e53e3e;
         }
         
         /* ── Buttons ── */
@@ -561,75 +360,11 @@
             font-size: 0.9rem;
             color: #888;
         }
-        
-        /* ── Responsive ── */
-        @media (max-width: 1100px) {
-            .nav-links { gap: 1.2rem; }
-            .navbar { padding: 0.75rem 1.5rem; }
-        }
         @media (max-width: 900px) {
             .features, .category-grid { grid-template-columns: repeat(2,1fr); }
             .hero-content h1 { font-size: 2.8rem; }
-            .nav-links {
-                order: 3;
-                width: 100%;
-                justify-content: center;
-                gap: 1rem;
-                padding-top: 0.5rem;
-                border-top: 1px solid #eee;
-            }
-            .navbar { padding: 0.75rem 1rem; }
         }
         @media (max-width: 600px) {
-            .navbar {
-                align-items: center;
-                padding: 0.65rem 0.75rem;
-                gap: 0.65rem;
-            }
-            .logo {
-                min-width: 0;
-            }
-            .site-logo {
-                height: 36px;
-                max-width: min(42vw, 160px);
-            }
-            .nav-icons {
-                margin-left: auto;
-                gap: 0.25rem;
-                flex-shrink: 0;
-            }
-            .nav-links {
-                order: 3;
-                justify-content: flex-start;
-                gap: 1.25rem;
-                width: calc(100% + 1.5rem);
-                margin: 0 -0.75rem -0.65rem;
-                padding: 0.6rem 0.75rem 0.65rem;
-                overflow-x: auto;
-                flex-wrap: nowrap;
-                scrollbar-width: none;
-            }
-            .nav-links::-webkit-scrollbar {
-                display: none;
-            }
-            .nav-link {
-                flex: 0 0 auto;
-                font-size: 0.8rem;
-            }
-            .search-input-wrap {
-                left: auto;
-                right: 0;
-                width: min(calc(100vw - 1.5rem), 300px);
-                min-width: 0;
-            }
-            .search-input-wrap input {
-                width: 100%;
-            }
-            .nav-icons .auth-btn span { display: none; }
-            .cart-btn span { display: none; }
-            .cart-btn { padding: 0.45rem 0.9rem; }
-            .user-menu span { display: none; }
-            .user-menu { padding: 0.45rem 0.7rem; }
             .hero-content h1 { font-size: 2.2rem; }
             .features {
                 grid-template-columns: 1fr 1fr;
@@ -683,38 +418,6 @@
         @media (prefers-reduced-motion: reduce) {
             .page-loader-logo, .page-loader-ring { animation: none; }
         }
-        .product-search { position: relative; width: clamp(180px, 20vw, 280px); min-width: 0; }
-        .product-search-field { display: flex; align-items: center; background: #f7f8fa; border: 1px solid #dce0e5; border-radius: 28px; overflow: hidden; }
-        .product-search-field:focus-within { border-color: #dc2626; box-shadow: 0 0 0 2px #dc262620; }
-        .product-search input { width: 100%; min-width: 0; padding: .65rem .85rem; font: inherit; font-size: .9rem; border: 0; outline: 0; background: transparent; }
-        .product-search button { border: 0; background: transparent; color: #dc2626; cursor: pointer; padding: .65rem .85rem; }
-        .product-search-results { position: absolute; top: calc(100% + .5rem); right: 0; width: max(100%, 280px); max-width: calc(100vw - 2rem); max-height: 60vh; overflow-y: auto; background: white; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 16px 40px #0002; z-index: 1100; }
-        .product-search-results .search-load-more { display: block; width: 100%; padding: .8rem; font-weight: 600; }
-        .product-search-results .search-load-more[hidden],
-        .product-search-results .search-image-placeholder[hidden] { display: none; }
-        .search-skeleton { display: flex; gap: .75rem; align-items: center; padding: .75rem 1rem; }
-        .search-skeleton span {
-            background: linear-gradient(100deg, #f1f5f9 20%, #fff 50%, #f1f5f9 80%);
-            background-size: 200% 100%; animation: search-shimmer 1.4s infinite;
-            border-radius: 8px; width: 48px; height: 48px; flex-shrink: 0;
-        }
-        .search-skeleton span + span { width: 60%; height: 14px; }
-        @keyframes search-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-        @media (prefers-reduced-motion: reduce) { .search-skeleton span { animation: none; } }
-        .product-search-results[hidden] { display: none; }
-        .product-search-results p { padding: .8rem 1rem; margin: 0; color: #64748b; font-size: .85rem; }
-        .product-search-results ul { list-style: none; margin: 0; padding: 0; }
-        .product-search-results a { display: flex; gap: .75rem; align-items: center; padding: .75rem 1rem; color: #1e293b; text-decoration: none; white-space: normal; }
-        .product-search-results a:hover, .product-search-results a:focus-visible { background: #fef2f2; }
-        .product-search-results img, .search-image-placeholder { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; background: #f1f5f9; flex-shrink: 0; }
-        .search-image-placeholder { display: grid; place-items: center; }
-        @media (max-width: 1250px) { .navbar { flex-wrap: wrap; gap: 1rem; } .nav-icons { flex-wrap: wrap; } }
-        @media (max-width: 600px) {
-            .navbar .nav-icons { width: 100%; display: flex; flex-wrap: wrap; gap: .5rem; }
-            .product-search { flex: 1; width: auto; min-width: 140px; }
-            .product-search-results { width: 100%; min-width: 0; }
-            .product-search input { font-size: 16px; }
-        }
     </style>
     
     @yield('styles')
@@ -734,6 +437,7 @@
     </style>
     <link rel="stylesheet" href="{{ asset('css/responsive.css') . '?v=' . filemtime(public_path('css/responsive.css')) }}">
     <script src="{{ asset('js/responsive.js') . '?v=' . filemtime(public_path('js/responsive.js')) }}" defer></script>
+    @include('partials.customer-header-assets')
 </head>
 <body class="store-site">
     <div id="pageLoader" class="page-loader" role="status" aria-live="polite" aria-label="Loading">
@@ -747,69 +451,7 @@
     <!-- ════════════════════════════════════════ -->
     <!--  NAVIGATION                            -->
     <!-- ════════════════════════════════════════ -->
-    <nav class="navbar">
-        <a href="{{ route('home') }}" class="logo">
-            <img src="{{ asset('images/achilles logo.png') }}" 
-                 alt="Achilles Electronics and Computer Shop"
-                 class="site-logo">
-        </a>
-        <div class="nav-links">
-            <a href="{{ route('new') }}" class="nav-link {{ request()->routeIs('new') ? 'active' : '' }}">NEW</a>
-            <a href="{{ route('men') }}" class="nav-link {{ request()->routeIs('men') ? 'active' : '' }}">MEN</a>
-            <a href="{{ route('women') }}" class="nav-link {{ request()->routeIs('women') ? 'active' : '' }}">WOMEN</a>
-            <a href="{{ route('kids') }}" class="nav-link {{ request()->routeIs('kids') ? 'active' : '' }}">KIDS</a>
-        </div>
-        <div class="nav-icons">
-            @auth
-                <div class="user-menu" id="userMenu">
-                    <button type="button" class="user-menu-trigger" id="userMenuTrigger" aria-label="Account menu" aria-expanded="false" aria-controls="userDropdown">
-                    <i class="fas fa-user-circle"></i>
-                    <span>{{ Auth::user()->first_name }}</span>
-                    <i class="fas fa-chevron-down" style="font-size:0.7rem; margin-left:4px;"></i>
-                    </button>
-                    <div class="user-dropdown" id="userDropdown" hidden>
-                        <a href="{{ route('profile.index') }}">
-                            <i class="fas fa-user"></i> My Profile
-                        </a>
-                        <a href="{{ route('addresses.index') }}">
-                            <i class="fas fa-location-dot"></i> My Addresses
-                        </a>
-                        <a href="{{ route('orders.index') }}">
-                            <i class="fas fa-box"></i> My Orders
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <form method="POST" action="{{ route('logout') }}" style="margin:0;">
-                            @csrf
-                            <button type="submit">
-                                <i class="fas fa-sign-out-alt"></i> Logout
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            @else
-                <a href="{{ route('login') }}" class="auth-btn">Login</a>
-                <a href="{{ route('register') }}" class="auth-btn">Register</a>
-            @endauth
-
-            <form class="product-search" id="productSearch" action="{{ route('search') }}" method="GET" role="search" data-suggestions-url="{{ route('search.suggestions') }}">
-                <div class="product-search-field">
-                    <input type="search" name="q" id="productSearchInput" placeholder="Search shoes..." aria-label="Search shoes" value="{{ request()->routeIs('search') ? request('q') : '' }}" maxlength="100" autocomplete="off" aria-controls="productSearchResults" aria-expanded="false" required>
-                    <button type="submit" aria-label="Search"><i class="fas fa-search" aria-hidden="true"></i></button>
-                </div>
-                <div id="productSearchResults" class="product-search-results" hidden>
-                    <p id="productSearchStatus" role="status" aria-live="polite"></p>
-                    <ul id="productSearchList" aria-label="Matching shoes"></ul>
-                </div>
-            </form>
-
-            <!-- Unified Cart Button -->
-            <a href="{{ route('cart.index') }}" class="cart-btn">
-                <i class="fas fa-shopping-bag"></i>
-                <span>Cart</span>
-                <span class="cart-count" id="cartCount">{{ $cartCount ?? 0 }}</span>
-            </a>
-        </div>
-    </nav>
+    @include('partials.customer-header')
 
     <!-- ════════════════════════════════════════ -->
     <!--  MAIN CONTENT                          -->
@@ -864,7 +506,6 @@
 
     </script>
 
-    <script src="{{ asset('js/product-search.js') . '?v=' . filemtime(public_path('js/product-search.js')) }}" defer></script>
     @stack('scripts')
 </body>
 </html>

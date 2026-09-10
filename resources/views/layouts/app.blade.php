@@ -307,8 +307,10 @@
     @yield('styles')
     <link rel="stylesheet" href="{{ asset('css/responsive.css') . '?v=' . filemtime(public_path('css/responsive.css')) }}">
     <script src="{{ asset('js/responsive.js') . '?v=' . filemtime(public_path('js/responsive.js')) }}" defer></script>
+    @include('partials.customer-header-assets')
 </head>
 <body class="auth-site relative bg-black font-['Inter',sans-serif] antialiased overflow-x-hidden">
+    @include('partials.customer-header')
     <div id="pageLoader" class="page-loader" role="status" aria-live="polite" aria-label="Loading">
         <div class="page-loader-content">
             <img src="{{ asset('images/achilles logo foot.png') }}" alt="Achilles" class="page-loader-logo">
@@ -336,6 +338,7 @@
     <div id="app" class="relative z-10">
         <main>
             @yield('content')
+            {{ $slot ?? '' }}
         </main>
     </div>
 

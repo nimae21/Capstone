@@ -301,7 +301,7 @@
 
     <script>
         // Add loading state to forms
-        document.querySelectorAll('form:not([data-quantity-form])').forEach(form => {
+        document.querySelectorAll('main form:not([data-quantity-form])').forEach(form => {
             form.addEventListener('submit', function(e) {
                 const btn = this.querySelector('button[type="submit"]');
                 if(btn && btn.disabled) {
@@ -355,6 +355,7 @@
                     cartItem.querySelector('.subtotal-value').textContent = formatCurrency(data.item_subtotal);
                     document.getElementById('cartSubtotal').textContent = formatCurrency(data.cart_total);
                     document.getElementById('cartTotal').textContent = formatCurrency(data.cart_total);
+                    document.getElementById('cartCount').textContent = Array.from(document.querySelectorAll('[data-cart-item] .quantity-value')).reduce((sum, item) => sum + Number(item.textContent), 0);
 
                     const currentQuantity = Number(data.quantity);
                     const availableStock = Number(cartItem.dataset.stock);

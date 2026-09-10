@@ -29,7 +29,7 @@ class AppServiceProvider extends ServiceProvider
     Event::listen(Logout::class, [LogAuthenticationActivity::class, 'handleLogout']);
     Event::listen(Failed::class, [LogAuthenticationActivity::class, 'handleFailed']);
     Event::listen(Registered::class, [LogAuthenticationActivity::class, 'handleRegistered']);
-        View::composer(['layouts.pages', 'layouts.app'], function ($view) {
+        View::composer('partials.customer-header', function ($view) {
             $cartCount = 0;
 
             if (auth()->check()) {
