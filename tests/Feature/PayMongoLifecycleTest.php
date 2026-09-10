@@ -422,3 +422,147 @@ it('leaves POS address placeholders and order state unchanged when rendering ref
     expect($pos->fresh()->status)->toBe(OrderStatus::Paid);
     Http::assertNothingSent();
 });
+it('records documented payment.failed without changing order or stock', function () {
+    $f = lifecycleOrder();
+    $f['payment']->update(['paymongo_payment_intent_id' => 'pi_fixture']);
+    Http::fake(['api.paymongo.com/v1/checkout_sessions/cs_fixture' => Http::response(['data' => lifecycleSession()])]);
+    $failed = ['id' => 'pay_failed', 'attributes' => ['status' => 'failed', 'payment_intent_id' => 'pi_fixture']];
+    lifecycleWebhook($this, 'payment.failed', $failed)->assertOk();
+    lifecycleWebhook($this, 'payment.failed', $failed)->assertOk();
+    expect($f['payment']->fresh()->status)->toBe('failed');
+    expect($f['payment']->fresh()->paymongo_payment_id)->toBeNull();
+    expect($f['order']->fresh()->status)->toBe(OrderStatus::Pending);
+    $this->assertDatabaseCount('stock_movements', 0);
+});
+
+it('shows expired payment and retry when no failure webhook was delivered', function () {
+    $f = lifecycleOrder();
+    Http::fake(['api.paymongo.com/v1/checkout_sessions/cs_fixture' => Http::response([
+        'data' => lifecycleSession(false, 'expired'),
+    ])]);
+    $this->actingAs($f['user'])->get('/orders/'.$f['order']->order_id)->assertOk()
+        ->assertSee('Expired')->assertSee('Retry Payment');
+    expect($f['order']->fresh()->status)->toBe(OrderStatus::Pending);
+    expect($f['payment']->fresh()->status)->toBe('expired');
+    $this->assertDatabaseCount('stock_movements', 0);
+});
+
+it('recognizes an expired-source attempt from the retrieved intent error', function () {
+    $f = lifecycleOrder();
+    $session = lifecycleSession();
+    $session['attributes']['payment_intent']['attributes']['last_payment_error'] = [
+        'failed_message' => 'Source src_fixture has expired status',
+    ];
+    Http::fake(['api.paymongo.com/v1/checkout_sessions/cs_fixture' => Http::response(['data' => $session])]);
+    app(OrderService::class)->refreshCheckoutPayment($f['order']);
+    expect($f['payment']->fresh()->status)->toBe('failed');
+    expect($f['order']->fresh()->status)->toBe(OrderStatus::Pending);
+    $this->assertDatabaseCount('stock_movements', 0);
+});
+
+it('creates a fresh checkout for the same order and ignores a repeated retry form', function () {
+    $f = lifecycleOrder();
+    $f['payment']->update(['status' => 'failed']);
+    Http::fake([
+        'api.paymongo.com/v1/checkout_sessions/cs_fixture' => Http::sequence()
+            ->push(['data' => lifecycleSession()])->push(['data' => lifecycleSession(false, 'expired')]),
+        'api.paymongo.com/v1/checkout_sessions/cs_fixture/expire' => Http::response([]),
+        'api.paymongo.com/v1/checkout_sessions' => Http::response(['data' => [
+            'id' => 'cs_retry', 'attributes' => [
+                'checkout_url' => 'https://checkout.paymongo.com/retry', 'payment_intent' => ['id' => 'pi_retry'],
+            ],
+        ]]),
+    ]);
+    $url = '/orders/'.$f['order']->order_id.'/retry-payment';
+    $this->actingAs($f['user'])->post($url, ['checkout_session_id' => 'cs_fixture'])
+        ->assertRedirect('https://checkout.paymongo.com/retry');
+    $this->post($url, ['checkout_session_id' => 'cs_fixture'])->assertRedirect('/orders/'.$f['order']->order_id);
+    expect($f['payment']->fresh()->checkout_session_id)->toBe('cs_retry');
+    expect($f['payment']->fresh()->paymongo_payment_intent_id)->toBe('pi_retry');
+    expect($f['payment']->fresh()->previous_checkout_session_ids)->toBe(['cs_fixture']);
+    expect($f['payment']->fresh()->status)->toBe('pending');
+    Http::assertSentCount(4);
+    $this->assertDatabaseCount('orders', 1);
+    $this->assertDatabaseCount('payments', 1);
+    $this->assertDatabaseCount('stock_movements', 0);
+    lifecycleWebhook($this, 'checkout_session.payment.failed', lifecycleSession())->assertOk();
+    expect($f['payment']->fresh()->status)->toBe('pending');
+    $paid = lifecycleSession(true);
+    $paid['id'] = 'cs_retry';
+    lifecycleWebhook($this, 'checkout_session.payment.paid', $paid)->assertOk();
+    lifecycleWebhook($this, 'checkout_session.payment.paid', $paid)->assertOk();
+    expect($f['order']->fresh()->status)->toBe(OrderStatus::Paid);
+    expect(DB::table('stocks')->value('remaining_quantity'))->toBe(8);
+    $this->assertDatabaseCount('stock_movements', 1);
+});
+
+it('reconciles payment that won the race before retry instead of creating another checkout', function () {
+    $f = lifecycleOrder();
+    Http::fake(['api.paymongo.com/v1/checkout_sessions/cs_fixture' => Http::response(['data' => lifecycleSession(true)])]);
+    $this->actingAs($f['user'])->post('/orders/'.$f['order']->order_id.'/retry-payment',
+        ['checkout_session_id' => 'cs_fixture'])->assertRedirect('/orders/'.$f['order']->order_id);
+    expect($f['order']->fresh()->status)->toBe(OrderStatus::Paid);
+    Http::assertSentCount(1);
+    $this->assertDatabaseCount('stock_movements', 1);
+});
+
+it('does not downgrade a paid session when payment.failed arrives late', function () {
+    $f = lifecycleOrder();
+    $f['payment']->update(['paymongo_payment_intent_id' => 'pi_fixture']);
+    Http::fake(['api.paymongo.com/v1/checkout_sessions/cs_fixture' => Http::response(['data' => lifecycleSession(true)])]);
+    lifecycleWebhook($this, 'payment.failed', ['id' => 'pay_failed', 'attributes' => [
+        'status' => 'failed', 'payment_intent_id' => 'pi_fixture',
+    ]])->assertOk();
+    expect($f['payment']->fresh()->status)->toBe('completed');
+    expect($f['order']->fresh()->status)->toBe(OrderStatus::Paid);
+    $this->assertDatabaseCount('stock_movements', 1);
+});
+
+it('returns 503 for transient failure reconciliation errors', function () {
+    $f = lifecycleOrder();
+    $f['payment']->update(['paymongo_payment_intent_id' => 'pi_fixture']);
+    Http::fake(['api.paymongo.com/v1/checkout_sessions/cs_fixture' => Http::response([], 503)]);
+    lifecycleWebhook($this, 'payment.failed', ['id' => 'pay_failed', 'attributes' => [
+        'status' => 'failed', 'payment_intent_id' => 'pi_fixture',
+    ]])->assertStatus(503);
+    expect($f['payment']->fresh()->status)->toBe('pending');
+});
+
+it('does not create a replacement when the old session cannot be verified', function () {
+    $f = lifecycleOrder();
+    Http::fake(['api.paymongo.com/v1/checkout_sessions/cs_fixture' => Http::response([], 503)]);
+    $this->actingAs($f['user'])->from('/orders/'.$f['order']->order_id)
+        ->post('/orders/'.$f['order']->order_id.'/retry-payment', ['checkout_session_id' => 'cs_fixture'])
+        ->assertRedirect()->assertSessionHas('error');
+    expect($f['payment']->fresh()->checkout_session_id)->toBe('cs_fixture');
+    Http::assertSentCount(1);
+    $this->assertDatabaseCount('stock_movements', 0);
+});
+
+it('rejects payment retries for another customer paid cancelled and POS orders', function () {
+    $f = lifecycleOrder();
+    $url = '/orders/'.$f['order']->order_id.'/retry-payment';
+    $data = ['checkout_session_id' => 'cs_fixture'];
+    $this->actingAs(User::factory()->create())->post($url, $data)->assertForbidden();
+    foreach (['paid', 'cancelled'] as $status) {
+        $f['order']->update(['status' => $status]);
+        $this->actingAs($f['user'])->post($url, $data)->assertRedirect()->assertSessionHas('error');
+    }
+    $f['order']->update(['status' => 'pending', 'sale_type' => 'pos']);
+    $this->post($url, $data)->assertRedirect()->assertSessionHas('error');
+    Http::assertNothingSent();
+});
+
+it('closes a replacement before confirming a delayed paid event from the retired session', function () {
+    $f = lifecycleOrder();
+    $f['payment']->update(['checkout_session_id' => 'cs_retry', 'previous_checkout_session_ids' => ['cs_fixture']]);
+    $replacement = lifecycleSession(false, 'expired');
+    $replacement['id'] = 'cs_retry';
+    Http::fake(['api.paymongo.com/v1/checkout_sessions/cs_retry' => Http::response(['data' => $replacement])]);
+    lifecycleWebhook($this, 'checkout_session.payment.paid', lifecycleSession(true))->assertOk();
+    lifecycleWebhook($this, 'checkout_session.payment.paid', lifecycleSession(true))->assertOk();
+    expect($f['order']->fresh()->status)->toBe(OrderStatus::Paid);
+    expect($f['payment']->fresh()->checkout_session_id)->toBe('cs_fixture');
+    $this->assertDatabaseCount('stock_movements', 1);
+    Http::assertSentCount(1);
+});

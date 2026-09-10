@@ -102,8 +102,8 @@ class OrderService
         if (!str_starts_with($paymongoPaymentId, 'pay_')) {
             throw new \RuntimeException('Missing PayMongo payment ID.');
         }
-        $hint = Payment::where('checkout_session_id', $checkoutSessionId)->firstOrFail();
-        $refundPaymentId = DB::transaction(function () use ($hint, $paymentMethodUsed, $paymongoPaymentId, $amount, $currency) {
+        $hint = Payment::forCheckoutSession($checkoutSessionId)->firstOrFail();
+        $refundPaymentId = DB::transaction(function () use ($hint, $checkoutSessionId, $paymentMethodUsed, $paymongoPaymentId, $amount, $currency) {
             $order = Order::whereKey($hint->order_id)->lockForUpdate()->firstOrFail();
             $payment = Payment::whereKey($hint->getKey())->lockForUpdate()->firstOrFail();
             if ($order->sale_type !== SaleType::Online) {
@@ -114,6 +114,17 @@ class OrderService
             }
             if ($payment->paymongo_payment_id && $payment->paymongo_payment_id !== $paymongoPaymentId) {
                 throw new \RuntimeException('Conflicting PayMongo payment IDs for one checkout session.');
+            }
+            if ($payment->checkout_session_id !== $checkoutSessionId && $payment->status !== 'completed') {
+                // A delayed paid event from a retired session must close its replacement.
+                $replacement = $this->payMongoService->expireCheckoutSession($payment->checkout_session_id);
+                if ($this->payMongoService->paidPayment($replacement)) {
+                    throw new \RuntimeException('Multiple paid checkout sessions require manual payment reconciliation.');
+                }
+                $payment->previous_checkout_session_ids = array_values(array_unique(array_merge(
+                    $payment->previous_checkout_session_ids ?? [], [$payment->checkout_session_id]
+                )));
+                $payment->checkout_session_id = $checkoutSessionId;
             }
             $payment->paymongo_payment_id = $paymongoPaymentId;
 
@@ -160,15 +171,89 @@ class OrderService
         }
     }
 
-    public function markPaymentFailed(string $checkoutSessionId): void
+    public function markPaymentFailed(string $checkoutSessionId, string $status = 'failed'): void
     {
-        $hint = Payment::where('checkout_session_id', $checkoutSessionId)->firstOrFail();
-        DB::transaction(function () use ($hint) {
-            Order::whereKey($hint->order_id)->lockForUpdate()->firstOrFail();
+        if (!in_array($status, ['failed', 'expired'], true)) {
+            throw new \InvalidArgumentException('Invalid unsuccessful payment status.');
+        }
+        $hint = Payment::forCheckoutSession($checkoutSessionId)->firstOrFail();
+        DB::transaction(function () use ($hint, $checkoutSessionId, $status) {
+            $order = Order::whereKey($hint->order_id)->lockForUpdate()->firstOrFail();
             $payment = Payment::whereKey($hint->getKey())->lockForUpdate()->firstOrFail();
-            if (!in_array($payment->status, ['completed', 'cancelled'], true)) {
-                $payment->update(['status' => 'failed']);
+            // An old failed attempt cannot overwrite its replacement or a paid order.
+            if ($order->sale_type === SaleType::Online && $order->status === OrderStatus::Pending
+                && $payment->checkout_session_id === $checkoutSessionId && !$payment->refund_status
+                && in_array($payment->status, ['pending', 'failed', 'expired'], true)) {
+                $payment->update(['status' => $payment->status === 'expired' ? 'expired' : $status]);
+                Log::info('PayMongo payment attempt unsuccessful', array_merge(
+                    $this->paymentContext($payment), ['payment_status' => $payment->status]
+                ));
             }
+        });
+    }
+
+    public function refreshCheckoutPayment(Order $order): void
+    {
+        $payment = $order->payment;
+        if ($order->sale_type !== SaleType::Online || $order->status !== OrderStatus::Pending
+            || !$payment?->checkout_session_id || $payment->status === 'completed' || $payment->refund_status) {
+            return;
+        }
+        $session = $this->payMongoService->retrieveCheckoutSession($payment->checkout_session_id);
+        $paid = $this->payMongoService->paidPayment($session);
+        if ($paid) {
+            $this->confirmPayment($session['id'], $paid['attributes']['source']['type'] ?? 'unknown',
+                $paid['id'], $paid['attributes']['amount'], $paid['attributes']['currency']);
+        } elseif (($session['attributes']['status'] ?? null) === 'expired') {
+            $this->markPaymentFailed($session['id'], 'expired');
+        } elseif (!empty($session['attributes']['payment_intent']['attributes']['last_payment_error'])
+            || collect($session['attributes']['payments'] ?? [])->contains(
+                fn ($attempt) => ($attempt['attributes']['status'] ?? null) === 'failed')) {
+            $this->markPaymentFailed($session['id']);
+        }
+    }
+
+    public function retryCheckout(Order $order, ?string $expectedSessionId): ?string
+    {
+        return DB::transaction(function () use ($order, $expectedSessionId) {
+            $current = Order::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+            $payment = $current->payment()->lockForUpdate()->first();
+            if ($current->sale_type !== SaleType::Online || $current->status !== OrderStatus::Pending
+                || !$payment || $payment->refund_status
+                || !in_array($payment->status, ['pending', 'failed', 'expired'], true)) {
+                throw new \RuntimeException('This order is not eligible for payment retry.');
+            }
+            // A repeated form submission must not expire a newly opened checkout.
+            if ($payment->checkout_session_id !== $expectedSessionId) {
+                return null;
+            }
+            if ($payment->checkout_session_id) {
+                $session = $this->payMongoService->expireCheckoutSession($payment->checkout_session_id);
+                if ($paid = $this->payMongoService->paidPayment($session)) {
+                    $this->confirmPayment($session['id'], $paid['attributes']['source']['type'] ?? 'unknown',
+                        $paid['id'], $paid['attributes']['amount'], $paid['attributes']['currency']);
+                    return null;
+                }
+            }
+            foreach ($current->items()->with('variant.stocks')->get() as $item) {
+                if (!$this->stockService->hasStock($item->variant, $item->quantity)) {
+                    throw new InsufficientStockException('An item is no longer in stock. Please contact support or cancel this order.');
+                }
+            }
+            $session = $this->payMongoService->createCheckoutSession($current,
+                route('checkout.success', $current->order_id), route('checkout.cancel', $current->order_id));
+            $previous = $payment->previous_checkout_session_ids ?? [];
+            if ($payment->checkout_session_id) {
+                $previous[] = $payment->checkout_session_id;
+            }
+            $payment->update([
+                'previous_checkout_session_ids' => array_values(array_unique($previous)),
+                'checkout_session_id' => $session['id'],
+                'paymongo_payment_intent_id' => $session['payment_intent_id'] ?? null,
+                'status' => 'pending', 'method' => 'pending',
+            ]);
+            Log::info('PayMongo checkout retry created', $this->paymentContext($payment));
+            return $session['checkout_url'];
         });
     }
 

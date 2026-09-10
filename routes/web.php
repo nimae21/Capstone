@@ -105,6 +105,7 @@ Route::middleware(['auth', 'verified', 'isUser'])->group(function () {
 
     Route::get('/orders', [CheckoutController::class, 'myOrders'])->name('orders.index');
     Route::get('/orders/{id}', [CheckoutController::class, 'show'])->name('orders.show');
+    Route::post('/orders/{order}/retry-payment', [CheckoutController::class, 'retryPayment'])->middleware('throttle:6,1')->name('orders.retry-payment');
     Route::put('/orders/{order}/cancel', [CheckoutController::class, 'cancelOrder'])->name('orders.cancel');
 
     /*

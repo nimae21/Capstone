@@ -36,7 +36,7 @@ class PayMongoWebhookController extends Controller
                 $paid = $this->payMongoService->paidPayment($resource);
                 $context['checkout_session_id'] = $sessionId;
                 $context['paymongo_payment_id'] = $paid['id'] ?? null;
-                $context['order_id'] = Payment::where('checkout_session_id', $sessionId)->value('order_id');
+                $context['order_id'] = Payment::forCheckoutSession($sessionId)->value('order_id');
                 if (!str_starts_with($sessionId, 'cs_') || !$paid
                     || !isset($paid['attributes']['amount'], $paid['attributes']['currency'])) {
                     throw new \RuntimeException('Paid event is missing payment details.');
@@ -45,6 +45,22 @@ class PayMongoWebhookController extends Controller
                     $sessionId, $paid['attributes']['source']['type'] ?? 'unknown', $paid['id'],
                     $paid['attributes']['amount'], $paid['attributes']['currency']
                 );
+            } elseif ($eventType === 'payment.failed') {
+                $context['paymongo_payment_id'] = $resource['id'] ?? null;
+                $intentId = $resource['attributes']['payment_intent_id'] ?? null;
+                $context['payment_intent_id'] = $intentId;
+                $payment = $intentId ? Payment::where('paymongo_payment_intent_id', $intentId)->first() : null;
+                if ($payment) {
+                    $context['order_id'] = $payment->order_id;
+                    $context['checkout_session_id'] = $payment->checkout_session_id;
+                    // Reconcile the session: a later successful attempt takes precedence.
+                    $this->orderService->refreshCheckoutPayment($payment->order);
+                    $this->orderService->markPaymentFailed($payment->checkout_session_id);
+                } else {
+                    // Legacy/unrelated source payments cannot be safely mapped by customer or amount.
+                    // The order page also reconciles directly with its saved Checkout Session.
+                    Log::warning('Unmatched PayMongo failed payment', $context);
+                }
             } elseif ($eventType === 'checkout_session.payment.failed') {
                 $context['checkout_session_id'] = $resource['id'] ?? '';
                 $this->orderService->markPaymentFailed($context['checkout_session_id']);

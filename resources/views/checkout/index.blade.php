@@ -99,12 +99,23 @@
                         <!-- Items List -->
                         <div class="mb-6 pb-6 border-b border-gray-200 space-y-3 max-h-64 overflow-y-auto">
                             @forelse($cart->items as $item)
-                                <div class="flex justify-between text-sm">
-                                    <div>
-                                        <p class="font-semibold text-gray-900">{{ substr($item->variant->product->product_name, 0, 20) }}...</p>
+                                <div class="flex justify-between gap-3 text-sm">
+                                    @php $imageUrl = $item->variant->product->images->first()?->image_url; @endphp
+                                    <div class="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                                        @if($imageUrl)
+                                            <img src="{{ $imageUrl }}" alt="{{ $item->variant->product->product_name }}"
+                                                 class="w-full h-full object-cover" loading="lazy" decoding="async"
+                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        @endif
+                                        <div class="w-full h-full flex items-center justify-center" style="{{ $imageUrl ? 'display: none;' : '' }}" aria-hidden="true">
+                                            <i class="fas fa-shoe-prints text-gray-400"></i>
+                                        </div>
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="font-semibold text-gray-900 truncate">{{ substr($item->variant->product->product_name, 0, 20) }}...</p>
                                         <p class="text-xs text-gray-500">{{ $item->variant->size }} / {{ $item->variant->color }} × {{ $item->quantity }}</p>
                                     </div>
-                                    <p class="font-semibold text-gray-900">₱{{ number_format($item->price * $item->quantity, 2) }}</p>
+                                    <p class="font-semibold text-gray-900 flex-shrink-0">₱{{ number_format($item->price * $item->quantity, 2) }}</p>
                                 </div>
                             @empty
                                 <p class="text-gray-500 text-center py-4">No items in cart</p>

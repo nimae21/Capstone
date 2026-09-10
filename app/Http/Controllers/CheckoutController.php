@@ -22,7 +22,7 @@ class CheckoutController extends Controller
 
     public function checkout()
     {
-        $cart = Cart::with('items.variant.product')
+        $cart = Cart::with('items.variant.product.images')
             ->where('user_id', auth()->id())
             ->where('status', 0)
             ->first();
@@ -55,6 +55,7 @@ class CheckoutController extends Controller
                 Payment::create([
                     'order_id' => $current->order_id,
                     'checkout_session_id' => $session['id'],
+                    'paymongo_payment_intent_id' => $session['payment_intent_id'] ?? null,
                     'method' => 'pending',
                     'status' => 'pending',
                 ]);
@@ -103,7 +104,7 @@ class CheckoutController extends Controller
         // A provider return URL is a GET navigation, not permission to refund.
         // Show the order's protected cancellation form instead.
         return redirect()->route('orders.show', $order->order_id)
-            ->with('error', 'Checkout was closed. Check the payment status below before cancelling the order.');
+            ->with('error', 'Checkout was closed. Your order is not cancelled. Check its payment status below; you can retry payment or cancel the order.');
     }
     public function myOrders()
     {
@@ -117,12 +118,42 @@ class CheckoutController extends Controller
 
     public function show($id)
     {
-        $order = Order::with(['items.variant.product', 'payment'])
+        $order = Order::with(['items.variant.product.images', 'payment'])
             ->where('order_id', $id)
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
+        try {
+            $this->orderService->refreshCheckoutPayment($order);
+            $order->refresh();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('PayMongo checkout status refresh unavailable', [
+                'order_id' => $order->order_id, 'checkout_session_id' => $order->payment?->checkout_session_id,
+                'exception' => get_class($e),
+            ]);
+            session()->flash('error', 'Payment status could not be verified yet. Please try again shortly.');
+        }
         return view('orders.show', compact('order'));
+    }
+
+    public function retryPayment(\Illuminate\Http\Request $request, Order $order)
+    {
+        abort_if($order->user_id != auth()->id(), 403);
+        $data = $request->validate(['checkout_session_id' => ['present', 'nullable', 'string', 'max:255']]);
+        try {
+            $url = $this->orderService->retryCheckout($order, $data['checkout_session_id']);
+            return $url ? redirect()->away($url)
+                : redirect()->route('orders.show', $order->order_id)
+                    ->with('success', 'Payment status changed. Review the current order status below.');
+        } catch (InsufficientStockException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('PayMongo checkout retry unavailable', [
+                'order_id' => $order->order_id, 'checkout_session_id' => $order->payment?->checkout_session_id,
+                'exception' => get_class($e),
+            ]);
+            return back()->with('error', 'Payment retry could not be started. Check the order status and try again shortly.');
+        }
     }
 
     public function cancelOrder(Order $order)

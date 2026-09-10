@@ -63,15 +63,16 @@
                                 <div class="border rounded-2xl p-4 sm:p-5 flex flex-col gap-4 sm:flex-row sm:gap-5 hover:shadow-md transition">
 
     <div class="w-24 h-24 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-        @if($item->variant->product->images->first())
-            <img
-                src="{{ asset('storage/' . $item->variant->product->images->first()->image_path) }}"
-                class="w-full h-full object-cover">
-        @else
-            <div class="w-full h-full flex items-center justify-center">
-                <i class="fas fa-shoe-prints text-3xl text-gray-400"></i>
-            </div>
+        @php $imageUrl = $item->variant->product->images->first()?->image_url; @endphp
+        @if($imageUrl)
+            <img src="{{ $imageUrl }}"
+                 alt="{{ $item->variant->product->product_name }}"
+                 class="w-full h-full object-cover" loading="lazy" decoding="async"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
         @endif
+        <div class="w-full h-full flex items-center justify-center" style="{{ $imageUrl ? 'display: none;' : '' }}" aria-hidden="true">
+            <i class="fas fa-shoe-prints text-3xl text-gray-400"></i>
+        </div>
     </div>
 
     <div class="flex-1">
@@ -318,6 +319,19 @@
     </div>
                     <!-- Action Buttons -->
                     <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+
+                    @if($order->sale_type === \App\Enums\SaleType::Online && $order->status === OrderStatus::Pending
+                        && $order->payment && !$order->payment->refund_status
+                        && in_array($order->payment->status, ['pending', 'failed', 'expired'], true))
+                        <p class="text-sm text-gray-600 mb-3">Payment is not confirmed. If payment failed or the checkout expired, retry with a new checkout session.</p>
+                        <form action="{{ route('orders.retry-payment', $order->order_id) }}" method="POST" class="mb-3">
+                            @csrf
+                            <input type="hidden" name="checkout_session_id" value="{{ $order->payment->checkout_session_id }}">
+                            <button type="submit" class="block w-full rounded-lg bg-gray-900 py-3 font-bold text-white transition hover:bg-black">
+                                Retry Payment
+                            </button>
+                        </form>
+                    @endif
 
                     @if($order->status->isCancellable() && !$order->payment?->refund_status)
                         <form action="{{ route('orders.cancel', $order->order_id) }}" method="POST" class="mb-3" onsubmit="return confirm('Cancel this order? If paid online, a refund will be requested.');">

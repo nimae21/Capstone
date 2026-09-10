@@ -11,6 +11,8 @@ class Payment extends Model
     protected $fillable = [
     'order_id',
     'checkout_session_id',
+    'paymongo_payment_intent_id',
+    'previous_checkout_session_ids',
     'paymongo_payment_id',
     'refund_status',
     'paymongo_refund_id',
@@ -25,6 +27,7 @@ class Payment extends Model
 ];
 
     protected $casts = [
+        'previous_checkout_session_ids' => 'array',
         'payment_date' => 'datetime',
         'refund_requested_at' => 'datetime',
         'refund_amount' => 'integer',
@@ -45,6 +48,14 @@ class Payment extends Model
     {
         return $this->refund_status === 'pending' && !$this->paymongo_refund_id
             && $this->refund_error && $this->refund_requested_at?->gt(now()->subHours(23));
+    }
+
+    public function scopeForCheckoutSession($query, string $sessionId)
+    {
+        return $query->where(function ($query) use ($sessionId) {
+            $query->where('checkout_session_id', $sessionId)
+                ->orWhereJsonContains('previous_checkout_session_ids', $sessionId);
+        });
     }
 
     public function order()
