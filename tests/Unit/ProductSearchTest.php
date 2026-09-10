@@ -39,7 +39,7 @@ class ProductSearchTest extends TestCase
         DB::table('products')->insert(['product_name' => 'Basketball', 'is_active' => true]);
         $response = app(PageController::class)->searchSuggestions(Request::create('/search/suggestions', 'GET', ['q' => ' RUNNER ']));
         $products = $response->getData(true)['products'];
-        $this->assertCount(5, $products);
+        $this->assertCount(3, $products);
         $this->assertSame('Runner 1', $products[0]['name']);
         $this->assertNull($products[0]['image']);
         $this->assertStringEndsWith('/product/1', $products[0]['url']);
@@ -53,7 +53,7 @@ class ProductSearchTest extends TestCase
         }
     }
 
-    public function test_suggestions_select_one_preview_image_in_a_single_query(): void
+    public function test_suggestions_select_one_preview_image_after_selecting_the_batch(): void
     {
         DB::table('products')->insert(['product_name' => 'Runner', 'is_active' => true]);
         DB::table('product_images')->insert([
@@ -67,13 +67,38 @@ class ProductSearchTest extends TestCase
         DB::flushQueryLog();
         $response = app(PageController::class)->searchSuggestions(Request::create('/search/suggestions', 'GET', ['q' => 'runner']));
         $this->assertSame('https://images.example/primary.jpg', $response->getData(true)['products'][0]['image']);
-        $this->assertCount(1, DB::getQueryLog());
+        $this->assertCount(2, DB::getQueryLog());
         DB::disableQueryLog();
     }
 
+    public function test_suggestions_rank_exact_then_prefix_then_contains_and_paginate_without_duplicates(): void
+    {
+        foreach (['Trail Runner', 'Runner Z', 'Runner', 'Runner A', 'Road Runner', 'Runner B', 'Runner C'] as $name) {
+            DB::table('products')->insert(['product_name' => $name, 'is_active' => true]);
+        }
+        $names = [];
+        foreach ([1, 2, 3] as $page) {
+            $response = app(PageController::class)->searchSuggestions(Request::create('/search/suggestions', 'GET', ['q' => 'runner', 'page' => $page]));
+            $data = $response->getData(true);
+            $this->assertSame($page === 3 ? null : $page + 1, $data['next_page']);
+            $this->assertLessThanOrEqual(3, count($data['products']));
+            $names = array_merge($names, array_column($data['products'], 'name'));
+        }
+        $this->assertSame(['Runner', 'Runner A', 'Runner B', 'Runner C', 'Runner Z', 'Road Runner', 'Trail Runner'], $names);
+    }
+
+    public function test_search_wildcards_are_literal(): void
+    {
+        foreach (['Shoe 50%', 'Shoe 500', 'Shoe XX'] as $name) {
+            DB::table('products')->insert(['product_name' => $name, 'is_active' => true]);
+        }
+        $data = app(PageController::class)->searchSuggestions(Request::create('/search/suggestions', 'GET', ['q' => '50%']))->getData(true);
+        $this->assertSame(['Shoe 50%'], array_column($data['products'], 'name'));
+        $this->assertNull($data['next_page']);
+    }
     public function test_suggestions_require_login_and_sale_route_is_removed(): void
     {
-        $this->getJson('/search/suggestions?q=runner')->assertUnauthorized();
+        $this->getJson('/search/suggestions?q=runner')->assertRedirect(route('login'));
         $this->get('/sale')->assertNotFound();
     }
 }

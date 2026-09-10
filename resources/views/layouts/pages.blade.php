@@ -689,6 +689,18 @@
         .product-search input { width: 100%; min-width: 0; padding: .65rem .85rem; font: inherit; font-size: .9rem; border: 0; outline: 0; background: transparent; }
         .product-search button { border: 0; background: transparent; color: #dc2626; cursor: pointer; padding: .65rem .85rem; }
         .product-search-results { position: absolute; top: calc(100% + .5rem); right: 0; width: max(100%, 280px); max-width: calc(100vw - 2rem); max-height: 60vh; overflow-y: auto; background: white; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 16px 40px #0002; z-index: 1100; }
+        .product-search-results .search-load-more { display: block; width: 100%; padding: .8rem; font-weight: 600; }
+        .product-search-results .search-load-more[hidden],
+        .product-search-results .search-image-placeholder[hidden] { display: none; }
+        .search-skeleton { display: flex; gap: .75rem; align-items: center; padding: .75rem 1rem; }
+        .search-skeleton span {
+            background: linear-gradient(100deg, #f1f5f9 20%, #fff 50%, #f1f5f9 80%);
+            background-size: 200% 100%; animation: search-shimmer 1.4s infinite;
+            border-radius: 8px; width: 48px; height: 48px; flex-shrink: 0;
+        }
+        .search-skeleton span + span { width: 60%; height: 14px; }
+        @keyframes search-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+        @media (prefers-reduced-motion: reduce) { .search-skeleton span { animation: none; } }
         .product-search-results[hidden] { display: none; }
         .product-search-results p { padding: .8rem 1rem; margin: 0; color: #64748b; font-size: .85rem; }
         .product-search-results ul { list-style: none; margin: 0; padding: 0; }

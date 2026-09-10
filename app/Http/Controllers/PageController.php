@@ -148,42 +148,44 @@ class PageController extends Controller
 
     public function searchSuggestions(Request $request)
     {
-        $validated = $request->validate(['q' => ['nullable', 'string', 'max:100']]);
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1', 'max:1000'],
+        ]);
         $query = trim($validated['q'] ?? '');
 
         if (mb_strlen($query) < 2) {
-            return response()->json(['products' => []]);
+            return response()->json(['products' => [], 'next_page' => null]);
         }
 
-        // Select only the preview image instead of fetching every product image.
-        $previewImage = ProductImage::select('image_path')
-            ->whereColumn('product_images.product_id', 'products.product_id')
-            ->orderByDesc('is_primary')
-            ->orderBy('display_order')
-            ->orderBy('image_id')
-            ->limit(1);
-
+        $term = mb_strtolower($query);
+        // Treat SQL wildcard characters as literal search text.
+        $pattern = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $term);
         $products = Product::select('product_id', 'product_name')
-            ->addSelect(['preview_image_path' => $previewImage])
             ->where('is_active', true)
-            ->whereRaw('LOWER(product_name) LIKE ?', ['%'.mb_strtolower($query).'%'])
+            ->whereRaw("LOWER(product_name) LIKE ? ESCAPE '!'", ['%'.$pattern.'%'])
+            ->orderByRaw("CASE WHEN LOWER(product_name) = ? THEN 0 WHEN LOWER(product_name) LIKE ? ESCAPE '!' THEN 1 ELSE 2 END", [$term, $pattern.'%'])
             ->orderBy('product_name')
             ->orderBy('product_id')
-            ->limit(5)
-            ->get()
-            ->map(function (Product $product) {
-                return [
-                    'name' => $product->product_name,
-                    'image' => $product->preview_image_path !== null
-                        ? Storage::disk('supabase')->url($product->preview_image_path)
-                        : null,
-                    'url' => route('product.show', $product->product_id),
-                ];
-            });
+            // No total-count query; fetch just enough to detect another batch.
+            ->simplePaginate(3, ['*'], 'page', $validated['page'] ?? 1);
 
-        return response()->json(['products' => $products]);
+        // Fetch images only for the three selected products, after matching/sorting.
+        $products->getCollection()->load([
+            'images' => fn ($images) => $images->reorder()
+                ->orderByDesc('is_primary')->orderBy('display_order')->orderBy('image_id')
+                ->select('image_id', 'product_id', 'image_path')->limit(1),
+        ]);
+
+        return response()->json([
+            'products' => $products->getCollection()->map(fn (Product $product) => [
+                'name' => $product->product_name,
+                'image' => $product->images->first()?->image_url,
+                'url' => route('product.show', $product->product_id),
+            ])->values(),
+            'next_page' => $products->hasMorePages() ? $products->currentPage() + 1 : null,
+        ]);
     }
-
     public function search(Request $request)
     {
         $query = trim((string) $request->input('q'));
