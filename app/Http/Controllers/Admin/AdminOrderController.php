@@ -54,6 +54,11 @@ class AdminOrderController extends Controller
 
         } catch (InvalidOrderTransitionException|OrderNotCancellableException $e) {
             return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Admin order transition could not finish', [
+                'order_id' => $order->order_id, 'exception' => get_class($e),
+            ]);
+            return back()->with('error', 'Payment processing could not be confirmed. Check the order and refund status before retrying.');
         }
     }
 }

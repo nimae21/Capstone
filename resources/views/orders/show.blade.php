@@ -155,6 +155,7 @@
                                         {{ ucfirst($order->payment->status) }}
                                     </span>
                                 </div>
+                                @include('orders.refund-status', ['refundRetryUrl' => route('orders.cancel', $order->order_id)])
                                 @if($order->payment->payment_date)
                                     <div class="flex justify-between">
                                         <span class="text-gray-600">Payment Date:</span>
@@ -318,8 +319,8 @@
                     <!-- Action Buttons -->
                     <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
 
-                    @if($order->status->isCancellable())
-                        <form action="{{ route('orders.cancel', $order->order_id) }}" method="POST" class="mb-3" onsubmit="return confirm('Are you sure you want to cancel this order?');">
+                    @if($order->status->isCancellable() && !$order->payment?->refund_status)
+                        <form action="{{ route('orders.cancel', $order->order_id) }}" method="POST" class="mb-3" onsubmit="return confirm('Cancel this order? If paid online, a refund will be requested.');">
                             @csrf
                             @method('PUT')
                             <button type="submit" class="block w-full rounded-lg bg-red-600 py-3 font-bold text-white transition hover:bg-red-700">

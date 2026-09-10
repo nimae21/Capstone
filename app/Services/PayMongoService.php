@@ -24,11 +24,24 @@ class PayMongoService
             ];
         })->values()->all();
 
-        $response = Http::withBasicAuth(config('services.paymongo.secret_key'), '')
+        $response = $this->client()
             ->asJson()
             ->post("{$this->baseUrl}/checkout_sessions", [
                 'data' => [
                     'attributes' => [
+                        'billing' => [
+                            'name' => $order->full_name,
+                            'email' => $order->user->email,
+                            'phone' => $order->phone_number,
+                            'address' => [
+                                'line1' => $order->street,
+                                'line2' => $order->barangay,
+                                'city' => $order->city,
+                                'state' => $order->province,
+                                'postal_code' => $order->postal_code,
+                                'country' => 'PH',
+                            ],
+                        ],
                         'line_items'           => $lineItems,
                         'payment_method_types' => ['card', 'gcash', 'grab_pay', 'paymaya'],
                         'success_url'          => $successUrl,
@@ -54,6 +67,62 @@ class PayMongoService
         ];
     }
 
+    private function client(): \Illuminate\Http\Client\PendingRequest
+    {
+        return Http::withBasicAuth(config('services.paymongo.secret_key'), '')
+            ->acceptJson()->asJson()->connectTimeout(3)->timeout(10);
+    }
+
+    public function retrieveCheckoutSession(string $sessionId): array
+    {
+        return $this->client()->get("{$this->baseUrl}/checkout_sessions/{$sessionId}")
+            ->throw()->json('data');
+    }
+
+    public function paidPayment(array $session): ?array
+    {
+        return collect($session['attributes']['payments'] ?? [])
+            ->first(fn ($payment) => ($payment['attributes']['status'] ?? null) === 'paid'
+                && str_starts_with($payment['id'] ?? '', 'pay_'));
+    }
+
+    public function expireCheckoutSession(string $sessionId): array
+    {
+        $session = $this->retrieveCheckoutSession($sessionId);
+        if ($this->paidPayment($session) || ($session['attributes']['status'] ?? null) === 'expired') {
+            return $session;
+        }
+
+        try {
+            $this->client()->post("{$this->baseUrl}/checkout_sessions/{$sessionId}/expire")->throw();
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            // Payment may have won the race with expiry.
+            $session = $this->retrieveCheckoutSession($sessionId);
+            if ($this->paidPayment($session) || ($session['attributes']['status'] ?? null) === 'expired') {
+                return $session;
+            }
+            throw $e;
+        }
+
+        $session = $this->retrieveCheckoutSession($sessionId);
+        if (!$this->paidPayment($session) && ($session['attributes']['status'] ?? null) !== 'expired') {
+            throw new \RuntimeException('Checkout session expiration was not confirmed.');
+        }
+        return $session;
+    }
+
+    public function refundPayment(string $paymentId, int $amount, string $requestKey, int $orderId): array
+    {
+        return $this->client()->withHeaders(['Idempotency-Key' => $requestKey])
+            ->post("{$this->baseUrl}/refunds", [
+                'data' => ['attributes' => [
+                    'payment_id' => $paymentId,
+                    'amount' => $amount,
+                    'reason' => 'others',
+                    'notes' => "Cancellation of Achilles order #{$orderId}",
+                ]],
+            ])->throw()->json('data');
+    }
     /**
      * Verify a webhook payload actually came from PayMongo.
      *
@@ -62,14 +131,14 @@ class PayMongoService
      */
     public function verifyWebhookSignature(string $rawPayload, ?string $signatureHeader): bool
     {
-        if (!$signatureHeader) {
+        if (!$signatureHeader || !config('services.paymongo.webhook_secret')) {
             return false;
         }
 
         $parts = [];
         foreach (explode(',', $signatureHeader) as $pair) {
             [$key, $value] = array_pad(explode('=', $pair, 2), 2, null);
-            $parts[$key] = $value;
+            $parts[trim($key)] = trim($value ?? '');
         }
 
         if (empty($parts['t']) || (empty($parts['te']) && empty($parts['li']))) {

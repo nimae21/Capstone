@@ -128,6 +128,15 @@
 
                     <div class="mt-6">
 
+    @if($order->status->isCancellable() && !$order->payment?->refund_status)
+        <form action="{{ route('admin.orders.update-status', $order->order_id) }}" method="POST" class="mb-3"
+              onsubmit="return confirm('Cancel this order? Paid online payments will be refunded. Cash repayments must be handled separately.');">
+            @csrf
+            @method('PUT')
+            <input type="hidden" name="status" value="cancelled">
+            <button type="submit" class="font-semibold text-red-600">Cancel Order</button>
+        </form>
+    @endif
     @if($order->status === OrderStatus::Pending)
 
     <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
@@ -140,7 +149,7 @@
         </p>
     </div>
 
-@elseif($order->status === OrderStatus::Paid)
+@elseif($order->status === OrderStatus::Paid && !$order->payment?->refund_status)
 
         <form action="{{ route('admin.orders.update-status', $order->order_id) }}"
               method="POST"
@@ -257,6 +266,7 @@
                                 <span class="text-gray-600">Status:</span>
                                 <span class="font-medium">{{ ucfirst($order->payment->status) }}</span>
                             </div>
+                            @include('orders.refund-status', ['refundRetryUrl' => route('admin.orders.update-status', $order->order_id)])
                             @if($order->payment->payment_date)
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">Payment Date:</span>

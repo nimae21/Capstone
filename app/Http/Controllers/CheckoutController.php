@@ -50,13 +50,32 @@ class CheckoutController extends Controller
                 route('checkout.cancel', $order->order_id),
             );
 
-            Payment::create([
-                'order_id'            => $order->order_id,
-                'checkout_session_id' => $session['id'],
-                'method'              => 'pending', // real method known only after webhook
-                'status'              => 'pending',
-            ]);
+            $order = \Illuminate\Support\Facades\DB::transaction(function () use ($order, $session) {
+                $current = Order::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+                Payment::create([
+                    'order_id' => $current->order_id,
+                    'checkout_session_id' => $session['id'],
+                    'method' => 'pending',
+                    'status' => 'pending',
+                ]);
+                return $current;
+            });
 
+            // A cancellation can arrive while the checkout API call is running.
+            // Persist its session, then close it instead of opening a cancelled order.
+            if ($order->status === \App\Enums\OrderStatus::Cancelled) {
+                try {
+                    $this->orderService->cancel($order);
+                    return redirect()->route('orders.show', $order->order_id);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error('Cancelled order session could not be closed', [
+                        'order_id' => $order->order_id, 'checkout_session_id' => $session['id'],
+                        'exception' => get_class($e),
+                    ]);
+                    return redirect()->route('orders.show', $order->order_id)
+                        ->with('error', 'The checkout session could not be closed. Retry cancellation below.');
+                }
+            }
             return redirect()->away($session['checkout_url']);
 
         } catch (EmptyCartException|InsufficientStockException $e) {
@@ -81,11 +100,11 @@ class CheckoutController extends Controller
     {
         abort_if($order->user_id != auth()->id(), 403);
 
-        return redirect()
-            ->route('checkout.index')
-            ->with('error', 'Payment was cancelled. Your order was not placed — please try again.');
+        // A provider return URL is a GET navigation, not permission to refund.
+        // Show the order's protected cancellation form instead.
+        return redirect()->route('orders.show', $order->order_id)
+            ->with('error', 'Checkout was closed. Check the payment status below before cancelling the order.');
     }
-
     public function myOrders()
     {
         $orders = Order::where('user_id', auth()->id())
@@ -113,10 +132,16 @@ class CheckoutController extends Controller
         }
 
         try {
-            $this->orderService->cancel($order);
-            return back()->with('success', 'Order cancelled successfully.');
+            $updated = $this->orderService->cancel($order);
+            $label = $updated->payment?->refund_label;
+            return back()->with('success', 'Order cancelled.' . ($label ? ' '.$label.'.' : ''));
         } catch (OrderNotCancellableException $e) {
             return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Order cancellation could not finish', [
+                'order_id' => $order->order_id, 'exception' => get_class($e),
+            ]);
+            return back()->with('error', 'Cancellation or refund could not be confirmed. Check the order below and retry if available.');
         }
     }
 }
