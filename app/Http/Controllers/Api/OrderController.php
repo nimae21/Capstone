@@ -3,100 +3,73 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enums\OrderStatus;
-use App\Exceptions\InvalidOrderTransitionException;
-use App\Exceptions\OrderNotCancellableException;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Services\OrderService;
+use App\Support\OrderPresenter;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
+/**
+ * Read-only order access for the Super Admin. Shipping, completing and
+ * cancelling stay on the website where Super Admin order writes have never
+ * been allowed, so the phone deliberately exposes no mutation endpoints.
+ */
 class OrderController extends Controller
 {
-    public function __construct(protected OrderService $orderService) {}
-
     public function index(Request $request)
     {
         $filters = $request->validate([
             'status' => ['nullable', Rule::in(['all', 'pending', 'paid', 'shipped', 'completed', 'cancelled'])],
+            'search' => ['nullable', 'string', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
-        $query = Order::with(['user', 'items.variant.product'])->where('sale_type', 'online');
-        $status = $filters['status'] ?? 'paid';
+
+        $query = Order::with(['user', 'items'])->where('sale_type', 'online');
+        $status = $filters['status'] ?? 'all';
         if ($status !== 'all') {
             $query->where('status', $status);
         }
 
-        return response()->json($query->latest()->orderByDesc('order_id')->paginate(20)
-            ->through(fn (Order $order) => $this->serialize($order)));
+        if (! empty($filters['search'])) {
+            $term = trim($filters['search']);
+            $query->where(function ($q) use ($term) {
+                $q->where('full_name', 'like', '%'.$term.'%')
+                    ->orWhere('phone_number', 'like', '%'.$term.'%');
+                if (ctype_digit($term)) {
+                    $q->orWhere('order_id', (int) $term);
+                }
+                $q->orWhereHas('user', fn ($u) => $u
+                    ->where('email', 'like', '%'.$term.'%')
+                    ->orWhere('first_name', 'like', '%'.$term.'%')
+                    ->orWhere('last_name', 'like', '%'.$term.'%'));
+            });
+        }
+
+        $orders = $query->orderByDesc('order_id')->paginate(20)
+            ->through(fn (Order $order) => OrderPresenter::summary($order));
+
+        return response()->json($orders);
     }
 
     public function show(Order $order)
     {
         abort_unless($order->sale_type?->value === 'online', 404);
-        return response()->json($this->serialize($order->load(['user', 'items.variant.product'])));
+
+        return response()->json(OrderPresenter::detail($order));
     }
 
-    // Kept for previously installed mobile clients.
-    public function pending()
+    public function counts()
     {
-        return response()->json(Order::with(['user', 'items.variant.product'])
-            ->where('sale_type', 'online')->where('status', OrderStatus::Paid)->latest()->get()
-            ->map(fn (Order $order) => $this->serialize($order)));
-    }
+        $counts = Order::where('sale_type', 'online')
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
 
-    public function confirm(Order $order)
-    {
-        return $this->transition($order, OrderStatus::Shipped);
-    }
-
-    public function updateStatus(Request $request, Order $order)
-    {
-        // These are the two actions displayed on the website's order detail page.
-        $validated = $request->validate(['status' => ['required', Rule::in(['shipped', 'completed'])]]);
-        return $this->transition($order, OrderStatus::from($validated['status']));
-    }
-
-    private function transition(Order $order, OrderStatus $status)
-    {
-        try {
-            $updated = DB::transaction(function () use ($order, $status) {
-                // Read current state under a lock: a repeated tap must not repeat an action.
-                $current = Order::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
-                abort_unless($current->sale_type?->value === 'online', 404);
-                return $this->orderService->updateStatus($current, $status);
-            });
-
-            return response()->json([
-                'message' => $status === OrderStatus::Shipped ? 'Order marked as shipped.' : 'Order marked as delivered.',
-                'order' => $this->serialize($updated->load(['user', 'items.variant.product'])),
-            ]);
-        } catch (InvalidOrderTransitionException|OrderNotCancellableException $e) {
-            return response()->json(['message' => $e->getMessage()], 422);
+        $result = ['all' => (int) $counts->sum()];
+        foreach (OrderStatus::cases() as $status) {
+            $result[$status->value] = (int) ($counts[$status->value] ?? 0);
         }
-    }
 
-    private function serialize(Order $order): array
-    {
-        return [
-            'id' => $order->order_id,
-            'customer' => $order->user?->full_name ?? $order->full_name ?? 'Customer',
-            'recipient' => $order->full_name,
-            'phone' => $order->phone_number,
-            'total' => $order->total_amount,
-            'created_at' => $order->created_at?->toIso8601String(),
-            'status' => $order->status->label(),
-            'status_key' => $order->status->value,
-            'payment_method' => $order->payment_method,
-            'address' => implode(', ', array_filter([$order->street, $order->barangay, $order->city, $order->province, $order->postal_code])),
-            'items' => $order->items->map(fn ($item) => [
-                'product' => $item->variant?->product?->product_name ?? 'Unavailable product',
-                'size' => $item->variant?->size,
-                'color' => $item->variant?->color,
-                'quantity' => $item->quantity,
-                'price' => $item->price,
-            ]),
-        ];
+        return response()->json($result);
     }
 }

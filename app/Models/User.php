@@ -67,6 +67,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Order::class, 'user_id', 'id');
     }
 
+    public function adminInvitations()
+    {
+        return $this->hasMany(AdminInvitation::class, 'inviter_id');
+    }
+
+    public function approvals()
+    {
+        return $this->hasMany(ApprovalRequest::class, 'requester_id');
+    }
+
     protected function fullName(): Attribute
     {
         return Attribute::make(
@@ -74,9 +84,24 @@ class User extends Authenticatable implements MustVerifyEmail
         );
     }
 
+    protected function initials(): Attribute
+    {
+        return Attribute::make(get: function () {
+            $first = mb_substr((string) $this->first_name, 0, 1);
+            $last = mb_substr((string) $this->last_name, 0, 1);
+
+            return mb_strtoupper($first.$last) ?: 'SA';
+        });
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'super_admin';
     }
 
     public function carts()

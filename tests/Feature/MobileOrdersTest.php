@@ -16,55 +16,81 @@ function mobileOrder(string $status = 'paid', string $saleType = 'online'): Orde
     ]);
 }
 
-it('requires an admin for mobile order access and changes', function () {
+it('only lets an active super admin read mobile orders', function () {
     $order = mobileOrder();
+
     $this->getJson('/api/orders')->assertUnauthorized();
+    $this->getJson('/api/orders/'.$order->order_id)->assertUnauthorized();
+
     Sanctum::actingAs(User::factory()->create(['role' => 'user']));
     $this->getJson('/api/orders')->assertForbidden();
     $this->getJson('/api/orders/'.$order->order_id)->assertForbidden();
-    $this->putJson('/api/orders/'.$order->order_id.'/status', ['status' => 'shipped'])->assertForbidden();
+
+    Sanctum::actingAs(User::factory()->create(['role' => 'admin']));
+    $this->getJson('/api/orders')->assertForbidden();
+    $this->getJson('/api/orders/'.$order->order_id)->assertForbidden();
+
+    Sanctum::actingAs(User::factory()->create(['role' => 'super_admin', 'is_active' => false]));
+    $this->getJson('/api/orders')->assertForbidden();
+});
+
+it('does not expose any order mutation endpoint to the super admin', function () {
+    $order = mobileOrder();
+    Sanctum::actingAs(User::factory()->create(['role' => 'super_admin']));
+
+    // The website has never let a Super Admin ship, complete or cancel an order,
+    // so the mobile API carries no such route at all.
+    $this->putJson('/api/orders/'.$order->order_id.'/status', ['status' => 'shipped'])->assertNotFound();
+    $this->postJson('/api/orders/'.$order->order_id.'/confirm')->assertNotFound();
+    $this->putJson('/api/orders/'.$order->order_id.'/cancel')->assertNotFound();
+
     expect($order->fresh()->status)->toBe(OrderStatus::Paid);
 });
 
-it('filters and paginates online orders and returns recipient details', function () {
-    Sanctum::actingAs(User::factory()->create(['role' => 'admin']));
+it('filters, searches and paginates online orders and returns recipient details', function () {
+    Sanctum::actingAs(User::factory()->create(['role' => 'super_admin']));
     $paid = mobileOrder();
-    mobileOrder('shipped');
+    mobileOrder('shipped')->update(['full_name' => 'Second Recipient']);
     mobileOrder('paid', 'pos');
+
     $this->getJson('/api/orders?status=paid')->assertOk()->assertJsonPath('total', 1)
         ->assertJsonPath('data.0.id', $paid->order_id)->assertJsonPath('data.0.status_key', 'paid');
     $this->getJson('/api/orders?status=all')->assertOk()->assertJsonPath('total', 2);
-    $this->getJson('/api/orders/'.$paid->order_id)->assertOk()->assertJsonPath('recipient', 'Delivery Recipient');
     $this->getJson('/api/orders?status=invalid')->assertUnprocessable();
+    $this->getJson('/api/orders?search=Second')->assertOk()->assertJsonPath('total', 1);
+    $this->getJson('/api/orders?search=Recipient')->assertOk()->assertJsonPath('total', 2);
+    $this->getJson('/api/orders?search=nobody')->assertOk()->assertJsonPath('total', 0);
+    $this->getJson('/api/orders/counts')->assertOk()
+        ->assertJsonPath('all', 2)->assertJsonPath('paid', 1)->assertJsonPath('shipped', 1)->assertJsonPath('completed', 0);
 });
 
-it('performs the same shipping and delivery transitions as the website', function () {
-    Sanctum::actingAs(User::factory()->create(['role' => 'admin']));
-    $order = mobileOrder();
-    $url = '/api/orders/'.$order->order_id.'/status';
-    $this->putJson($url, ['status' => 'shipped'])->assertOk()->assertJsonPath('order.status_key', 'shipped');
-    expect($order->fresh()->status)->toBe(OrderStatus::Shipped);
-    $this->putJson($url, ['status' => 'shipped'])->assertUnprocessable();
-    $this->putJson($url, ['status' => 'completed'])->assertOk()->assertJsonPath('order.status_key', 'completed');
-    expect($order->fresh()->status)->toBe(OrderStatus::Completed);
-    $this->putJson($url, ['status' => 'shipped'])->assertUnprocessable();
+it('returns full order detail with shipping, payment and a real status timeline', function () {
+    $order = mobileOrder('pending');
+    $order->update(['status' => 'paid']);
+    $order->update(['status' => 'shipped']);
+    $order->update(['status' => 'completed']);
+
+    Sanctum::actingAs(User::factory()->create(['role' => 'super_admin']));
+    $this->getJson('/api/orders/'.$order->order_id)
+        ->assertOk()
+        ->assertJsonPath('recipient', 'Delivery Recipient')
+        ->assertJsonPath('shipping.city', 'Test City')
+        ->assertJsonPath('shipping.phone', '09171234567')
+        ->assertJsonPath('address', '123 Test Street, Test Barangay, Test City, Test Province, 1100')
+        ->assertJsonPath('payment', null)
+        ->assertJsonStructure(['timeline' => [['label', 'at', 'kind']]]);
+
+    $timeline = collect($this->getJson('/api/orders/'.$order->order_id)->json('timeline'))->pluck('label');
+    expect($timeline)->toContain('Order placed')
+        ->toContain('Status changed to Paid')
+        ->toContain('Status changed to Shipped')
+        ->toContain('Status changed to Completed');
 });
 
-it('cannot ship unpaid orders or manually confirm payment or change POS orders', function () {
-    Sanctum::actingAs(User::factory()->create(['role' => 'admin']));
-    $unpaid = mobileOrder('pending');
-    $this->putJson('/api/orders/'.$unpaid->order_id.'/status', ['status' => 'shipped'])->assertUnprocessable();
-    $this->putJson('/api/orders/'.$unpaid->order_id.'/status', ['status' => 'paid'])->assertUnprocessable();
-    $this->putJson('/api/orders/'.$unpaid->order_id.'/status', ['status' => 'cancelled'])->assertUnprocessable();
-    $pos = mobileOrder('paid', 'pos');
-    $this->putJson('/api/orders/'.$pos->order_id.'/status', ['status' => 'shipped'])->assertNotFound();
-    expect($unpaid->fresh()->status)->toBe(OrderStatus::Pending);
-    expect($pos->fresh()->status)->toBe(OrderStatus::Paid);
-});
+it('hides POS orders from the mobile order feed', function () {
+    $pos = mobileOrder('completed', 'pos');
+    Sanctum::actingAs(User::factory()->create(['role' => 'super_admin']));
 
-it('keeps the existing confirm endpoint working', function () {
-    Sanctum::actingAs(User::factory()->create(['role' => 'admin']));
-    $order = mobileOrder();
-    $this->postJson('/api/orders/'.$order->order_id.'/confirm')->assertOk();
-    expect($order->fresh()->status)->toBe(OrderStatus::Shipped);
+    $this->getJson('/api/orders/' . $pos->order_id)->assertNotFound();
+    $this->getJson('/api/orders?status=all')->assertOk()->assertJsonPath('total', 0);
 });

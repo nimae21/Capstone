@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ApprovalRequest;
 use App\Models\User;
+use App\Services\AccountStatusService;
 use App\Services\ApprovalService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class GovernanceController extends Controller
@@ -53,17 +53,10 @@ class GovernanceController extends Controller
         return view('admin.governance.accounts', compact('users'));
     }
 
-    public function status(Request $request, User $user)
+    public function status(Request $request, User $user, AccountStatusService $statuses)
     {
         $data = $request->validate(['is_active' => 'required|boolean']);
-        DB::transaction(function () use ($request, $user, $data) {
-            $target = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
-            abort_unless($target->id !== $request->user()->id && in_array($target->role, ['user', 'admin'], true), 403, 'Only other customer and admin accounts can be suspended or restored.');
-            $target->forceFill(['is_active' => (bool) $data['is_active']])->save();
-            if (! $data['is_active']) {
-                $target->tokens()->delete();
-            }
-        });
+        $statuses->setActive($user, $request->user(), (bool) $data['is_active']);
 
         return back()->with('success', 'Account status updated.');
     }

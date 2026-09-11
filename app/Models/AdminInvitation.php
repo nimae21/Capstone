@@ -14,4 +14,14 @@ class AdminInvitation extends Model
     protected $hidden = ['token_hash'];
 
     protected $casts = ['expires_at' => 'datetime', 'accepted_at' => 'datetime'];
+
+    public function inviter()
+    {
+        return $this->belongsTo(User::class, 'inviter_id');
+    }
+
+    public function acceptedUser()
+    {
+        return $this->belongsTo(User::class, 'accepted_user_id');
+    }
 }

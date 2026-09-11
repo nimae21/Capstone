@@ -3,9 +3,17 @@
 namespace App\Providers;
 
 use App\Listeners\LogAuthenticationActivity;
+use App\Models\AdminInvitation;
+use App\Models\ApprovalRequest;
 use App\Models\Cart;
 use App\Models\Order;
+use App\Models\Stock;
+use App\Models\User;
+use App\Observers\AdminInvitationObserver;
+use App\Observers\ApprovalRequestObserver;
 use App\Observers\MobileOrderObserver;
+use App\Observers\StockObserver;
+use App\Observers\UserObserver;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -57,6 +65,10 @@ class AppServiceProvider extends ServiceProvider
             : Limit::perMinute(120)->by('api-user:'.$request->user()->getAuthIdentifier()));
         RateLimiter::for('expensive-admin', fn ($request) => Limit::perMinute(10)->by('admin-expensive:'.($request->user()?->id ?? $request->ip())));
         Order::observe(MobileOrderObserver::class);
+        ApprovalRequest::observe(ApprovalRequestObserver::class);
+        AdminInvitation::observe(AdminInvitationObserver::class);
+        User::observe(UserObserver::class);
+        Stock::observe(StockObserver::class);
         Event::listen(Login::class, [LogAuthenticationActivity::class, 'handleLogin']);
         Event::listen(Logout::class, [LogAuthenticationActivity::class, 'handleLogout']);
         Event::listen(Failed::class, [LogAuthenticationActivity::class, 'handleFailed']);

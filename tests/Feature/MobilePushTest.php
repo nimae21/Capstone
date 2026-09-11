@@ -14,23 +14,25 @@ use Illuminate\Support\Str;
 
 function pushLogin($test, ?User $user = null): array
 {
-    $user ??= User::factory()->create(['role' => 'admin', 'is_active' => true]);
+    $user ??= User::factory()->create(['role' => 'super_admin', 'is_active' => true]);
     $token = $user->createToken('mobile-app');
     app('auth')->forgetGuards();
     $test->withToken($token->plainTextToken);
     return [$user, $token->accessToken];
 }
+
 function pushRegister($test): MobilePushDevice
 {
     $id = (string) Str::uuid();
     $test->putJson('/api/push/device', ['installation_id' => $id, 'token' => 'test-fcm-token-'.Str::random(30)])->assertOk();
     return MobilePushDevice::where('installation_id', $id)->firstOrFail();
 }
-function pushOrder(): Order
+
+function pushOrder(string $status = 'pending', string $saleType = 'online'): Order
 {
     return Order::create([
         'user_id' => User::factory()->create(['role' => 'user'])->id,
-        'sale_type' => 'online', 'status' => 'pending', 'total_amount' => 2500,
+        'sale_type' => $saleType, 'status' => $status, 'total_amount' => 2500,
         'full_name' => 'Private Recipient', 'phone_number' => '09171234567',
         'street' => 'Private Street', 'barangay' => 'Test', 'city' => 'Test', 'province' => 'Test', 'postal_code' => '1100',
     ]);
@@ -46,12 +48,14 @@ beforeEach(function () {
     $this->app->instance(FirebasePushSender::class, $this->sender);
 });
 
-it('requires an active admin mobile token to register a phone', function () {
+it('only lets an active super admin register a phone', function () {
     $input = ['installation_id' => (string) Str::uuid(), 'token' => str_repeat('a', 40)];
     $this->putJson('/api/push/device', $input)->assertUnauthorized();
     pushLogin($this, User::factory()->create(['role' => 'user']));
     $this->putJson('/api/push/device', $input)->assertForbidden();
-    pushLogin($this, User::factory()->create(['role' => 'admin', 'is_active' => false]));
+    pushLogin($this, User::factory()->create(['role' => 'admin']));
+    $this->putJson('/api/push/device', $input)->assertForbidden();
+    pushLogin($this, User::factory()->create(['role' => 'super_admin', 'is_active' => false]));
     $this->putJson('/api/push/device', $input)->assertForbidden();
     $this->assertDatabaseCount('mobile_push_devices', 0);
 });
@@ -90,37 +94,50 @@ it('cannot disable or test a different session phone', function () {
 it('clears old pending alerts when a phone changes sessions', function () {
     [$admin] = pushLogin($this);
     $device = pushRegister($this);
-    $order = pushOrder();
-    $order->update(['status' => 'paid']);
-    $this->assertDatabaseCount('mobile_push_deliveries', 1);
+    pushOrder()->update(['status' => 'paid']);
+    expect(MobilePushDelivery::count())->toBeGreaterThan(0);
     pushLogin($this, $admin);
     $this->putJson('/api/push/device', ['installation_id' => $device->installation_id, 'token' => $device->token])->assertOk();
     $this->assertDatabaseCount('mobile_push_deliveries', 0);
 });
 
-it('stages one alert for a paid order and none for unrelated or POS updates', function () {
-    pushLogin($this);
+it('stores a notification and stages a phone alert for a new and a paid order', function () {
+    [$admin] = pushLogin($this);
     pushRegister($this);
+
     $order = pushOrder();
-    $this->assertDatabaseCount('mobile_push_deliveries', 0);
+    expect($order->fresh()->status)->toBe(OrderStatus::Pending);
+    $this->assertDatabaseCount('notifications', 1);
+    expect(MobilePushDelivery::where('kind', 'order_placed')->count())->toBe(1);
+
     $order->update(['status' => 'paid']);
+    $this->assertDatabaseCount('notifications', 2);
+    expect(MobilePushDelivery::where('kind', 'order_paid')->count())->toBe(1);
+
+    // Non-status changes and POS sales must not alert anyone.
     $order->update(['full_name' => 'Another Recipient']);
-    app(MobilePushOutbox::class)->orderPaid($order); // Retried event.
-    $pos = pushOrder();
-    $pos->update(['sale_type' => 'pos', 'status' => 'paid']);
-    $this->assertDatabaseCount('mobile_push_deliveries', 1);
+    pushOrder('completed', 'pos');
+    $this->assertDatabaseCount('notifications', 2);
+    expect(MobilePushDelivery::count())->toBe(2);
+
+    expect($admin->fresh()->unreadNotifications()->count())->toBe(2);
     Http::assertNothingSent();
 });
 
-it('rolls back alert creation together with a failed payment transaction', function () {
+it('rolls back notification and alert creation together with a failed payment transaction', function () {
     pushLogin($this);
     pushRegister($this);
     $order = pushOrder();
+    $this->assertDatabaseCount('notifications', 1);
+
     DB::beginTransaction();
     $order->update(['status' => 'paid']);
-    $this->assertDatabaseCount('mobile_push_deliveries', 1);
+    $this->assertDatabaseCount('notifications', 2);
+    expect(MobilePushDelivery::where('kind', 'order_paid')->count())->toBe(1);
     DB::rollBack();
-    $this->assertDatabaseCount('mobile_push_deliveries', 0);
+
+    $this->assertDatabaseCount('notifications', 1);
+    $this->assertDatabaseCount('mobile_push_deliveries', 1);
     expect($order->fresh()->status)->toBe(OrderStatus::Pending);
 });
 
@@ -129,6 +146,8 @@ it('sends a paid-order alert once with a safe order link and no customer details
     $device = pushRegister($this);
     $order = pushOrder();
     $order->update(['status' => 'paid']);
+    MobilePushDelivery::where('kind', 'order_placed')->update(['status' => 'skipped']);
+
     Http::fake(['fcm.googleapis.com/*' => Http::response(['name' => 'projects/test/messages/1'])]);
     $outbox = app(MobilePushOutbox::class);
     expect($outbox->deliverPending($this->sender))->toBe(1);
@@ -137,11 +156,12 @@ it('sends a paid-order alert once with a safe order link and no customer details
         return $request['message']['data']['order_id'] === (string) $order->order_id
             && $request['message']['token'] === $device->token
             && $request['message']['android']['notification']['channel_id'] === 'orders'
+            && $request['message']['data']['route'] === '/tabs/orders/'.$order->order_id
             && !str_contains($request->body(), 'Private Recipient')
             && !str_contains($request->body(), 'Private Street');
     });
     Http::assertSentCount(1);
-    expect(MobilePushDelivery::first()->status)->toBe('sent');
+    expect(MobilePushDelivery::where('kind', 'order_paid')->first()->status)->toBe('sent');
 });
 
 it('retries temporary provider failures without delaying payment', function () {
@@ -149,10 +169,11 @@ it('retries temporary provider failures without delaying payment', function () {
     pushRegister($this);
     $order = pushOrder();
     $order->update(['status' => 'paid']);
+    MobilePushDelivery::where('kind', 'order_placed')->update(['status' => 'skipped']);
     Http::fake(['fcm.googleapis.com/*' => Http::sequence()->push([], 503)->push(['name' => 'ok'])]);
     $outbox = app(MobilePushOutbox::class);
     expect($outbox->deliverPending($this->sender))->toBe(0);
-    expect(MobilePushDelivery::first()->status)->toBe('pending');
+    expect(MobilePushDelivery::where('kind', 'order_paid')->first()->status)->toBe('pending');
     expect($order->fresh()->status)->toBe(OrderStatus::Paid);
     expect($outbox->deliverPending($this->sender))->toBe(0);
     $this->travel(61)->seconds();
@@ -166,7 +187,7 @@ it('retires invalid FCM tokens instead of retrying them forever', function () {
     Http::fake(['fcm.googleapis.com/*' => Http::response(['error' => ['details' => [['errorCode' => 'UNREGISTERED']]]], 404)]);
     app(MobilePushOutbox::class)->deliverPending($this->sender);
     expect($device->fresh()->enabled)->toBeFalse();
-    expect(MobilePushDelivery::first()->status)->toBe('failed');
+    expect(MobilePushDelivery::where('status', 'failed')->count())->toBeGreaterThan(0);
 });
 
 it('skips expired sessions and orders already handled on the website', function () {
@@ -176,12 +197,14 @@ it('skips expired sessions and orders already handled on the website', function 
     $order->update(['status' => 'paid']);
     $token->update(['expires_at' => now()->subMinute()]);
     app(MobilePushOutbox::class)->deliverPending($this->sender);
-    expect(MobilePushDelivery::first()->status)->toBe('skipped');
+    expect(MobilePushDelivery::where('kind', 'order_paid')->first()->status)->toBe('skipped');
+
     pushLogin($this);
     pushRegister($this);
     $other = pushOrder();
     $other->update(['status' => 'paid']);
     $other->update(['status' => 'shipped']);
+    MobilePushDelivery::where('status', 'pending')->update(['status' => 'skipped']);
     app(MobilePushOutbox::class)->deliverPending($this->sender);
     Http::assertNothingSent();
     expect(MobilePushDelivery::where('status', 'pending')->count())->toBe(0);
@@ -201,4 +224,36 @@ it('reports unconfigured Firebase honestly and refuses registration', function (
     config(['mobile_push.enabled' => false]);
     $this->getJson('/api/push/status')->assertOk()->assertJsonPath('configured', false);
     $this->putJson('/api/push/device', ['installation_id' => (string) Str::uuid(), 'token' => str_repeat('a', 40)])->assertStatus(503);
+});
+
+it('serves the in-app notification centre with unread counts and read state', function () {
+    [$admin] = pushLogin($this);
+    pushRegister($this);
+    $order = pushOrder();
+    $order->update(['status' => 'paid']);
+
+    $this->getJson('/api/notifications/unread-count')->assertOk()->assertJsonPath('unread', 2);
+
+    $list = $this->getJson('/api/notifications')->assertOk()->assertJsonPath('total', 2);
+    $rows = collect($list->json('data'));
+    $paid = $rows->firstWhere('title', 'Order #'.$order->order_id.' paid');
+    expect($paid)->not->toBeNull()
+        ->and($paid['read'])->toBeFalse()
+        ->and($paid['route'])->toBe('/tabs/orders/'.$order->order_id);
+    expect($rows->pluck('title'))->toContain('New order placed');
+
+    $this->postJson('/api/notifications/'.$paid['id'].'/read')->assertOk()->assertJsonPath('unread', 1);
+    $this->getJson('/api/notifications?filter=unread')->assertOk()->assertJsonPath('total', 1);
+    $this->postJson('/api/notifications/read-all')->assertOk()->assertJsonPath('unread', 0);
+    expect($admin->fresh()->unreadNotifications()->count())->toBe(0);
+});
+
+it('does not let one super admin read another account notification', function () {
+    [$first] = pushLogin($this);
+    pushRegister($this);
+    pushOrder()->update(['status' => 'paid']);
+    $id = $first->notifications()->first()->id;
+
+    pushLogin($this);
+    $this->postJson('/api/notifications/'.$id.'/read')->assertNotFound();
 });

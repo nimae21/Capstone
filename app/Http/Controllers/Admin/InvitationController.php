@@ -5,14 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Auth\PendingRegistrationController;
 use App\Http\Controllers\Controller;
 use App\Models\AdminInvitation;
-use App\Models\PendingRegistration;
 use App\Models\User;
-use App\Notifications\AccountLinkNotification;
 use App\Services\AccountEmail;
+use App\Services\AdminInvitationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
 class InvitationController extends Controller
@@ -22,18 +20,13 @@ class InvitationController extends Controller
         return view('admin.governance.invite');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, AdminInvitationService $invitations)
     {
         $request->merge(['email' => Str::lower(trim((string) $request->email))]);
         $data = $request->validate(['email' => AccountEmail::newAccountRules()]);
-        $token = Str::random(64);
-        DB::transaction(function () use ($data, $token, $request) {
-            abort_if(PendingRegistration::where('email', $data['email'])->where('expires_at', '>', now())->exists(), 409, 'This email has a pending customer registration. Wait for it to expire or use another email.');
-            AdminInvitation::updateOrCreate(['email' => $data['email']], ['inviter_id' => $request->user()->id,
-                'token_hash' => hash('sha256', $token), 'expires_at' => now()->addHours(48), 'accepted_at' => null, 'accepted_user_id' => null]);
-        });
+
         try {
-            Notification::route('mail', $data['email'])->notify(new AccountLinkNotification(route('invitation.show', $token), true));
+            $invitations->invite($request->user(), $data['email']);
         } catch (\Throwable $e) {
             report($e);
 

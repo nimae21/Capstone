@@ -27,11 +27,16 @@ class MobilePushDevice extends Model
         return $this->belongsTo(PersonalAccessToken::class, 'personal_access_token_id');
     }
 
+    /**
+     * A device only receives Achilles alerts while it belongs to an active
+     * Super Admin with a live mobile session. Admins and customers are never
+     * eligible, even if an old registration row still exists.
+     */
     public function scopeEligible(Builder $query): Builder
     {
         return $query->where('enabled', true)
             ->where('last_seen_at', '>', now()->subDays(config('mobile_push.device_lifetime_days', 30)))
-            ->whereHas('user', fn ($q) => $q->where('role', 'admin')->where('is_active', true))
+            ->whereHas('user', fn ($q) => $q->where('role', 'super_admin')->where('is_active', true))
             ->whereHas('accessToken', function ($q) {
                 $q->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()));
                 if ($expiration = config('sanctum.expiration')) {
