@@ -430,9 +430,11 @@
         <a href="{{ route('admin.products.index') }}" data-tooltip="Products" class="{{ request()->routeIs('admin.products.*') ? 'active' : '' }}">
             <i class="fas fa-box-open"></i> <span>Products</span>
         </a>
-        <a href="{{ route('admin.pos.index') }}" data-tooltip="POS" class="{{ request()->routeIs('admin.pos.*') ? 'active' : '' }}">
+        @if(auth()->user()->role === 'admin')
+<a href="{{ route('admin.pos.index') }}" data-tooltip="POS" class="{{ request()->routeIs('admin.pos.*') ? 'active' : '' }}">
             <i class="fas fa-cash-register"></i> <span>Point of Sale</span>
         </a>
+@endif
         <a href="{{ route('admin.categories.index') }}" data-tooltip="Categories" class="{{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
             <i class="fas fa-tags"></i> <span>Categories</span>
         </a>
@@ -443,9 +445,12 @@
             <i class="fas fa-shoe-prints"></i> <span>Shoe Types</span>
         </a>
 
-        <a href="{{ route('admin.users.index') }}" data-tooltip="Users" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+        @if(auth()->user()->role === 'super_admin')
+<a href="{{ route('governance.approvals') }}"><i class="fas fa-check-double"></i> <span>Approval queue</span></a>
+<a href="{{ route('admin.users.index') }}" data-tooltip="Users" class="{{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
             <i class="fas fa-users"></i> <span>Users</span>
         </a>
+@endif
         <a href="{{ route('admin.orders.index') }}" data-tooltip="Orders" class="{{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
             <i class="fas fa-shopping-bag"></i> <span>Orders</span>
         </a>
@@ -511,6 +516,9 @@
 
     <!-- MAIN CONTENT -->
     <div class="main">
+        @if(auth()->user()->role === 'super_admin' && request()->is('admin/*'))
+        <div style="background:#fff;border-left:4px solid #dc2626;padding:16px;margin-bottom:20px;border-radius:10px;color:#0f172a">Read-only operational view. <a href="{{ route('governance.approvals') }}" style="color:#991b1b;font-weight:700">Review pending requests</a></div>
+        @endif
         @yield('content')
     </div>
 
@@ -793,5 +801,11 @@
         })();
     </script>
     @stack('scripts')
+@if(auth()->user()->role === 'super_admin' && request()->is('admin/*'))
+<script>
+document.querySelectorAll('form').forEach(form=>{if(form.method.toLowerCase()!=='get' && !form.action.endsWith('/logout')){form.hidden=true;form.querySelectorAll('input,button,select,textarea').forEach(el=>el.disabled=true);}});
+document.querySelectorAll('a[href$="/edit"],button[onclick*="Delete"],button[onclick*="Add"],button[onclick*="Create"]').forEach(el=>el.hidden=true);
+</script>
+@endif
 </body>
 </html>

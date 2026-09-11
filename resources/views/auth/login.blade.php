@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+@if(session('status'))<div role="status" style="position:relative;z-index:20;padding:18px;background:#ecfdf5;color:#065f46;text-align:center">{{ session('status') }}</div>@endif
 <!-- ========================================================================
      ELEGANT CINEMATIC LOGIN – AIR JORDAN 1 CHICAGO BULLS
      No hover/tilt disruptions, smooth input glow, refined aesthetics.

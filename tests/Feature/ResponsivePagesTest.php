@@ -38,7 +38,7 @@ it('renders admin pages without the runtime css compiler', function (string $pat
         ->assertSee('css/responsive.css', false)
         ->assertSee('js/responsive.js', false)
         ->assertDontSee('cdn.tailwindcss.com', false);
-})->with(['/admin/dashboard', '/admin/categories', '/admin/brands', '/admin/shoe-types', '/admin/products', '/admin/users/create-admin', '/admin/inventory', '/admin/orders', '/admin/users', '/admin/reports', '/admin/logs', '/admin/settings', '/admin/pos']);
+})->with(['/admin/dashboard', '/admin/categories', '/admin/brands', '/admin/shoe-types', '/admin/products', '/admin/inventory', '/admin/orders', '/admin/reports', '/admin/logs', '/admin/settings', '/admin/pos']);
 
 it('renders an existing address and its edit form with responsive styling', function () {
     $user = User::factory()->create(['role' => 'user', 'email_verified_at' => now()]);
@@ -52,4 +52,3 @@ it('renders an existing address and its edit form with responsive styling', func
     $this->get('/addresses/'.$address->address_id.'/edit')->assertOk()
         ->assertSee('css/responsive.css', false)->assertSee('p-4 sm:p-8', false);
 });
-

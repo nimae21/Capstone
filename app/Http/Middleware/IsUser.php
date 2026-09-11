@@ -10,8 +10,8 @@ class IsUser
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->check() && auth()->user()->role === 'admin') {
-        
+        if (auth()->check() && in_array(auth()->user()->role, ['admin', 'super_admin'], true)) {
+
             return redirect()->route('admin.dashboard');
         }
 

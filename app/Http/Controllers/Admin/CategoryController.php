@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
 use App\Models\Category;
+use App\Services\ApprovalService;
 use App\Traits\HasCaseInsensitiveUniqueName;
 use Illuminate\Http\Request;
 
@@ -18,7 +19,7 @@ class CategoryController extends Controller
         $query = Category::query();
 
         if ($request->filled('search')) {
-            $query->where('category_name', 'LIKE', '%' . trim($request->search) . '%');
+            $query->where('category_name', 'LIKE', '%'.trim($request->search).'%');
         }
 
         if ($request->filled('status')) {
@@ -28,38 +29,17 @@ class CategoryController extends Controller
         $categories = $query->orderBy('category_name')->paginate(10)->withQueryString();
 
         return view('admin.categories.index', [
-            'categories'         => $categories,
-            'totalCategories'    => Category::count(),
-            'activeCategories'   => Category::where('is_active', true)->count(),
+            'categories' => $categories,
+            'totalCategories' => Category::count(),
+            'activeCategories' => Category::where('is_active', true)->count(),
             'inactiveCategories' => Category::where('is_active', false)->count(),
         ]);
     }
 
     public function store(StoreCategoryRequest $request)
-{
-    $this->abortIfDuplicateName(
-        Category::class,
-        'category_name',
-        $request->category_name
-    );
-
-    $category = Category::create([
-        'category_name'        => $request->category_name,
-        'category_description' => $request->category_description,
-        'is_active'             => true,
-    ]);
-
-    if ($request->wantsJson()) {
-        return response()->json([
-            'id'   => $category->category_id,
-            'name' => $category->category_name,
-        ]);
+    {
+        return app(ApprovalService::class)->submit($request, 'category');
     }
-
-    return redirect()
-        ->route('admin.categories.index')
-        ->with('success', 'Category created successfully.');
-}
 
     public function edit(Category $category)
     {
@@ -77,7 +57,7 @@ class CategoryController extends Controller
         );
 
         $category->update([
-            'category_name'        => $request->category_name,
+            'category_name' => $request->category_name,
             'category_description' => $request->category_description,
         ]);
 

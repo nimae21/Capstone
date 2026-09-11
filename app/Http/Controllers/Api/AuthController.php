@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\AccountEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -11,17 +12,17 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email'    => 'required|email',
+            'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        if (! Auth::once(['email' => AccountEmail::storedAddress((string) $request->email), 'password' => $request->password, 'is_active' => true, 'role' => 'admin'])) {
             return response()->json(['message' => 'Invalid credentials.'], 401);
         }
 
         $user = Auth::user();
 
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             return response()->json(['message' => 'Unauthorized. Admin access only.'], 403);
         }
 
@@ -29,8 +30,8 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'user'  => [
-                'name'  => $user->full_name,
+            'user' => [
+                'name' => $user->full_name,
                 'email' => $user->email,
             ],
         ]);

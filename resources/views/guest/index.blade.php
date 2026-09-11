@@ -551,7 +551,7 @@
         <h1>ACHILLES</h1>
         <div class="tagline">wear your weakness</div>
         <p>Curated collection of authentic performance footwear. Trusted by champions, designed for your everyday greatness. Step into our store and experience the difference.</p>
-        <button type="button" data-auth class="btn-primary">Shop Now <i class="fas fa-arrow-right"></i></button>
+        <a href="{{ route('home') }}" class="btn-primary">Shop Now <i class="fas fa-arrow-right"></i></a>
     </div>
     <div class="hero-image reveal reveal-delay-1">
         <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600" alt="Achilles signature shoe">
@@ -588,18 +588,18 @@
 <div class="container">
     <h2 class="section-title reveal"><i class="fas fa-compass"></i> Shop by Category</h2>
     <div class="category-grid">
-        <div class="category-card reveal" data-auth role="button" tabindex="0" aria-label="Shop men">
+        <a class="category-card reveal" href="{{ route('men') }}" aria-label="Shop men">
             <img src="https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=600" alt="Men">
             <h3>MEN</h3>
-        </div>
-        <div class="category-card reveal reveal-delay-1" data-auth role="button" tabindex="0" aria-label="Shop women">
+        </a>
+        <a class="category-card reveal reveal-delay-1" href="{{ route('women') }}" aria-label="Shop women">
             <img src="https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600" alt="Women">
             <h3>WOMEN</h3>
-        </div>
-        <div class="category-card reveal reveal-delay-2" data-auth role="button" tabindex="0" aria-label="Shop kids">
+        </a>
+        <a class="category-card reveal reveal-delay-2" href="{{ route('kids') }}" aria-label="Shop kids">
             <img src="https://images.unsplash.com/photo-1514989940723-e8e51635b782?w=600" alt="Kids">
             <h3>KIDS</h3>
-        </div>
+        </a>
     </div>
 </div>
 
@@ -608,7 +608,7 @@
     <div class="featured-grid">
         @forelse ($products as $product)
             @php($image = $product->primaryImage ?? $product->images->first())
-            <button type="button" class="product-card reveal" data-auth aria-label="View {{ $product->product_name }}">
+            <a href="{{ route('product.show', $product->product_id) }}" class="product-card reveal" aria-label="View {{ $product->product_name }}">
                 @if ($image)
                     <img class="product-img" src="{{ $image->image_url }}" alt="{{ $product->product_name }}" loading="lazy">
                 @else
@@ -624,7 +624,7 @@
                     @endif
                 </span>
                 <span class="btn-card">View Shoe</span>
-            </button>
+            </a>
         @empty
             <p class="empty-bestsellers">Our best sellers are on their way. Check back soon to discover our customers' favorites.</p>
         @endforelse
@@ -651,9 +651,9 @@
         <div class="footer-col">
             <h5>EXPLORE</h5>
             <ul>
-                <li><a href="{{ route('login') }}" data-auth>Men's</a></li>
-                <li><a href="{{ route('login') }}" data-auth>Women's</a></li>
-                <li><a href="{{ route('login') }}" data-auth>Kids</a></li>
+                <li><a href="{{ route('men') }}">Men's</a></li>
+                <li><a href="{{ route('women') }}">Women's</a></li>
+                <li><a href="{{ route('kids') }}">Kids</a></li>
             </ul>
         </div>
         <div class="footer-col">
@@ -679,16 +679,7 @@
     </div>
 </footer>
 
-<dialog id="auth-modal" class="landing-modal" aria-labelledby="auth-title" aria-describedby="auth-description">
-    <button type="button" class="modal-close" data-close aria-label="Close">&times;</button>
-    <div class="modal-icon"><i class="fas fa-shoe-prints" aria-hidden="true"></i></div>
-    <h2 id="auth-title">Your next pair awaits</h2>
-    <p id="auth-description">Log in or create an account to explore our shoes, find your size, and shop with Achilles.</p>
-    <div class="modal-actions auth-buttons">
-        <a class="nav-link" href="{{ route('login') }}">Log In</a>
-        <a class="nav-link" href="{{ route('register') }}">Register</a>
-    </div>
-</dialog>
+
 <dialog id="info-modal" class="landing-modal" aria-labelledby="info-title">
     <button type="button" class="modal-close" data-close aria-label="Close">&times;</button>
     <span class="draft-label">Draft information</span>
@@ -719,7 +710,7 @@
 
         // Editable placeholder copy for footer information dialogs.
         const information = {
-            help: ['Help Center', 'After logging in, browse a category, choose a shoe, and check the available sizes before adding it to your cart.', 'For order questions, keep your order number ready. Store contact details and support hours will be added here.'],
+            help: ['Help Center', 'Browse a category, choose a shoe, and check the available sizes. Log in when you are ready to add it to your cart.', 'For order questions, keep your order number ready. Store contact details and support hours will be added here.'],
             size: ['Size Guide', 'Measure each foot from heel to longest toe while standing and use the larger measurement.', 'Sizing varies by brand and model. Compare your measurement with the brand size chart before ordering. A detailed chart will be added here.'],
             authenticity: ['Authenticity Check', 'Review the product details, labels, stitching, and packaging. Keep your receipt and original packaging for follow-up questions.', 'Prepare your order number and clear photos when asking about a product. Our verification process and contact details will be added here.'],
             tracking: ['Track Order', 'Log in to the account used for your purchase and open My Orders to review your order status.', 'Courier tracking guidance will be added here. This popup does not look up an order.'],
@@ -730,27 +721,11 @@
             'x-twitter': ['Find us on X', 'Our official X profile link will be added here.'],
             tiktok: ['Find us on TikTok', 'Our official TikTok profile link will be added here. Follow Achilles for shoe videos and store updates.'],
         };
-        const authModal = document.getElementById('auth-modal');
         const infoModal = document.getElementById('info-modal');
         function openModal(modal) {
             modal.showModal();
             document.body.classList.add('modal-open');
         }
-        document.querySelectorAll('[data-auth]').forEach(trigger => {
-            trigger.setAttribute('aria-haspopup', 'dialog');
-            trigger.addEventListener('click', event => {
-                event.preventDefault();
-                openModal(authModal);
-            });
-            if (trigger.getAttribute('role') === 'button') {
-                trigger.addEventListener('keydown', event => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        trigger.click();
-                    }
-                });
-            }
-        });
         document.querySelectorAll('[data-info]').forEach(trigger => {
             trigger.setAttribute('aria-haspopup', 'dialog');
             trigger.addEventListener('click', event => {
@@ -775,5 +750,6 @@
         });
     })();
 </script>
+@include('partials.guest-auth-prompt')
 </body>
 </html>

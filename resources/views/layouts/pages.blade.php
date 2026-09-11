@@ -507,5 +507,6 @@
     </script>
 
     @stack('scripts')
+@include('partials.guest-auth-prompt')
 </body>
 </html>

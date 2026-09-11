@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\ApprovalService;
 use App\Services\ProductImageService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -35,39 +36,7 @@ class ProductVariantController extends Controller
      */
     public function store(Request $request, Product $product)
     {
-        $request->validate([
-            'size' => ['required', Rule::in(self::availableSizes())],
-            'color' => 'required|string|max:50',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
-        ]);
-
-        $color = ucwords(strtolower(trim($request->color)));
-
-        $exists = ProductVariant::where('product_id', $product->product_id)
-            ->where('size', $request->size)
-            ->where('color', $color)
-            ->exists();
-
-        if ($exists) {
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'color' => 'This color and size already exists for this product.',
-                ]);
-        }
-
-        $product->variants()->create([
-            'size' => $request->size,
-            'color' => $color,
-        ]);
-
-        if ($request->hasFile('image')) {
-            $this->imageService->storeMany($product, [$request->file('image')], $color);
-        }
-
-        return redirect()
-            ->route('admin.products.variants.index', $product->product_id)
-            ->with('success', 'Variant added successfully!');
+        return app(ApprovalService::class)->submit($request, 'variant', ['product_id' => $product->product_id]);
     }
 
     /**

@@ -1,11 +1,13 @@
-    <?php
+<?php
 
-    use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminOrderController;
-use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\GovernanceController;
 use App\Http\Controllers\Admin\InventoryController;
+use App\Http\Controllers\Admin\InvitationController;
 use App\Http\Controllers\Admin\PosController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductImageController;
@@ -13,6 +15,8 @@ use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ShoeTypeController;
 use App\Http\Controllers\Admin\StockController;
+use App\Http\Controllers\Auth\PendingRegistrationController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Guest\GuestController;
@@ -22,7 +26,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserAddressController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\ActivityLogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,12 +34,10 @@ use App\Http\Controllers\Admin\ActivityLogController;
 */
 // paymongo webhook route
 
-
 Route::post('/webhooks/paymongo', [PayMongoWebhookController::class, 'handle'])
     ->name('paymongo.webhook');
 // Landing page
 Route::get('/', [GuestController::class, 'index'])->name('index');
-
 
 /*
 |--------------------------------------------------------------------------
@@ -44,7 +45,12 @@ Route::get('/', [GuestController::class, 'index'])->name('index');
 |--------------------------------------------------------------------------
 */
 
-Auth::routes(['verify' => true]);
+Auth::routes(['verify' => true, 'register' => false]);
+Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->middleware('guest')->name('register');
+Route::post('/register', [PendingRegistrationController::class, 'store'])->middleware(['guest', 'throttle:registration']);
+Route::get('/registration/verify/{token}', [PendingRegistrationController::class, 'verify'])->middleware('throttle:20,1')->where('token', '[A-Za-z0-9]{64}')->name('registration.verify');
+Route::get('/admin-invitations/{token}', [InvitationController::class, 'show'])->middleware('guest')->where('token', '[A-Za-z0-9]{64}')->name('invitation.show');
+Route::post('/admin-invitations/{token}', [InvitationController::class, 'accept'])->middleware(['guest', 'throttle:registration'])->where('token', '[A-Za-z0-9]{64}')->name('invitation.accept');
 
 /*
 |--------------------------------------------------------------------------
@@ -52,20 +58,21 @@ Auth::routes(['verify' => true]);
 |--------------------------------------------------------------------------
 */
 
+// Public catalog: authentication is required only for customer actions.
+
+// Pages
+Route::get('/product/{id}', [PageController::class, 'showProduct'])->name('product.show');
+Route::get('/home', [PageController::class, 'home'])->name('home');
+Route::get('/men', [PageController::class, 'men'])->name('men');
+Route::get('/women', [PageController::class, 'women'])->name('women');
+Route::get('/kids', [PageController::class, 'kids'])->name('kids');
+Route::get('/new', [PageController::class, 'new'])->name('new');
+Route::get('/search/suggestions', [PageController::class, 'searchSuggestions'])->middleware('throttle:60,1')->name('search.suggestions');
+Route::get('/search', [PageController::class, 'search'])->name('search');
+
+// All products listing (for back to shop button)
+Route::get('/products', [PageController::class, 'home'])->name('products.index');
 Route::middleware(['auth', 'verified', 'isUser'])->group(function () {
-
-    // Pages
-    Route::get('/product/{id}', [PageController::class, 'showProduct'])->name('product.show');
-    Route::get('/home', [PageController::class, 'home'])->name('home');
-    Route::get('/men', [PageController::class, 'men'])->name('men');
-    Route::get('/women', [PageController::class, 'women'])->name('women');
-    Route::get('/kids', [PageController::class, 'kids'])->name('kids');
-    Route::get('/new', [PageController::class, 'new'])->name('new');
-    Route::get('/search/suggestions', [PageController::class, 'searchSuggestions'])->middleware('throttle:60,1')->name('search.suggestions');
-    Route::get('/search', [PageController::class, 'search'])->name('search');
-
-    // All products listing (for back to shop button)
-    Route::get('/products', [PageController::class, 'home'])->name('products.index');
     Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
 
     /*
@@ -162,13 +169,12 @@ Route::middleware(['auth', 'admin'])
     ->name('admin.')
     ->group(function () {
 
-
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])
             ->name('dashboard');
 
         Route::view('/settings', 'admin.settings.index')->name('settings.index');
 
-        //logs
+        // logs
         Route::get('/logs', [ActivityLogController::class, 'index'])->name('logs.index');
         // Categories
         Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
@@ -213,8 +219,8 @@ Route::middleware(['auth', 'admin'])
         Route::patch('/product-images/{image}/primary', [ProductImageController::class, 'setPrimary'])
             ->name('products.images.primary');
 
-       Route::patch('/products/images/{image}/color', [ProductImageController::class, 'assignColor'])
-    ->name('products.images.assignColor');
+        Route::patch('/products/images/{image}/color', [ProductImageController::class, 'assignColor'])
+            ->name('products.images.assignColor');
 
         // Product Variants
         Route::get('/products/{product}/variants', [ProductVariantController::class, 'index'])
@@ -250,25 +256,6 @@ Route::middleware(['auth', 'admin'])
         Route::delete('/stocks/{stock}', [StockController::class, 'destroy'])
             ->name('stocks.destroy');
 
-        // Users Management
-        Route::get('/users', [AdminUserController::class, 'index'])
-            ->name('users.index');
-
-        Route::get('/users/create-admin', [AdminUserController::class, 'createAdmin'])
-            ->name('users.create-admin');
-
-        Route::post('/users/create-admin', [AdminUserController::class, 'storeAdmin'])
-            ->name('users.store-admin');
-
-        Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])
-            ->name('users.edit');
-
-        Route::put('/users/{user}', [AdminUserController::class, 'update'])
-            ->name('users.update');
-
-        Route::patch('/users/{user}/toggle-status', [AdminUserController::class, 'toggleStatus'])
-            ->name('users.toggle-status');
-
         // Orders Management
         Route::get('/orders', [AdminOrderController::class, 'index'])
             ->name('orders.index');
@@ -293,3 +280,12 @@ Route::middleware(['auth', 'admin'])
         Route::post('/pos/sale', [PosController::class, 'store'])->name('pos.store');
         Route::get('/pos/receipt/{order}', [PosController::class, 'receipt'])->name('pos.receipt');
     });
+
+Route::middleware(['auth', 'active', 'super_admin'])->prefix('governance')->group(function () {
+    Route::get('/approvals', [GovernanceController::class, 'index'])->name('governance.approvals');
+    Route::post('/approvals/review', [GovernanceController::class, 'review'])->middleware('throttle:30,1')->name('governance.review');
+    Route::get('/accounts', [GovernanceController::class, 'accounts'])->name('admin.users.index');
+    Route::patch('/accounts/{user}/status', [GovernanceController::class, 'status'])->name('admin.users.toggle-status');
+    Route::get('/invitations', [InvitationController::class, 'create'])->name('admin.users.create-admin');
+    Route::post('/invitations', [InvitationController::class, 'store'])->middleware('throttle:10,1')->name('admin.users.store-admin');
+});

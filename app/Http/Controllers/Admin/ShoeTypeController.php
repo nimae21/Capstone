@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreShoeTypeRequest;
 use App\Http\Requests\UpdateShoeTypeRequest;
 use App\Models\ShoeType;
+use App\Services\ApprovalService;
 use App\Traits\HasCaseInsensitiveUniqueName;
 
 class ShoeTypeController extends Controller
@@ -17,39 +18,17 @@ class ShoeTypeController extends Controller
         $shoeTypes = ShoeType::orderBy('display_order')->paginate(10)->withQueryString();
 
         return view('admin.shoe-types.index', [
-            'shoeTypes'     => $shoeTypes,
-            'totalTypes'    => ShoeType::count(),
-            'activeTypes'   => ShoeType::where('is_active', true)->count(),
+            'shoeTypes' => $shoeTypes,
+            'totalTypes' => ShoeType::count(),
+            'activeTypes' => ShoeType::where('is_active', true)->count(),
             'inactiveTypes' => ShoeType::where('is_active', false)->count(),
         ]);
     }
 
     public function store(StoreShoeTypeRequest $request)
-{
-    $this->abortIfDuplicateName(
-        ShoeType::class,
-        'shoe_type_name',
-        $request->shoe_type_name
-    );
-
-    $shoeType = ShoeType::create([
-        'shoe_type_name' => $request->shoe_type_name,
-        'description'    => $request->description,
-        'display_order'  => 0,
-        'is_active'      => true,
-    ]);
-
-    if ($request->wantsJson()) {
-        return response()->json([
-            'id'   => $shoeType->shoe_type_id,
-            'name' => $shoeType->shoe_type_name,
-        ]);
+    {
+        return app(ApprovalService::class)->submit($request, 'shoe_type');
     }
-
-    return redirect()
-        ->route('admin.shoe-types.index')
-        ->with('success', 'Shoe type created successfully.');
-}
 
     public function edit(ShoeType $shoeType)
     {
@@ -68,9 +47,9 @@ class ShoeTypeController extends Controller
 
         $shoeType->update([
             'shoe_type_name' => $request->shoe_type_name,
-            'description'    => $request->description,
-            'display_order'  => $request->display_order,
-            'is_active'      => $request->is_active,
+            'description' => $request->description,
+            'display_order' => $request->display_order,
+            'is_active' => $request->is_active,
         ]);
 
         return redirect()

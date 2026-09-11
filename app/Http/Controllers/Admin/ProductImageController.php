@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Services\ApprovalService;
 use App\Services\ProductImageService;
 use Illuminate\Http\Request;
 
@@ -16,14 +17,7 @@ class ProductImageController extends Controller
 
     public function store(Request $request, Product $product)
     {
-        $request->validate([
-            'images.*' => 'required|image|mimes:jpg,jpeg,png,webp,gif|max:5120',
-            'color' => 'nullable|string|max:50',
-        ]);
-
-        $this->imageService->storeMany($product, $request->file('images'), $request->color);
-
-        return back()->with('success', 'Images uploaded successfully.');
+        return app(ApprovalService::class)->submit($request, 'images', ['product_id' => $product->product_id]);
     }
 
     public function destroy(ProductImage $image)

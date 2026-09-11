@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBrandRequest;
 use App\Http\Requests\UpdateBrandRequest;
 use App\Models\Brand;
+use App\Services\ApprovalService;
 use App\Traits\HasCaseInsensitiveUniqueName;
 use Illuminate\Http\Request;
 
@@ -18,7 +19,7 @@ class BrandController extends Controller
         $query = Brand::query();
 
         if ($request->filled('search')) {
-            $query->where('brand_name', 'like', '%' . trim($request->search) . '%');
+            $query->where('brand_name', 'like', '%'.trim($request->search).'%');
         }
 
         if ($request->filled('status')) {
@@ -28,37 +29,17 @@ class BrandController extends Controller
         $brands = $query->orderBy('brand_name')->paginate(10)->withQueryString();
 
         return view('admin.brands.index', [
-            'brands'         => $brands,
-            'totalBrands'    => Brand::count(),
-            'activeBrands'   => Brand::where('is_active', true)->count(),
+            'brands' => $brands,
+            'totalBrands' => Brand::count(),
+            'activeBrands' => Brand::where('is_active', true)->count(),
             'inactiveBrands' => Brand::where('is_active', false)->count(),
         ]);
     }
 
     public function store(StoreBrandRequest $request)
-{
-    $this->abortIfDuplicateName(
-        Brand::class,
-        'brand_name',
-        $request->brand_name
-    );
-
-    $brand = Brand::create([
-        'brand_name' => $request->brand_name,
-        'is_active'  => true,
-    ]);
-
-    if ($request->wantsJson()) {
-        return response()->json([
-            'id'   => $brand->brand_id,
-            'name' => $brand->brand_name,
-        ]);
+    {
+        return app(ApprovalService::class)->submit($request, 'brand');
     }
-
-    return redirect()
-        ->route('admin.brands.index')
-        ->with('success', 'Brand created successfully!');
-}
 
     public function edit(Brand $brand)
     {

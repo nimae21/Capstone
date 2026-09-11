@@ -1,8 +1,13 @@
 <?php
 
+use App\Http\Middleware\ActiveAccount;
+use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\IsUser;
+use App\Http\Middleware\SuperAdmin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\HandleCors;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,12 +20,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
 
         $middleware->api(prepend: [
-            \Illuminate\Http\Middleware\HandleCors::class,
+            HandleCors::class,
         ]);
 
+        $middleware->web(append: [ActiveAccount::class]);
         $middleware->alias([
-            'admin'  => \App\Http\Middleware\AdminMiddleware::class,
-            'isUser' => \App\Http\Middleware\IsUser::class,
+            'active' => ActiveAccount::class,
+            'super_admin' => SuperAdmin::class,
+            'admin' => AdminMiddleware::class,
+            'isUser' => IsUser::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
@@ -28,5 +36,5 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(fn($request) => $request->is('api/*'));
+        $exceptions->shouldRenderJsonWhen(fn ($request) => $request->is('api/*'));
     })->create();

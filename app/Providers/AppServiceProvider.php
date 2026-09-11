@@ -2,12 +2,20 @@
 
 namespace App\Providers;
 
+use App\Listeners\LogAuthenticationActivity;
 use App\Models\Cart;
+use App\Models\Order;
+use App\Observers\MobileOrderObserver;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Auth\Events\{Login, Logout, Failed, Registered};
-use App\Listeners\LogAuthenticationActivity;
+use Illuminate\Validation\ValidationException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,11 +32,21 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \App\Models\Order::observe(\App\Observers\MobileOrderObserver::class);
+        RateLimiter::for('registration', function ($request) {
+            $error = fn () => throw ValidationException::withMessages(['email' => 'Too many attempts. Please wait a few minutes before trying again.']);
+
+            return [Limit::perMinute(3)->by('register-ip:'.$request->ip())->response($error),
+                Limit::perHour(10)->by('register-hour:'.$request->ip())->response($error),
+                Limit::perMinutes(10, 3)->by('register-email:'.hash('sha256', strtolower(trim((string) $request->email))))->response($error)];
+        });
+        RateLimiter::for('api-login', fn ($request) => [
+            Limit::perMinute(5)->by(hash('sha256', strtolower(trim((string) $request->email)).'|'.$request->ip())),
+            Limit::perMinute(30)->by('login-ip:'.$request->ip())]);
+        Order::observe(MobileOrderObserver::class);
         Event::listen(Login::class, [LogAuthenticationActivity::class, 'handleLogin']);
-    Event::listen(Logout::class, [LogAuthenticationActivity::class, 'handleLogout']);
-    Event::listen(Failed::class, [LogAuthenticationActivity::class, 'handleFailed']);
-    Event::listen(Registered::class, [LogAuthenticationActivity::class, 'handleRegistered']);
+        Event::listen(Logout::class, [LogAuthenticationActivity::class, 'handleLogout']);
+        Event::listen(Failed::class, [LogAuthenticationActivity::class, 'handleFailed']);
+        Event::listen(Registered::class, [LogAuthenticationActivity::class, 'handleRegistered']);
         View::composer('partials.customer-header', function ($view) {
             $cartCount = 0;
 
@@ -43,5 +61,4 @@ class AppServiceProvider extends ServiceProvider
             $view->with('cartCount', $cartCount);
         });
     }
-    
 }

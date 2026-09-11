@@ -998,10 +998,16 @@ function submitAddNew() {
     })
     .then(async res => {
         const data = await res.json();
+        if (res.status === 202 && data.pending) {
+            alert(data.message);
+            if (addNewActiveSelect) addNewActiveSelect.value = addNewActiveSelect.dataset.lastValue || '';
+            return;
+        }
         if (!res.ok) throw data;
         return data;
     })
     .then(data => {
+        if (!data) { closeAddNewModal(); return; }
         const option = document.createElement('option');
         option.value = data.id;
         option.textContent = data.name;

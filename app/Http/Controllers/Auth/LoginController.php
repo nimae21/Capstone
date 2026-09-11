@@ -3,15 +3,18 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\AccountEmail;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
-use App\Http\Controllers\PageController;
 use Illuminate\Http\Request;
+
 class LoginController extends Controller
 {
     use AuthenticatesUsers;
 
     protected $maxAttempts = 5;
+
     protected $decayMinutes = 1;
+
     /**
      * Where to redirect users after login.
      *
@@ -19,14 +22,15 @@ class LoginController extends Controller
      */
     protected function redirectTo()
     {
+        if (auth()->user()->role === 'super_admin') {
+            return '/governance/approvals';
+        }
         if (auth()->user()->role === 'admin') {
             return '/admin/dashboard';
         }
 
         return '/home';
     }
-
-    use AuthenticatesUsers;
 
     /**
      * Where to redirect users after login.
@@ -46,12 +50,17 @@ class LoginController extends Controller
         $this->middleware('auth')->only('logout');
     }
 
+    protected function throttleKey(Request $request)
+    {
+        return hash('sha256', strtolower(trim((string) $request->email)).'|'.$request->ip());
+    }
+
     protected function credentials(Request $request)
-{
-    return [
-        'email' => $request->email,
-        'password' => $request->password,
-        'is_active' => true,
-    ];
-}
+    {
+        return [
+            'email' => AccountEmail::storedAddress((string) $request->email),
+            'password' => $request->password,
+            'is_active' => true,
+        ];
+    }
 }

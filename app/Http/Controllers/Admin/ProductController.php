@@ -8,9 +8,9 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\ShoeType;
+use App\Services\ApprovalService;
 use App\Services\ProductImageService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 
 class ProductController extends Controller
@@ -62,65 +62,7 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $request->merge([
-            'product_name' => ucwords(
-                strtolower(
-                    preg_replace('/\s+/', ' ', trim($request->product_name))
-                )
-            ),
-        ]);
-
-        $validated = $request->validate([
-            'product_name' => 'required|string|max:255',
-            'product_description' => 'nullable|string',
-            'new_arrival_until' => 'sometimes|nullable|date_format:Y-m-d',
-            'category_id' => 'required|exists:categories,category_id',
-            'brand_id' => 'required|exists:brands,brand_id',
-            'shoe_type_id' => 'required|exists:shoe_types,shoe_type_id',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-        ]);
-
-        if (array_key_exists('new_arrival_until', $validated)) {
-            $validated['new_arrival_until'] = $validated['new_arrival_until']
-                ? Carbon::parse($validated['new_arrival_until'])->endOfDay()
-                : null;
-        }
-
-        $exists = Product::whereRaw(
-            'LOWER(product_name)=?',
-            [strtolower($validated['product_name'])]
-        )->exists();
-
-        if ($exists) {
-            return back()
-                ->withErrors(['product_name' => 'This product already exists.'])
-                ->withInput();
-        }
-
-        try {
-            // Only pass the columns that actually belong to the products table
-            $product = Product::create([
-                ...Arr::only($validated, ['new_arrival_until']),
-                'product_name' => $validated['product_name'],
-                'product_description' => $validated['product_description'] ?? null,
-                'category_id' => $validated['category_id'],
-                'brand_id' => $validated['brand_id'],
-                'shoe_type_id' => $validated['shoe_type_id'],
-            ]);
-
-            if ($request->hasFile('images')) {
-                $this->imageService->storeMany($product, $request->file('images'));
-            }
-
-            return redirect()
-                ->route('admin.products.index')
-                ->with('success', "Product '{$product->product_name}' created successfully!");
-
-        } catch (\Exception $e) {
-            return back()
-                ->withInput()
-                ->with('error', 'Failed to create product: '.$e->getMessage());
-        }
+        return app(ApprovalService::class)->submit($request, 'product');
     }
 
     public function edit(Product $product)

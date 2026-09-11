@@ -5,9 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ProductVariant;
 use App\Models\Stock;
-use App\Models\StockMovement;
+use App\Services\ApprovalService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class StockController extends Controller
 {
@@ -31,32 +30,7 @@ class StockController extends Controller
 
     public function store(Request $request, ProductVariant $variant)
     {
-        $validated = $request->validate([
-            'received_quantity' => 'required|integer|min:1',
-            'price' => 'required|numeric|min:0.01',
-            'deliver_date' => 'required|date|before_or_equal:today',
-        ]);
-
-        DB::transaction(function () use ($validated, $variant) {
-
-            $stock = Stock::create([
-                'product_variant_id' => $variant->product_variant_id,
-                'received_quantity' => $validated['received_quantity'],
-                'remaining_quantity' => $validated['received_quantity'],
-                'price' => $validated['price'],
-                'deliver_date' => $validated['deliver_date'],
-            ]);
-
-            StockMovement::create([
-                'stock_id' => $stock->stock_id,
-                'quantity' => $validated['received_quantity'],
-                'type' => 'in',
-            ]);
-        });
-
-        return redirect()
-            ->route('admin.stocks.index', $variant)
-            ->with('success', 'Stock added successfully.');
+        return app(ApprovalService::class)->submit($request, 'stock', ['product_variant_id' => $variant->product_variant_id]);
     }
 
     public function edit(Stock $stock)

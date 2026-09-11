@@ -14,11 +14,14 @@ class AdminMiddleware
      * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
-{
-    if (! $request->user() || ! $request->user()->isAdmin()) {
-        abort(403, 'Unauthorized');
-    }
+    {
+        $user = $request->user();
+        $readOnly = $user?->role === 'super_admin' && $request->isMethod('GET')
+            && ! $request->is('api/*') && ! $request->is('admin/*/edit') && ! $request->is('admin/pos*');
+        if (! $user || ! $user->is_active || (! $user->isAdmin() && ! $readOnly)) {
+            abort(403, 'Unauthorized');
+        }
 
-    return $next($request);
-}
+        return $next($request);
+    }
 }
