@@ -14,7 +14,7 @@ Route::middleware(['api'])->group(function () {});
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:api-login');
 
 // Protected — admin only
-Route::middleware(['auth:sanctum', 'active', 'admin'])->group(function () {
+Route::middleware(['auth:sanctum', 'active', 'admin', 'throttle:authenticated_api'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Phone notifications (bound to the authenticated mobile token).
@@ -28,7 +28,7 @@ Route::middleware(['auth:sanctum', 'active', 'admin'])->group(function () {
     Route::get('/orders/{order}', [OrderController::class, 'show'])->whereNumber('order');
     Route::put('/orders/{order}/status', [OrderController::class, 'updateStatus'])->whereNumber('order');
     Route::get('/orders/pending', [OrderController::class, 'pending']);
-    Route::post('/orders/{order}/confirm', [OrderController::class, 'confirm']);
+    Route::post('/orders/{order}/confirm', [OrderController::class, 'confirm'])->whereNumber('order');
 
     // Analytics
     Route::get('/analytics', [AnalyticsController::class, 'index']);

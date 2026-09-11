@@ -57,9 +57,11 @@ class UserAddressController extends Controller
                 ->route('addresses.index')
                 ->with('success', 'Address added successfully!');
         } catch (\Exception $e) {
+            report($e);
+
             return back()
                 ->withInput()
-                ->with('error', 'Failed to add address: '.$e->getMessage());
+                ->with('error', 'The address could not be saved. Please try again.');
         }
     }
 
@@ -106,9 +108,11 @@ class UserAddressController extends Controller
                 ->route('addresses.index')
                 ->with('success', 'Address updated successfully!');
         } catch (\Exception $e) {
+            report($e);
+
             return back()
                 ->withInput()
-                ->with('error', 'Failed to update address: '.$e->getMessage());
+                ->with('error', 'The address could not be updated. Please try again.');
         }
     }
 
@@ -126,8 +130,10 @@ class UserAddressController extends Controller
                 ->route('addresses.index')
                 ->with('success', 'Address deleted successfully!');
         } catch (\Exception $e) {
+            report($e);
+
             return back()
-                ->with('error', 'Failed to delete address: '.$e->getMessage());
+                ->with('error', 'The address could not be deleted. Please try again.');
         }
     }
 
@@ -147,7 +153,9 @@ class UserAddressController extends Controller
 
             return back()->with('success', 'Default address updated!');
         } catch (\Exception $e) {
-            return back()->with('error', 'Failed to update default address: '.$e->getMessage());
+            report($e);
+
+            return back()->with('error', 'The default address could not be updated. Please try again.');
         }
     }
 }

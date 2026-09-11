@@ -343,7 +343,8 @@
 <div id="errorToast" class="fixed top-6 right-6 bg-red-50 border border-red-200 text-red-700 px-5 py-3 rounded-xl shadow-lg hidden z-50 max-w-sm"></div>
 
 <script>
-let cart = {}; // keyed by variantId
+let cart = {};
+let saleRequestId = crypto.randomUUID(); // keyed by variantId
 
 function addToCart(item) {
     if (cart[item.variantId]) {
@@ -437,8 +438,7 @@ function showError(message) {
 async function completeSale() {
     const items = Object.values(cart).map(item => ({
         product_variant_id: item.variantId,
-        quantity: item.quantity,
-        price: item.price
+        quantity: item.quantity
     }));
 
     const btn = document.getElementById('checkoutBtn');
@@ -452,7 +452,7 @@ async function completeSale() {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
             },
-            body: JSON.stringify({ items })
+            body: JSON.stringify({ request_id: saleRequestId, items })
         });
 
         const data = await response.json();
@@ -476,6 +476,7 @@ async function completeSale() {
 }
 
 function startNewSale() {
+    saleRequestId = crypto.randomUUID();
     clearCart();
     document.getElementById('saleSuccessModal').classList.add('hidden');
     document.getElementById('checkoutBtn').innerHTML = '<i class="fas fa-check-circle mr-2"></i> Complete Sale (Cash)';

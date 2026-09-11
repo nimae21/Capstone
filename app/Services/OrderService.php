@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\OrderStatus;
+use App\Enums\SaleType;
 use App\Exceptions\EmptyCartException;
 use App\Exceptions\InsufficientStockException;
 use App\Exceptions\InvalidOrderTransitionException;
@@ -11,11 +12,13 @@ use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
+use App\Models\ProductVariant;
 use App\Models\User;
-use App\Enums\SaleType;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Support\Str;
 
 class OrderService
 {
@@ -46,41 +49,50 @@ class OrderService
         }
 
         foreach ($cart->items as $item) {
-            if (!$this->stockService->hasStock($item->variant, $item->quantity)) {
+            if (! $item->variant?->is_active || ! $item->variant->product?->is_active
+                || $item->quantity < 1 || $item->quantity > 1000) {
+                throw new InsufficientStockException('One or more cart items are unavailable.');
+            }
+            if (! $this->stockService->hasStock($item->variant, $item->quantity)) {
                 throw new InsufficientStockException(
                     "Insufficient stock for {$item->variant->product->product_name} ({$item->variant->size}/{$item->variant->color})."
                 );
             }
+            $price = $this->stockService->currentPrice($item->variant);
+            if ($price <= 0) {
+                throw new InsufficientStockException('One or more cart items do not have a valid current price.');
+            }
+            $item->setAttribute('checkout_price', $price);
         }
 
         $address = $user->addresses()->findOrFail($addressId);
 
         return DB::transaction(function () use ($cart, $address) {
-            $total = $cart->items->sum(fn ($item) => $item->price * $item->quantity);
+            $total = $cart->items->sum(fn ($item) => $item->checkout_price * $item->quantity);
 
             $order = Order::create([
-                'user_id'        => $cart->user_id,
-                'sale_type'      => SaleType::Online,
-                'total_amount'   => $total,
-                'status'         => OrderStatus::Pending,
+                'user_id' => $cart->user_id,
+                'sale_type' => SaleType::Online,
+                'total_amount' => $total,
+                'status' => OrderStatus::Pending,
                 'payment_method' => null, // unknown until PayMongo confirms
-                'full_name'      => $address->full_name,
-                'phone_number'   => $address->phone_number,
-                'street'         => $address->street,
-                'barangay'       => $address->barangay,
-                'city'           => $address->city,
-                'province'       => $address->province,
-                'postal_code'    => $address->postal_code,
-                'latitude'       => $address->latitude,
-                'longitude'      => $address->longitude,
+                'full_name' => $address->full_name,
+                'phone_number' => $address->phone_number,
+                'street' => $address->street,
+                'barangay' => $address->barangay,
+                'city' => $address->city,
+                'province' => $address->province,
+                'postal_code' => $address->postal_code,
+                'latitude' => $address->latitude,
+                'longitude' => $address->longitude,
             ]);
 
             foreach ($cart->items as $item) {
                 OrderItem::create([
-                    'order_id'           => $order->order_id,
+                    'order_id' => $order->order_id,
                     'product_variant_id' => $item->product_variant_id,
-                    'quantity'           => $item->quantity,
-                    'price'              => $item->price,
+                    'quantity' => $item->quantity,
+                    'price' => $item->checkout_price,
                 ]);
             }
 
@@ -99,7 +111,7 @@ class OrderService
         ?int $amount = null,
         string $currency = 'PHP'
     ): void {
-        if (!str_starts_with($paymongoPaymentId, 'pay_')) {
+        if (! str_starts_with($paymongoPaymentId, 'pay_')) {
             throw new \RuntimeException('Missing PayMongo payment ID.');
         }
         $hint = Payment::forCheckoutSession($checkoutSessionId)->firstOrFail();
@@ -132,8 +144,10 @@ class OrderService
                 $payment->save();
                 if ($order->status === OrderStatus::Cancelled) {
                     $this->prepareRefund($order, $payment);
+
                     return $payment->getKey();
                 }
+
                 return null;
             }
 
@@ -141,7 +155,7 @@ class OrderService
                 throw new \RuntimeException('Unexpected order state during payment confirmation.');
             }
             // Cancelled orders are never fulfilled or charged stock by a late event.
-            if ($order->status === OrderStatus::Pending && !$payment->refund_status) {
+            if ($order->status === OrderStatus::Pending && ! $payment->refund_status) {
                 foreach ($order->items()->with('variant')->orderBy('product_variant_id')->get() as $item) {
                     $this->stockService->deduct($item->variant, $item->quantity, $item->order_item_id);
                 }
@@ -156,6 +170,7 @@ class OrderService
                 $order->status = OrderStatus::Cancelled;
                 $order->save();
                 $this->prepareRefund($order, $payment);
+
                 return $payment->getKey();
             }
 
@@ -163,6 +178,7 @@ class OrderService
             $order->save();
             $order->user->carts()->where('status', 0)->update(['status' => 1]);
             Log::info('PayMongo payment confirmed', $this->paymentContext($payment));
+
             return null;
         });
 
@@ -173,7 +189,7 @@ class OrderService
 
     public function markPaymentFailed(string $checkoutSessionId, string $status = 'failed'): void
     {
-        if (!in_array($status, ['failed', 'expired'], true)) {
+        if (! in_array($status, ['failed', 'expired'], true)) {
             throw new \InvalidArgumentException('Invalid unsuccessful payment status.');
         }
         $hint = Payment::forCheckoutSession($checkoutSessionId)->firstOrFail();
@@ -182,7 +198,7 @@ class OrderService
             $payment = Payment::whereKey($hint->getKey())->lockForUpdate()->firstOrFail();
             // An old failed attempt cannot overwrite its replacement or a paid order.
             if ($order->sale_type === SaleType::Online && $order->status === OrderStatus::Pending
-                && $payment->checkout_session_id === $checkoutSessionId && !$payment->refund_status
+                && $payment->checkout_session_id === $checkoutSessionId && ! $payment->refund_status
                 && in_array($payment->status, ['pending', 'failed', 'expired'], true)) {
                 $payment->update(['status' => $payment->status === 'expired' ? 'expired' : $status]);
                 Log::info('PayMongo payment attempt unsuccessful', array_merge(
@@ -196,7 +212,7 @@ class OrderService
     {
         $payment = $order->payment;
         if ($order->sale_type !== SaleType::Online || $order->status !== OrderStatus::Pending
-            || !$payment?->checkout_session_id || $payment->status === 'completed' || $payment->refund_status) {
+            || ! $payment?->checkout_session_id || $payment->status === 'completed' || $payment->refund_status) {
             return;
         }
         $session = $this->payMongoService->retrieveCheckoutSession($payment->checkout_session_id);
@@ -206,7 +222,7 @@ class OrderService
                 $paid['id'], $paid['attributes']['amount'], $paid['attributes']['currency']);
         } elseif (($session['attributes']['status'] ?? null) === 'expired') {
             $this->markPaymentFailed($session['id'], 'expired');
-        } elseif (!empty($session['attributes']['payment_intent']['attributes']['last_payment_error'])
+        } elseif (! empty($session['attributes']['payment_intent']['attributes']['last_payment_error'])
             || collect($session['attributes']['payments'] ?? [])->contains(
                 fn ($attempt) => ($attempt['attributes']['status'] ?? null) === 'failed')) {
             $this->markPaymentFailed($session['id']);
@@ -219,8 +235,8 @@ class OrderService
             $current = Order::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
             $payment = $current->payment()->lockForUpdate()->first();
             if ($current->sale_type !== SaleType::Online || $current->status !== OrderStatus::Pending
-                || !$payment || $payment->refund_status
-                || !in_array($payment->status, ['pending', 'failed', 'expired'], true)) {
+                || ! $payment || $payment->refund_status
+                || ! in_array($payment->status, ['pending', 'failed', 'expired'], true)) {
                 throw new \RuntimeException('This order is not eligible for payment retry.');
             }
             // A repeated form submission must not expire a newly opened checkout.
@@ -232,19 +248,25 @@ class OrderService
                 if ($paid = $this->payMongoService->paidPayment($session)) {
                     $this->confirmPayment($session['id'], $paid['attributes']['source']['type'] ?? 'unknown',
                         $paid['id'], $paid['attributes']['amount'], $paid['attributes']['currency']);
+
                     return null;
                 }
             }
             foreach ($current->items()->with('variant.stocks')->get() as $item) {
-                if (!$this->stockService->hasStock($item->variant, $item->quantity)) {
+                if (! $this->stockService->hasStock($item->variant, $item->quantity)) {
                     throw new InsufficientStockException('An item is no longer in stock. Please contact support or cancel this order.');
                 }
             }
-            $session = $this->payMongoService->createCheckoutSession($current,
-                route('checkout.success', $current->order_id), route('checkout.cancel', $current->order_id));
+            $idempotencyKey = 'checkout-retry-'.$current->order_id.'-'.hash('sha256', $payment->checkout_session_id);
+            $session = $this->payMongoService->createCheckoutSession(
+                $current,
+                route('checkout.success', $current->order_id),
+                route('checkout.cancel', $current->order_id),
+                $idempotencyKey
+            );
             if ($session['id'] === $payment->checkout_session_id
                 || in_array($session['id'], $payment->previous_checkout_session_ids ?? [], true)
-                || (!empty($session['payment_intent_id']) && $session['payment_intent_id'] === $payment->paymongo_payment_intent_id)) {
+                || (! empty($session['payment_intent_id']) && $session['payment_intent_id'] === $payment->paymongo_payment_intent_id)) {
                 throw new \RuntimeException('PayMongo retry returned a previously used payment attempt.');
             }
             $previous = $payment->previous_checkout_session_ids ?? [];
@@ -261,6 +283,7 @@ class OrderService
                 'previous_checkout_session_id' => $expectedSessionId,
                 'payment_intent_id' => $payment->paymongo_payment_intent_id,
             ]));
+
             return $session['checkout_url'];
         });
     }
@@ -271,10 +294,10 @@ class OrderService
             $current = Order::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
             $payment = $current->payment()->lockForUpdate()->first();
             $alreadyCancelled = $current->status === OrderStatus::Cancelled;
-            if (!$alreadyCancelled && !$current->status->isCancellable()) {
+            if (! $alreadyCancelled && ! $current->status->isCancellable()) {
                 throw new OrderNotCancellableException("Order #{$current->order_id} can no longer be cancelled.");
             }
-            if ($current->sale_type === SaleType::Online && $current->status === OrderStatus::Paid && !$payment) {
+            if ($current->sale_type === SaleType::Online && $current->status === OrderStatus::Paid && ! $payment) {
                 throw new OrderNotCancellableException('The payment record is missing. Please verify payment before cancellation.');
             }
             $restoreStock = $current->status === OrderStatus::Paid;
@@ -290,13 +313,13 @@ class OrderService
                     if ($paid) {
                         $this->recordPaymentForCancellation($current, $payment, $paid);
                     }
-                } elseif ($payment->status === 'completed' && !$payment->paymongo_payment_id) {
-                    if (!$payment->checkout_session_id) {
+                } elseif ($payment->status === 'completed' && ! $payment->paymongo_payment_id) {
+                    if (! $payment->checkout_session_id) {
                         throw new OrderNotCancellableException('Payment needs manual verification before a refund can be requested.');
                     }
                     $session = $this->payMongoService->retrieveCheckoutSession($payment->checkout_session_id);
                     $paid = $this->payMongoService->paidPayment($session);
-                    if (!$paid) {
+                    if (! $paid) {
                         throw new OrderNotCancellableException('PayMongo has not confirmed this payment. Please verify it before cancelling.');
                     }
                     $this->recordPaymentForCancellation($current, $payment, $paid);
@@ -317,7 +340,7 @@ class OrderService
                     $this->stockService->restore($item);
                 }
             }
-            if (!$alreadyCancelled) {
+            if (! $alreadyCancelled) {
                 $current->update(['status' => OrderStatus::Cancelled]);
             }
             Log::info('Order cancellation recorded', $payment
@@ -330,6 +353,7 @@ class OrderService
         if ($refundPaymentId) {
             $this->requestRefund($refundPaymentId);
         }
+
         return $order->fresh('payment');
     }
 
@@ -359,7 +383,7 @@ class OrderService
         $payment->update([
             'refund_status' => 'pending',
             'refund_amount' => (int) round($order->total_amount * 100),
-            'refund_request_key' => (string) \Illuminate\Support\Str::uuid(),
+            'refund_request_key' => (string) Str::uuid(),
             'refund_requested_at' => now(),
             'refund_error' => null,
         ]);
@@ -376,9 +400,10 @@ class OrderService
             }
             // Provider keys expire after 24h. Never blindly submit an ambiguous
             // request after that window: it needs provider-side reconciliation.
-            if (!$payment->refund_requested_at || $payment->refund_requested_at->lte(now()->subHours(23))) {
+            if (! $payment->refund_requested_at || $payment->refund_requested_at->lte(now()->subHours(23))) {
                 $payment->update(['refund_error' => 'Refund outcome needs manual verification before another request.']);
                 Log::warning('PayMongo refund requires reconciliation', $this->paymentContext($payment));
+
                 return null;
             }
             try {
@@ -387,11 +412,12 @@ class OrderService
                     $payment->refund_request_key, $payment->order_id,
                 );
                 $this->applyRefund($payment, $refund);
+
                 return null;
             } catch (\Throwable $e) {
-                $status = $e instanceof \Illuminate\Http\Client\RequestException ? $e->response->status() : null;
+                $status = $e instanceof RequestException ? $e->response->status() : null;
                 $definitiveFailure = $status !== null && $status >= 400 && $status < 500
-                    && !in_array($status, [408, 409, 429], true);
+                    && ! in_array($status, [408, 409, 429], true);
                 $payment->update([
                     'refund_status' => $definitiveFailure ? 'failed' : 'pending',
                     'refund_error' => $definitiveFailure
@@ -401,6 +427,7 @@ class OrderService
                 Log::error('PayMongo refund request failed', array_merge($this->paymentContext($payment), [
                     'http_status' => $status, 'exception' => get_class($e),
                 ]));
+
                 // Commit the error state, then propagate transient failures for webhook retry.
                 return $definitiveFailure ? null : $e;
             }
@@ -413,7 +440,7 @@ class OrderService
     public function syncRefund(array $refund): void
     {
         $paymentId = $refund['attributes']['payment_id'] ?? null;
-        if (!$paymentId || !str_starts_with($refund['id'] ?? '', 'ref_')) {
+        if (! $paymentId || ! str_starts_with($refund['id'] ?? '', 'ref_')) {
             throw new \RuntimeException('Refund event is missing its payment or refund ID.');
         }
         $hint = Payment::where('paymongo_payment_id', $paymentId)->firstOrFail();
@@ -429,6 +456,7 @@ class OrderService
                 Log::warning('PayMongo partial/unmatched refund requires manual review', array_merge(
                     $this->paymentContext($payment), ['refund_id' => $refund['id']]
                 ));
+
                 return;
             }
             $this->applyRefund($payment, $refund);
@@ -438,7 +466,7 @@ class OrderService
     private function applyRefund(Payment $payment, array $refund): void
     {
         $attributes = $refund['attributes'] ?? [];
-        if (!str_starts_with($refund['id'] ?? '', 'ref_')
+        if (! str_starts_with($refund['id'] ?? '', 'ref_')
             || ($attributes['payment_id'] ?? null) !== $payment->paymongo_payment_id) {
             throw new \RuntimeException('Refund response does not match the payment.');
         }
@@ -446,6 +474,7 @@ class OrderService
             Log::warning('Additional PayMongo refund requires review', array_merge(
                 $this->paymentContext($payment), ['incoming_refund_id' => $refund['id']]
             ));
+
             return;
         }
         $status = match ($attributes['status'] ?? '') {
@@ -490,84 +519,143 @@ class OrderService
         if ($newStatus === OrderStatus::Cancelled) {
             return $this->cancel($order);
         }
+
         return DB::transaction(function () use ($order, $newStatus) {
             $current = Order::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
             $payment = $current->payment()->lockForUpdate()->first();
-            if (!$current->status->canTransitionTo($newStatus) || $payment?->refund_status) {
+            if (! $current->status->canTransitionTo($newStatus) || $payment?->refund_status) {
                 throw new InvalidOrderTransitionException(
                     "Cannot change order #{$current->order_id} from '{$current->status->label()}' to '{$newStatus->label()}'."
                 );
             }
             $current->update(['status' => $newStatus]);
+
             return $current->fresh();
         });
     }
+
     /**
- * Create and immediately complete a walk-in POS sale. Unlike web
- * checkout, this is synchronous and cash-only — no pending state,
- * no webhook. Stock is deducted immediately since payment is
- * confirmed at the point of sale.
- *
- * @param array $items [['product_variant_id' => int, 'quantity' => int, 'price' => float], ...]
- * @throws InsufficientStockException
- */
-public function createPosSale(array $items, User $cashier): Order
-{
-    if (empty($items)) {
-        throw new \InvalidArgumentException('Cannot create a sale with no items.');
-    }
-
-    return DB::transaction(function () use ($items, $cashier) {
-        $total = 0;
-
+     * Create and immediately complete a walk-in POS sale. Unlike web
+     * checkout, this is synchronous and cash-only — no pending state,
+     * no webhook. Stock is deducted immediately since payment is
+     * confirmed at the point of sale.
+     *
+     * @param  array  $items  [['product_variant_id' => int, 'quantity' => int], ...]
+     *
+     * @throws InsufficientStockException
+     */
+    public function createPosSale(array $items, User $cashier, string $requestId): Order
+    {
+        if (empty($items) || count($items) > 100 || ! Str::isUuid($requestId)) {
+            throw new \InvalidArgumentException('Invalid POS sale request.');
+        }
         foreach ($items as $item) {
-            $variant = \App\Models\ProductVariant::findOrFail($item['product_variant_id']);
+            if (! isset($item['product_variant_id'], $item['quantity'])
+                || filter_var($item['product_variant_id'], FILTER_VALIDATE_INT) === false
+                || filter_var($item['quantity'], FILTER_VALIDATE_INT) === false
+                || (int) $item['quantity'] < 1
+                || (int) $item['quantity'] > 1000) {
+                throw new \InvalidArgumentException('Invalid POS sale item.');
+            }
+        }
+        if ($cashier->role !== 'admin' || ! $cashier->is_active) {
+            throw new AuthorizationException('Only an active operational Admin can create POS sales.');
+        }
 
-            if (!$this->stockService->hasStock($variant, $item['quantity'])) {
-                throw new InsufficientStockException(
-                    "Insufficient stock for {$variant->product->product_name} ({$variant->size}/{$variant->color})."
-                );
+        return DB::transaction(function () use ($items, $cashier, $requestId) {
+            // Serialize retries of the same request across Railway instances.
+            if (DB::getDriverName() === 'pgsql') {
+                DB::select('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))', [$requestId]);
             }
 
-            $total += $item['price'] * $item['quantity'];
-        }
+            $existing = Order::where('pos_request_id', $requestId)->first();
+            if ($existing) {
+                if ((int) $existing->user_id !== (int) $cashier->id || $existing->sale_type !== SaleType::Pos) {
+                    throw new \RuntimeException('POS request identifier conflict.');
+                }
+                $existing->load('items.variant.product', 'payment');
+                $requestedItems = collect($items)->mapWithKeys(
+                    fn ($item) => [(int) $item['product_variant_id'] => (int) $item['quantity']]
+                )->sortKeys()->all();
+                $storedItems = $existing->items->mapWithKeys(
+                    fn ($item) => [(int) $item->product_variant_id => (int) $item->quantity]
+                )->sortKeys()->all();
+                if ($requestedItems !== $storedItems) {
+                    throw new \RuntimeException('POS request identifier conflict.');
+                }
 
-        $order = Order::create([
-            'user_id'        => $cashier->id,
-            'sale_type'      => SaleType::Pos,
-            'total_amount'   => $total,
-            'status'         => OrderStatus::Paid,
-            'payment_method' => 'cash_pos',
-            'full_name'      => 'Walk-in Customer',
-            'phone_number'   => 'N/A',
-            'street'         => 'In-Store Purchase',
-            'barangay'       => 'N/A',
-            'city'           => 'N/A',
-            'province'       => 'N/A',
-            'postal_code'    => 'N/A',
-        ]);
+                return $existing;
+            }
 
-        foreach ($items as $item) {
-            $variant = \App\Models\ProductVariant::findOrFail($item['product_variant_id']);
+            $variantIds = collect($items)->pluck('product_variant_id')->map(fn ($id) => (int) $id)->all();
+            $variants = ProductVariant::with('product')
+                ->whereIn('product_variant_id', $variantIds)
+                ->where('is_active', true)
+                ->orderBy('product_variant_id')
+                ->get()
+                ->keyBy('product_variant_id');
 
-            $orderItem = OrderItem::create([
-                'order_id'           => $order->order_id,
-                'product_variant_id' => $item['product_variant_id'],
-                'quantity'           => $item['quantity'],
-                'price'              => $item['price'],
+            if ($variants->count() !== count($variantIds) || $variants->contains(fn ($variant) => ! $variant->product?->is_active)) {
+                throw new \InvalidArgumentException('One or more POS items are unavailable.');
+            }
+
+            $pricedItems = [];
+            $total = 0.0;
+            foreach ($items as $item) {
+                $variant = $variants->get((int) $item['product_variant_id']);
+                $quantity = (int) $item['quantity'];
+                $price = $this->stockService->currentPrice($variant);
+
+                if ($price <= 0) {
+                    throw new \InvalidArgumentException('One or more POS items do not have a valid server price.');
+                }
+                if (! $this->stockService->hasStock($variant, $quantity)) {
+                    throw new InsufficientStockException(
+                        "Insufficient stock for {$variant->product->product_name} ({$variant->size}/{$variant->color})."
+                    );
+                }
+
+                $pricedItems[] = compact('variant', 'quantity', 'price');
+                $total += $price * $quantity;
+            }
+
+            $order = Order::create([
+                'user_id' => $cashier->id,
+                'sale_type' => SaleType::Pos,
+                'pos_request_id' => $requestId,
+                'total_amount' => round($total, 2),
+                'status' => OrderStatus::Completed,
+                'payment_method' => 'cash_pos',
+                'full_name' => 'Walk-in Customer',
+                'phone_number' => 'N/A',
+                'street' => 'In-Store Purchase',
+                'barangay' => 'N/A',
+                'city' => 'N/A',
+                'province' => 'N/A',
+                'postal_code' => 'N/A',
             ]);
 
-            $this->stockService->deduct($variant, $item['quantity'], $orderItem->order_item_id);
-        }
+            foreach ($pricedItems as $item) {
+                $variant = $item['variant'];
+                $orderItem = OrderItem::create([
+                    'order_id' => $order->order_id,
+                    'product_variant_id' => $variant->product_variant_id,
+                    'quantity' => $item['quantity'],
+                    'price' => $item['price'],
+                ]);
+                $this->stockService->deduct($variant, $item['quantity'], $orderItem->order_item_id);
+            }
 
-        Payment::create([
-            'order_id'     => $order->order_id,
-            'method'       => 'cash_pos',
-            'status'       => 'completed',
-            'payment_date' => now(),
-        ]);
+            Payment::create([
+                'order_id' => $order->order_id,
+                'method' => 'cash_pos',
+                'status' => 'completed',
+                'payment_date' => now(),
+            ]);
 
-        return $order->fresh('items.variant.product');
-    });
-}
+            Log::info('POS sale completed', ['order_id' => $order->order_id, 'cashier_id' => $cashier->id]);
+
+            return $order->fresh(['items.variant.product', 'payment']);
+        }, 3);
+    }
 }

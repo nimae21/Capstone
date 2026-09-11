@@ -1,14 +1,18 @@
 <?php
 
 use App\Enums\OrderStatus;
+use App\Exceptions\InvalidOrderTransitionException;
+use App\Exceptions\OrderNotCancellableException;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\OrderService;
 use App\Services\PayMongoService;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 beforeEach(function () {
     Http::preventStrayRequests();
@@ -42,6 +46,7 @@ function lifecycleOrder(string $saleType = 'online'): array
         'order_id' => $order->order_id, 'checkout_session_id' => 'cs_fixture',
         'method' => 'pending', 'status' => 'pending',
     ]);
+
     return compact('order', 'payment', 'stock', 'variant', 'user');
 }
 
@@ -71,6 +76,7 @@ function lifecycleWebhook($test, string $type, array $resource)
     $body = json_encode(['data' => ['id' => 'evt_fixture', 'attributes' => ['type' => $type, 'data' => $resource]]]);
     $timestamp = (string) time();
     $signature = hash_hmac('sha256', $timestamp.'.'.$body, 'whsec_fixture');
+
     return $test->call('POST', '/webhooks/paymongo', [], [], [], [
         'CONTENT_TYPE' => 'application/json', 'HTTP_PAYMONGO_SIGNATURE' => "t={$timestamp},te={$signature}",
     ], $body);
@@ -87,11 +93,12 @@ it('sends the online order snapshot as billing without changing it', function ()
         'data' => ['id' => 'cs_created', 'attributes' => ['checkout_url' => 'https://checkout.paymongo.com/test']],
     ])]);
     app(PayMongoService::class)->createCheckoutSession($f['order'], 'https://shop.test/success', 'https://shop.test/cancel');
-    Http::assertSent(fn ($r) => $r['data']['attributes']['billing'] === [
-        'name' => 'Snapshot Recipient', 'email' => $f['user']->email, 'phone' => '09171234567',
-        'address' => ['line1' => '123 Snapshot Street', 'line2' => 'Snapshot Barangay', 'city' => 'Quezon City',
-            'state' => 'Metro Manila', 'postal_code' => '1100', 'country' => 'PH'],
-    ]);
+    Http::assertSent(fn ($r) => $r->hasHeader('Idempotency-Key', 'checkout-order-'.$f['order']->order_id)
+        && $r['data']['attributes']['billing'] === [
+            'name' => 'Snapshot Recipient', 'email' => $f['user']->email, 'phone' => '09171234567',
+            'address' => ['line1' => '123 Snapshot Street', 'line2' => 'Snapshot Barangay', 'city' => 'Quezon City',
+                'state' => 'Metro Manila', 'postal_code' => '1100', 'country' => 'PH'],
+        ]);
 });
 
 it('saves the payment ID and deducts stock once across duplicate signed paid events', function () {
@@ -124,7 +131,7 @@ it('expires an unpaid session and cancels without changing stock', function () {
 it('does not cancel locally if unpaid session expiry cannot be verified', function () {
     $f = lifecycleOrder();
     Http::fake(['api.paymongo.com/v1/checkout_sessions/cs_fixture' => Http::response([], 503)]);
-    expect(fn () => app(OrderService::class)->cancel($f['order']))->toThrow(\Illuminate\Http\Client\RequestException::class);
+    expect(fn () => app(OrderService::class)->cancel($f['order']))->toThrow(RequestException::class);
     expect($f['order']->fresh()->status)->toBe(OrderStatus::Pending);
     expect(DB::table('stocks')->value('remaining_quantity'))->toBe(10);
 });
@@ -197,6 +204,7 @@ it('uses the same durable refund key after an uncertain network failure', functi
         if (count($keys) === 1) {
             throw new ConnectionException('Timed out');
         }
+
         return Http::response(['data' => lifecycleRefund('succeeded')]);
     }]);
     expect(fn () => app(OrderService::class)->cancel($f['order']))->toThrow(RuntimeException::class);
@@ -269,7 +277,7 @@ it('tracks an asynchronous failed refund and blocks fulfillment', function () {
     lifecycleWebhook($this, 'payment.refund.updated', lifecycleRefund('failed', 200))->assertOk();
     expect($f['payment']->fresh()->refund_label)->toBe('Refund failed');
     expect(fn () => app(OrderService::class)->updateStatus($f['order'], OrderStatus::Shipped))
-        ->toThrow(\App\Exceptions\InvalidOrderTransitionException::class);
+        ->toThrow(InvalidOrderTransitionException::class);
 });
 
 it('returns retryable failure for unknown payments and stock errors instead of acknowledging success', function () {
@@ -300,20 +308,22 @@ it('rejects invalid signatures without touching order state', function () {
     expect($f['order']->fresh()->status)->toBe(OrderStatus::Pending);
 });
 
-it('keeps POS creation and cash cancellation isolated from PayMongo', function () {
+it('keeps completed POS sales isolated from PayMongo and cancellation', function () {
     $f = lifecycleOrder();
+    $cashier = User::factory()->create(['role' => 'admin', 'is_active' => true]);
     $pos = app(OrderService::class)->createPosSale([
-        ['product_variant_id' => $f['variant'], 'quantity' => 2, 'price' => 500],
-    ], $f['user']);
+        ['product_variant_id' => $f['variant'], 'quantity' => 2],
+    ], $cashier, (string) Str::uuid());
     expect($pos->street)->toBe('In-Store Purchase');
     expect($pos->payment_method)->toBe('cash_pos');
-    app(OrderService::class)->cancel($pos);
-    app(OrderService::class)->cancel($pos);
-    expect($pos->fresh()->status)->toBe(OrderStatus::Cancelled);
-    expect($pos->fresh()->payment->refund_status)->toBeNull();
-    expect(DB::table('stocks')->value('remaining_quantity'))->toBe(10);
+    expect($pos->status)->toBe(OrderStatus::Completed);
+    expect(fn () => app(OrderService::class)->cancel($pos))
+        ->toThrow(OrderNotCancellableException::class);
+    expect($pos->fresh()->status)->toBe(OrderStatus::Completed);
+    expect($pos->fresh()->payment->status)->toBe('completed');
+    expect(DB::table('stocks')->value('remaining_quantity'))->toBe(8);
     Http::assertNothingSent();
-    $this->assertDatabaseCount('stock_movements', 2);
+    $this->assertDatabaseCount('stock_movements', 1);
 });
 
 it('renders refund state for customer and admin and removes the ordinary cancellation action', function () {
@@ -350,6 +360,7 @@ it('closes a checkout session created after the customer already cancelled the p
         'api.paymongo.com/v1/checkout_sessions' => function ($request) {
             $order = Order::findOrFail($request['data']['attributes']['reference_number']);
             app(OrderService::class)->cancel($order); // session request still in flight
+
             return Http::response(['data' => ['id' => 'cs_race',
                 'attributes' => ['checkout_url' => 'https://checkout.paymongo.com/cs_race']]]);
         },
@@ -390,7 +401,7 @@ it('requires verification when a paid online order has no payment record', funct
     $f['payment']->delete();
     $f['order']->update(['status' => 'paid']);
     expect(fn () => app(OrderService::class)->cancel($f['order']))
-        ->toThrow(\App\Exceptions\OrderNotCancellableException::class);
+        ->toThrow(OrderNotCancellableException::class);
     expect($f['order']->fresh()->status)->toBe(OrderStatus::Paid);
     Http::assertNothingSent();
 });
@@ -410,16 +421,16 @@ it('shows a retry for an uncertain refund and clears it after confirmation', fun
         ->assertSee('Refunded')->assertDontSee('Retry refund confirmation');
 });
 
-it('leaves POS address placeholders and order state unchanged when rendering refund views', function () {
+it('leaves completed POS address placeholders unchanged when rendering order views', function () {
     $f = lifecycleOrder();
+    $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
     $pos = app(OrderService::class)->createPosSale([
-        ['product_variant_id' => $f['variant'], 'quantity' => 1, 'price' => 500],
-    ], $f['user']);
-    $admin = User::factory()->create(['role' => 'admin']);
+        ['product_variant_id' => $f['variant'], 'quantity' => 1],
+    ], $admin, (string) Str::uuid());
     $this->actingAs($admin)->get('/admin/orders/'.$pos->order_id)->assertOk()
         ->assertDontSee('Refund pending')->assertDontSee('Retry refund confirmation');
     expect($pos->fresh()->city)->toBe('N/A');
-    expect($pos->fresh()->status)->toBe(OrderStatus::Paid);
+    expect($pos->fresh()->status)->toBe(OrderStatus::Completed);
     Http::assertNothingSent();
 });
 it('records documented payment.failed without changing order or stock', function () {
@@ -487,10 +498,11 @@ it('creates a fresh checkout for the same order and ignores a repeated retry for
             return false;
         }
         $attributes = $request['data']['attributes'];
-        return !isset($attributes['source'], $attributes['payment_intent'])
-            && !array_key_exists('source', $attributes)
-            && !array_key_exists('payment_intent_id', $attributes)
-            && !array_key_exists('checkout_url', $attributes);
+
+        return ! isset($attributes['source'], $attributes['payment_intent'])
+            && ! array_key_exists('source', $attributes)
+            && ! array_key_exists('payment_intent_id', $attributes)
+            && ! array_key_exists('checkout_url', $attributes);
     });
     $this->assertDatabaseCount('orders', 1);
     $this->assertDatabaseCount('payments', 1);

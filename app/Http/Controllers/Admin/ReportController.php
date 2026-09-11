@@ -11,6 +11,7 @@ use App\Models\ProductVariant;
 use App\Models\Stock;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -30,7 +31,7 @@ class ReportController extends Controller
         $pdf = Pdf::loadView('admin.reports.pdf', $data)
             ->setPaper('a4', 'portrait');
 
-        $filename = 'sales-report-' . ($data['selectedYear'] ?? now()->year) . '.pdf';
+        $filename = 'sales-report-'.($data['selectedYear'] ?? now()->year).'.pdf';
 
         return $pdf->download($filename);
     }
@@ -41,6 +42,10 @@ class ReportController extends Controller
      */
     private function gatherReportData(Request $request): array
     {
+        $filters = $request->validate([
+            'year' => ['nullable', 'integer', 'min:2000', 'max:'.(now()->year + 1)],
+        ]);
+
         $totalProducts = Product::count();
         $totalVariants = ProductVariant::count();
         $totalOrders = Order::count();
@@ -68,9 +73,9 @@ class ReportController extends Controller
         )?->total ?? 0;
 
         $salesByDate = Order::select(
-                DB::raw('DATE(created_at) as date'),
-                DB::raw('SUM(total_amount) as total_sales')
-            )
+            DB::raw('DATE(created_at) as date'),
+            DB::raw('SUM(total_amount) as total_sales')
+        )
             ->where('status', 'completed')
             ->groupBy('date')
             ->orderBy('date')
@@ -85,56 +90,56 @@ class ReportController extends Controller
             ->get();
 
         $bestSellingProducts = OrderItem::select(
-                'product_variant_id',
-                DB::raw('SUM(quantity) as total_sold')
-            )
+            'product_variant_id',
+            DB::raw('SUM(quantity) as total_sold')
+        )
             ->groupBy('product_variant_id')
             ->orderByDesc('total_sold')
             ->get();
 
-        $selectedYear = $request->input('year', now()->year);
+        $selectedYear = (int) ($filters['year'] ?? now()->year);
 
-       $monthlyTrend = Order::selectRaw('EXTRACT(MONTH FROM created_at) as month, SUM(total_amount) as total_sales')
-    ->where('status', 'completed')
-    ->whereYear('created_at', $selectedYear)
-    ->groupBy(DB::raw('EXTRACT(MONTH FROM created_at)'))
-    ->orderBy('month')
-    ->get()
-    ->keyBy('month');
+        $monthlyTrend = Order::selectRaw('EXTRACT(MONTH FROM created_at) as month, SUM(total_amount) as total_sales')
+            ->where('status', 'completed')
+            ->whereYear('created_at', $selectedYear)
+            ->groupBy(DB::raw('EXTRACT(MONTH FROM created_at)'))
+            ->orderBy('month')
+            ->get()
+            ->keyBy('month');
 
         $monthlyLabels = [];
         $monthlySalesData = [];
 
         for ($m = 1; $m <= 12; $m++) {
-            $monthlyLabels[] = \Carbon\Carbon::create()->month($m)->format('M');
+            $monthlyLabels[] = Carbon::create()->month($m)->format('M');
             $monthlySalesData[] = $monthlyTrend->get($m)?->total_sales ?? 0;
         }
 
         $yearlyTrend = Order::selectRaw('EXTRACT(YEAR FROM created_at) as year, SUM(total_amount) as total_sales')
-    ->where('status', 'completed')
-    ->groupBy(DB::raw('EXTRACT(YEAR FROM created_at)'))
-    ->orderBy('year')
-    ->get();
+            ->where('status', 'completed')
+            ->groupBy(DB::raw('EXTRACT(YEAR FROM created_at)'))
+            ->orderBy('year')
+            ->get();
 
-$availableYears = Order::selectRaw('DISTINCT EXTRACT(YEAR FROM created_at) as year')
-    ->orderByDesc('year')
-    ->pluck('year');
+        $availableYears = Order::selectRaw('DISTINCT EXTRACT(YEAR FROM created_at) as year')
+            ->orderByDesc('year')
+            ->pluck('year');
 
         $salesByProvince = Order::select(
-                'province',
-                DB::raw('COUNT(*) as order_count'),
-                DB::raw('SUM(total_amount) as total_sales')
-            )
+            'province',
+            DB::raw('COUNT(*) as order_count'),
+            DB::raw('SUM(total_amount) as total_sales')
+        )
             ->where('status', 'completed')
             ->groupBy('province')
             ->orderByDesc('order_count')
             ->get();
 
         $salesByCity = Order::select(
-                'city', 'province',
-                DB::raw('COUNT(*) as order_count'),
-                DB::raw('SUM(total_amount) as total_sales')
-            )
+            'city', 'province',
+            DB::raw('COUNT(*) as order_count'),
+            DB::raw('SUM(total_amount) as total_sales')
+        )
             ->where('status', 'completed')
             ->groupBy('city', 'province')
             ->orderByDesc('order_count')

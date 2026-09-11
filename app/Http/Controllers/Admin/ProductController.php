@@ -128,9 +128,11 @@ class ProductController extends Controller
                 ->with('success', 'Product updated successfully!');
 
         } catch (\Exception $e) {
+            report($e);
+
             return back()
                 ->withInput()
-                ->with('error', 'Failed to update product: '.$e->getMessage());
+                ->with('error', 'The product could not be updated. Please try again.');
         }
     }
 

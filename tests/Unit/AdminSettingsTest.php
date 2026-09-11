@@ -2,8 +2,8 @@
 
 namespace Tests\Unit;
 
-use App\Models\User;
 use App\Models\ActivityLog;
+use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Tests\TestCase;
 
@@ -22,6 +22,9 @@ class AdminSettingsTest extends TestCase
 
     public function test_log_view_shows_name_and_email_and_handles_system_events(): void
     {
+        $admin = new User(['first_name' => 'Admin', 'last_name' => 'User', 'email' => 'admin@example.com', 'role' => 'admin']);
+        $admin->id = 99;
+        $this->actingAs($admin);
         $user = new User(['first_name' => 'Alex', 'last_name' => 'Reyes', 'email' => 'alex@gmail.com']);
         $log = new ActivityLog(['action' => 'auth.login']);
         $log->created_at = now();

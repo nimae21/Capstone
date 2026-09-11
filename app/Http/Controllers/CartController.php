@@ -39,12 +39,15 @@ class CartController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'product_variant_id' => 'required|exists:product_variants,product_variant_id',
-            'quantity' => 'required|integer|min:1',
+        $validated = $request->validate([
+            'product_variant_id' => ['required', 'integer', 'exists:product_variants,product_variant_id'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:1000'],
         ]);
 
-        $variant = ProductVariant::with('product')->findOrFail($request->product_variant_id);
+        $variant = ProductVariant::with('product')
+            ->where('is_active', true)
+            ->whereHas('product', fn ($query) => $query->where('is_active', true))
+            ->findOrFail($validated['product_variant_id']);
 
         $availableStock = $this->stockService->availableQuantity($variant);
 
@@ -52,7 +55,7 @@ class CartController extends Controller
             return back()->with('error', 'This item is out of stock.');
         }
 
-        if ($request->quantity > $availableStock) {
+        if ($validated['quantity'] > $availableStock) {
             return back()->with('error', "Only {$availableStock} item(s) available.");
         }
 
@@ -67,7 +70,7 @@ class CartController extends Controller
 
         if ($item) {
 
-            $newQuantity = $item->quantity + $request->quantity;
+            $newQuantity = $item->quantity + $validated['quantity'];
 
             if ($newQuantity > $availableStock) {
                 return back()->with('error', "Only {$availableStock} item(s) available.");
@@ -82,7 +85,7 @@ class CartController extends Controller
             CartItem::create([
                 'cart_id' => $cart->cart_id,
                 'product_variant_id' => $variant->product_variant_id,
-                'quantity' => $request->quantity,
+                'quantity' => $validated['quantity'],
                 'price' => $this->stockService->currentPrice($variant),
             ]);
 

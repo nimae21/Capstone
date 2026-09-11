@@ -61,14 +61,14 @@ Route::post('/admin-invitations/{token}', [InvitationController::class, 'accept'
 // Public catalog: authentication is required only for customer actions.
 
 // Pages
-Route::get('/product/{id}', [PageController::class, 'showProduct'])->name('product.show');
+Route::get('/product/{id}', [PageController::class, 'showProduct'])->whereNumber('id')->name('product.show');
 Route::get('/home', [PageController::class, 'home'])->name('home');
 Route::get('/men', [PageController::class, 'men'])->name('men');
 Route::get('/women', [PageController::class, 'women'])->name('women');
 Route::get('/kids', [PageController::class, 'kids'])->name('kids');
 Route::get('/new', [PageController::class, 'new'])->name('new');
 Route::get('/search/suggestions', [PageController::class, 'searchSuggestions'])->middleware('throttle:60,1')->name('search.suggestions');
-Route::get('/search', [PageController::class, 'search'])->name('search');
+Route::get('/search', [PageController::class, 'search'])->middleware('throttle:public-search')->name('search');
 
 // All products listing (for back to shop button)
 Route::get('/products', [PageController::class, 'home'])->name('products.index');
@@ -100,9 +100,9 @@ Route::middleware(['auth', 'verified', 'isUser'])->group(function () {
     */
 
     Route::get('/checkout', [CheckoutController::class, 'checkout'])->name('checkout.index');
-    Route::post('/checkout/place-order', [CheckoutController::class, 'placeOrder'])->name('checkout.place-order');
-    Route::get('/checkout/{order}/success', [CheckoutController::class, 'success'])->name('checkout.success');
-    Route::get('/checkout/{order}/cancel', [CheckoutController::class, 'cancel'])->name('checkout.cancel');
+    Route::post('/checkout/place-order', [CheckoutController::class, 'placeOrder'])->middleware('throttle:6,1')->name('checkout.place-order');
+    Route::get('/checkout/{order}/success', [CheckoutController::class, 'success'])->whereNumber('order')->name('checkout.success');
+    Route::get('/checkout/{order}/cancel', [CheckoutController::class, 'cancel'])->whereNumber('order')->name('checkout.cancel');
 
     /*
     |--------------------------------------------------------------------------
@@ -111,9 +111,9 @@ Route::middleware(['auth', 'verified', 'isUser'])->group(function () {
     */
 
     Route::get('/orders', [CheckoutController::class, 'myOrders'])->name('orders.index');
-    Route::get('/orders/{id}', [CheckoutController::class, 'show'])->name('orders.show');
-    Route::post('/orders/{order}/retry-payment', [CheckoutController::class, 'retryPayment'])->middleware('throttle:6,1')->name('orders.retry-payment');
-    Route::put('/orders/{order}/cancel', [CheckoutController::class, 'cancelOrder'])->name('orders.cancel');
+    Route::get('/orders/{id}', [CheckoutController::class, 'show'])->whereNumber('id')->name('orders.show');
+    Route::post('/orders/{order}/retry-payment', [CheckoutController::class, 'retryPayment'])->middleware('throttle:6,1')->whereNumber('order')->name('orders.retry-payment');
+    Route::put('/orders/{order}/cancel', [CheckoutController::class, 'cancelOrder'])->whereNumber('order')->name('orders.cancel');
 
     /*
     |--------------------------------------------------------------------------
@@ -267,8 +267,8 @@ Route::middleware(['auth', 'admin'])
             ->name('orders.update-status');
 
         // reports
-        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
-        Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.export-pdf');
+        Route::get('/reports', [ReportController::class, 'index'])->middleware('throttle:expensive-admin')->name('reports.index');
+        Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->middleware('throttle:expensive-admin')->name('reports.export-pdf');
 
         // inventory routes
         Route::get('/inventory', [InventoryController::class, 'index'])
@@ -276,9 +276,9 @@ Route::middleware(['auth', 'admin'])
 
         // POS
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
-        Route::get('/pos/variant/{variant}', [PosController::class, 'variantInfo'])->name('pos.variant-info');
-        Route::post('/pos/sale', [PosController::class, 'store'])->name('pos.store');
-        Route::get('/pos/receipt/{order}', [PosController::class, 'receipt'])->name('pos.receipt');
+        Route::get('/pos/variant/{variant}', [PosController::class, 'variantInfo'])->whereNumber('variant')->name('pos.variant-info');
+        Route::post('/pos/sale', [PosController::class, 'store'])->middleware('throttle:30,1')->name('pos.store');
+        Route::get('/pos/receipt/{order}', [PosController::class, 'receipt'])->whereNumber('order')->name('pos.receipt');
     });
 
 Route::middleware(['auth', 'active', 'super_admin'])->prefix('governance')->group(function () {

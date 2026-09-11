@@ -25,6 +25,7 @@ class RecommendationClient
      */
     public function forUser(int $userId, int $limit = 8): Collection
     {
+        $limit = max(1, min(20, $limit));
         $cacheKey = "recommendations.user.{$userId}.{$limit}";
 
         return Cache::remember($cacheKey, now()->addSeconds(60), function () use ($userId, $limit): Collection {
@@ -40,10 +41,18 @@ class RecommendationClient
     private function fetchForUser(int $userId, int $limit): Collection
     {
         try {
+            $key = (string) config('services.recommendation.key');
+            if ($key === '') {
+                Log::warning('Recommendation service key is not configured.');
+
+                return collect();
+            }
+
             $response = Http::connectTimeout(1)->timeout(5)
-    ->get("{$this->baseUrl}/recommendations/{$userId}", [
-        'limit' => $limit,
-    ]);
+                ->withHeaders(['X-Recommendation-Key' => $key])
+                ->get("{$this->baseUrl}/recommendations/{$userId}", [
+                    'limit' => $limit,
+                ]);
 
             if ($response->failed()) {
                 Log::warning("Recommendation service returned an error for user {$userId}: ".$response->status());
@@ -76,7 +85,7 @@ class RecommendationClient
         } catch (\Throwable $e) {
             // Connection refused, timeout, DNS failure, etc. — the
             // Python service being unreachable should degrade silently.
-            Log::warning('Recommendation service unreachable: '.$e->getMessage());
+            Log::warning('Recommendation service unreachable.', ['exception' => get_class($e)]);
 
             return collect();
         }

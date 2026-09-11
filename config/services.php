@@ -14,10 +14,11 @@ return [
     |
     */
     'paymongo' => [
-    'secret_key'     => env('PAYMONGO_SECRET_KEY'),
-    'public_key'     => env('PAYMONGO_PUBLIC_KEY'),
-    'webhook_secret' => env('PAYMONGO_WEBHOOK_SECRET'),
-],
+        'secret_key' => env('PAYMONGO_SECRET_KEY'),
+        'public_key' => env('PAYMONGO_PUBLIC_KEY'),
+        'webhook_secret' => env('PAYMONGO_WEBHOOK_SECRET'),
+        'webhook_tolerance' => env('PAYMONGO_WEBHOOK_TOLERANCE', 300),
+    ],
 
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
@@ -41,7 +42,8 @@ return [
     ],
 
     'recommendation' => [
-    'url' => env('RECOMMENDATION_SERVICE_URL', 'http://127.0.0.1:5000'),
-],
+        'url' => env('RECOMMENDATION_SERVICE_URL', 'http://127.0.0.1:5000'),
+        'key' => env('RECOMMENDATION_SERVICE_KEY'),
+    ],
 
 ];

@@ -8,12 +8,24 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class MobilePushDevice extends Model
 {
-    protected $guarded = [];
+    protected $fillable = [
+        'installation_id', 'user_id', 'personal_access_token_id', 'token',
+        'token_hash', 'enabled', 'last_seen_at',
+    ];
+
     protected $hidden = ['token', 'token_hash'];
+
     protected $casts = ['token' => 'encrypted', 'enabled' => 'boolean', 'personal_access_token_id' => 'integer', 'last_seen_at' => 'datetime'];
 
-    public function user() { return $this->belongsTo(User::class); }
-    public function accessToken() { return $this->belongsTo(PersonalAccessToken::class, 'personal_access_token_id'); }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function accessToken()
+    {
+        return $this->belongsTo(PersonalAccessToken::class, 'personal_access_token_id');
+    }
 
     public function scopeEligible(Builder $query): Builder
     {

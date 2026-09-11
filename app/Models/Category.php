@@ -2,13 +2,20 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Traits\LogsActivity;
+use Illuminate\Support\Facades\Cache;
 
 class Category extends Model
 {
     use HasFactory, LogsActivity;
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => Cache::forget('catalog.filter-options.v1'));
+        static::deleted(fn () => Cache::forget('catalog.filter-options.v1'));
+    }
 
     protected $primaryKey = 'category_id';
 

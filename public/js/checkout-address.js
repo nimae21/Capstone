@@ -6,6 +6,7 @@
     const addressForm = document.getElementById('checkoutAddressForm');
     const formWarning = document.getElementById('checkoutAddressFormWarning');
     const saveButton = document.getElementById('saveCheckoutAddress');
+    const checkoutButton = checkout?.querySelector('button[type="submit"]');
     if (!checkout || !modal || !addressForm) return;
 
     openButton.addEventListener('click', () => {
@@ -24,7 +25,15 @@
             warning.hidden = false;
             warning.focus();
             warning.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            return;
         }
+        if (checkout.dataset.submitted === 'true') {
+            event.preventDefault();
+            return;
+        }
+        checkout.dataset.submitted = 'true';
+        checkoutButton.disabled = true;
+        checkoutButton.textContent = 'Starting secure payment...';
     });
     checkout.addEventListener('change', event => {
         if (event.target.name === 'address_id') warning.hidden = true;
@@ -53,6 +62,9 @@
     window.addEventListener('pageshow', () => {
         saveButton.disabled = false;
         saveButton.textContent = 'Save and use this address';
+        checkout.dataset.submitted = 'false';
+        checkoutButton.disabled = false;
+        checkoutButton.textContent = 'Complete Order';
     });
     if (modal.dataset.reopen === 'true') openButton.click();
 })();

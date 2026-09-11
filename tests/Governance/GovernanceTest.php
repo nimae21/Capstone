@@ -168,8 +168,9 @@ class GovernanceTest extends TestCase
             $this->post('/login', ['email' => 'no@example.test', 'password' => 'incorrect'])->assertSessionHasErrors('email');
         }
         $response = $this->postJson('/login', ['email' => 'NO@example.test', 'password' => 'incorrect']);
-        $response->assertRedirect()->assertSessionHasErrors('email');
-        $this->assertStringContainsString('Too many login attempts', session('errors')->first('email'));
+        $response->assertStatus(429)
+            ->assertJsonValidationErrors('email');
+        $this->assertStringContainsString('Too many login attempts', $response->json('errors.email.0'));
         for ($i = 0; $i < 5; $i++) {
             $this->postJson('/api/login', ['email' => 'api@example.test', 'password' => 'wrong'])->assertUnauthorized();
         }
@@ -282,7 +283,7 @@ class GovernanceTest extends TestCase
         $this->get('/admin-invitations/'.str_repeat('a', 64))->assertStatus(410);
         $this->post('/admin-invitations/'.str_repeat('a', 64), $this->registration())->assertStatus(410);
         $item = $this->proposal($admin);
-        $admin->update(['is_active' => false]);
+        $admin->forceFill(['is_active' => false])->save();
         $this->actingAs($super)->post(route('governance.review'), ['ids' => [$item->id], 'decision' => 'approved'])->assertSessionHas('review_errors');
         $this->assertSame('pending', $item->fresh()->status);
         $this->assertDatabaseCount('categories', 0);

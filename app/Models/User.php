@@ -5,19 +5,21 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
+use App\Traits\LogsActivity;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Traits\LogsActivity;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
+    protected $attributes = ['role' => 'user', 'is_active' => true];
+
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, LogsActivity, HasApiTokens;
+    use HasApiTokens, HasFactory, LogsActivity, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -31,8 +33,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'suffix',
         'email',
         'password',
-        'role',
-        'is_active',
         'terms_accepted_at',
     ];
 
@@ -54,6 +54,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'is_active' => 'boolean',
     ];
 
     public function addresses()

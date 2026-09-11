@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\User;
-use App\Models\UserAddress;
+use App\Services\OrderService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
@@ -27,6 +27,7 @@ beforeEach(function () {
         'brand_id' => $brand, 'shoe_type_id' => $type,
     ], 'product_id');
     $variant = DB::table('product_variants')->insertGetId(['product_id' => $product, 'size' => '9', 'color' => 'Black'], 'product_variant_id');
+    $this->variant = $variant;
     $cart = DB::table('carts')->insertGetId(['user_id' => $this->customer->id, 'status' => 0], 'cart_id');
     DB::table('cart_items')->insert(['cart_id' => $cart, 'product_variant_id' => $variant, 'quantity' => 2, 'price' => 2500]);
 });
@@ -38,7 +39,7 @@ it('shows add address and a visible warning when arriving from cart without addr
         ->assertSee('Please add a delivery address before completing your order.')
         ->assertSee('₱5,000.00')
         ->assertSee('name="return_to" value="checkout"', false);
-    $dom = new DOMDocument();
+    $dom = new DOMDocument;
     @$dom->loadHTML($response->getContent());
     $xpath = new DOMXPath($dom);
     expect($xpath->query('//form[@id="checkoutForm"]//button[@type="submit"]')->length)->toBe(1)
@@ -99,4 +100,23 @@ it('switches the default only when requested from the checkout modal', function 
         ->assertRedirect('/checkout');
     $this->assertFalse($old->fresh()->is_default);
     $this->assertSame(1, $this->customer->addresses()->where('is_default', true)->count());
+});
+it('reprices cart items from trusted stock when creating an order', function () {
+    DB::table('stocks')->insert([
+        'product_variant_id' => $this->variant,
+        'price' => 3000,
+        'received_quantity' => 5,
+        'remaining_quantity' => 5,
+        'deliver_date' => '2026-09-01',
+    ]);
+    DB::table('cart_items')->update(['price' => 1]);
+    $address = $this->customer->addresses()->create(checkoutAddressData());
+
+    $order = app(OrderService::class)->createPendingOrderFromCart(
+        $this->customer,
+        $address->address_id
+    );
+
+    expect((float) $order->total_amount)->toBe(6000.0)
+        ->and((float) $order->items->first()->price)->toBe(3000.0);
 });

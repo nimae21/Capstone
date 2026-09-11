@@ -59,7 +59,7 @@ class GovernanceController extends Controller
         DB::transaction(function () use ($request, $user, $data) {
             $target = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
             abort_unless($target->id !== $request->user()->id && in_array($target->role, ['user', 'admin'], true), 403, 'Only other customer and admin accounts can be suspended or restored.');
-            $target->update(['is_active' => (bool) $data['is_active']]);
+            $target->forceFill(['is_active' => (bool) $data['is_active']])->save();
             if (! $data['is_active']) {
                 $target->tokens()->delete();
             }

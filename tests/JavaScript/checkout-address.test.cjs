@@ -24,7 +24,8 @@ function setup(reopen = false) {
     modal.querySelectorAll = () => [close, cancel];
     const fields = Object.fromEntries(['region', 'province', 'city', 'barangay'].map(name => [name, {value: name}]));
     ids.checkoutAddressForm.elements = {namedItem: name => fields[name]};
-    ids.checkoutForm.querySelector = () => ids.checkoutForm.selected || null;
+    const checkoutButton = element();
+    ids.checkoutForm.querySelector = selector => selector === 'button[type="submit"]' ? checkoutButton : (ids.checkoutForm.selected || null);
     const window = element();
     vm.runInNewContext(source, {
         document: {getElementById: id => ids[id], dispatchEvent: event => events.push(event.type)},
@@ -35,7 +36,7 @@ function setup(reopen = false) {
         ids[id].listeners.submit(event);
         return event;
     }
-    return {ids, fields, modal, cancel, close, window, events, submit};
+    return {ids, fields, modal, cancel, close, checkoutButton, window, events, submit};
 }
 
 test('missing address prevents checkout and focuses a visible warning', () => {
@@ -86,4 +87,15 @@ test('valid save permits submission once and browser back restores the save butt
     assert.equal(h.submit('checkoutAddressForm').defaultPrevented, true);
     h.window.listeners.pageshow();
     assert.equal(h.ids.saveCheckoutAddress.disabled, false);
+});
+
+test('checkout submission is accepted once and browser back restores the button', () => {
+    const h = setup();
+    h.ids.checkoutForm.selected = {};
+    assert.equal(h.submit('checkoutForm').defaultPrevented, false);
+    assert.equal(h.checkoutButton.disabled, true);
+    assert.equal(h.submit('checkoutForm').defaultPrevented, true);
+    h.window.listeners.pageshow();
+    assert.equal(h.checkoutButton.disabled, false);
+    assert.equal(h.submit('checkoutForm').defaultPrevented, false);
 });

@@ -7,6 +7,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ProductSearchTest extends TestCase
@@ -62,7 +63,7 @@ class ProductSearchTest extends TestCase
         ]);
         $disk = \Mockery::mock();
         $disk->shouldReceive('url')->once()->with('primary.jpg')->andReturn('https://images.example/primary.jpg');
-        \Illuminate\Support\Facades\Storage::shouldReceive('disk')->with('supabase')->andReturn($disk);
+        Storage::shouldReceive('disk')->with('supabase')->andReturn($disk);
         DB::enableQueryLog();
         DB::flushQueryLog();
         $response = app(PageController::class)->searchSuggestions(Request::create('/search/suggestions', 'GET', ['q' => 'runner']));
@@ -96,9 +97,10 @@ class ProductSearchTest extends TestCase
         $this->assertSame(['Shoe 50%'], array_column($data['products'], 'name'));
         $this->assertNull($data['next_page']);
     }
-    public function test_suggestions_require_login_and_sale_route_is_removed(): void
+
+    public function test_suggestions_are_public_and_sale_route_is_removed(): void
     {
-        $this->getJson('/search/suggestions?q=runner')->assertRedirect(route('login'));
+        $this->getJson('/search/suggestions?q=runner')->assertOk();
         $this->get('/sale')->assertNotFound();
     }
 }

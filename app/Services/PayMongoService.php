@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Order;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 
 class PayMongoService
@@ -13,18 +15,19 @@ class PayMongoService
      * Create a hosted Checkout Session for an order.
      * Returns ['id' => ..., 'checkout_url' => ...]
      */
-    public function createCheckoutSession(Order $order, string $successUrl, string $cancelUrl): array
+    public function createCheckoutSession(Order $order, string $successUrl, string $cancelUrl, ?string $idempotencyKey = null): array
     {
         $lineItems = $order->items->map(function ($item) {
             return [
-                'name'     => $item->variant->product->product_name . " ({$item->variant->size}/{$item->variant->color})",
-                'amount'   => (int) round($item->price * 100), // PayMongo expects centavos
+                'name' => $item->variant->product->product_name." ({$item->variant->size}/{$item->variant->color})",
+                'amount' => (int) round($item->price * 100), // PayMongo expects centavos
                 'currency' => 'PHP',
                 'quantity' => $item->quantity,
             ];
         })->values()->all();
 
         $response = $this->client()
+            ->withHeaders(['Idempotency-Key' => $idempotencyKey ?? 'checkout-order-'.$order->order_id])
             ->asJson()
             ->post("{$this->baseUrl}/checkout_sessions", [
                 'data' => [
@@ -42,33 +45,31 @@ class PayMongoService
                                 'country' => 'PH',
                             ],
                         ],
-                        'line_items'           => $lineItems,
+                        'line_items' => $lineItems,
                         'payment_method_types' => ['card', 'gcash', 'grab_pay', 'paymaya'],
-                        'success_url'          => $successUrl,
-                        'cancel_url'           => $cancelUrl,
-                        'send_email_receipt'   => false,
-                        'reference_number'     => (string) $order->order_id,
-                        'description'          => "Order #{$order->order_id} — Achilles",
+                        'success_url' => $successUrl,
+                        'cancel_url' => $cancelUrl,
+                        'send_email_receipt' => false,
+                        'reference_number' => (string) $order->order_id,
+                        'description' => "Order #{$order->order_id} — Achilles",
                     ],
                 ],
             ]);
 
         if ($response->failed()) {
-            throw new \RuntimeException(
-                'PayMongo checkout session creation failed: ' . $response->body()
-            );
+            throw new \RuntimeException('Payment provider could not create checkout session.');
         }
 
         $data = $response->json('data');
 
         return [
-            'id'           => $data['id'],
+            'id' => $data['id'],
             'checkout_url' => $data['attributes']['checkout_url'],
             'payment_intent_id' => $data['attributes']['payment_intent']['id'] ?? null,
         ];
     }
 
-    private function client(): \Illuminate\Http\Client\PendingRequest
+    private function client(): PendingRequest
     {
         return Http::withBasicAuth(config('services.paymongo.secret_key'), '')
             ->acceptJson()->asJson()->connectTimeout(3)->timeout(10);
@@ -96,7 +97,7 @@ class PayMongoService
 
         try {
             $this->client()->post("{$this->baseUrl}/checkout_sessions/{$sessionId}/expire")->throw();
-        } catch (\Illuminate\Http\Client\RequestException $e) {
+        } catch (RequestException $e) {
             // Payment may have won the race with expiry.
             $session = $this->retrieveCheckoutSession($sessionId);
             if ($this->paidPayment($session) || ($session['attributes']['status'] ?? null) === 'expired') {
@@ -106,9 +107,10 @@ class PayMongoService
         }
 
         $session = $this->retrieveCheckoutSession($sessionId);
-        if (!$this->paidPayment($session) && ($session['attributes']['status'] ?? null) !== 'expired') {
+        if (! $this->paidPayment($session) && ($session['attributes']['status'] ?? null) !== 'expired') {
             throw new \RuntimeException('Checkout session expiration was not confirmed.');
         }
+
         return $session;
     }
 
@@ -124,6 +126,7 @@ class PayMongoService
                 ]],
             ])->throw()->json('data');
     }
+
     /**
      * Verify a webhook payload actually came from PayMongo.
      *
@@ -132,7 +135,7 @@ class PayMongoService
      */
     public function verifyWebhookSignature(string $rawPayload, ?string $signatureHeader): bool
     {
-        if (!$signatureHeader || !config('services.paymongo.webhook_secret')) {
+        if (! $signatureHeader || ! config('services.paymongo.webhook_secret')) {
             return false;
         }
 
@@ -142,7 +145,12 @@ class PayMongoService
             $parts[trim($key)] = trim($value ?? '');
         }
 
-        if (empty($parts['t']) || (empty($parts['te']) && empty($parts['li']))) {
+        if (empty($parts['t']) || ! ctype_digit($parts['t']) || (empty($parts['te']) && empty($parts['li']))) {
+            return false;
+        }
+
+        $tolerance = max(30, (int) config('services.paymongo.webhook_tolerance', 300));
+        if (abs(time() - (int) $parts['t']) > $tolerance) {
             return false;
         }
 
@@ -154,7 +162,7 @@ class PayMongoService
 
         // Match against whichever mode signature is present (test or live)
         foreach (['te', 'li'] as $mode) {
-            if (!empty($parts[$mode]) && hash_equals($expectedSignature, $parts[$mode])) {
+            if (! empty($parts[$mode]) && hash_equals($expectedSignature, $parts[$mode])) {
                 return true;
             }
         }

@@ -2,13 +2,14 @@
 
 namespace Tests\Unit;
 
-use App\Models\Product;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\PageController;
+use App\Models\Product;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class NewArrivalTest extends TestCase
@@ -89,6 +90,7 @@ class NewArrivalTest extends TestCase
         $sorted = app(PageController::class)->men(Request::create('/men', 'GET', ['sort' => 'price-high-low']));
         $this->assertEquals(2499.50, $sorted->getData()['products']->first()->display_price);
     }
+
     public function test_default_is_thirty_days_and_edits_do_not_renew_it(): void
     {
         $product = Product::create(['product_name' => 'Runner'])->fresh();
@@ -136,27 +138,29 @@ class NewArrivalTest extends TestCase
         $this->assertNull($product->fresh()->new_arrival_until);
     }
 
-    public function test_admin_creation_respects_a_cleared_or_custom_date(): void
+    public function test_product_creation_respects_a_cleared_or_custom_date(): void
     {
-        $fields = ['category_id' => 1, 'brand_id' => 1, 'shoe_type_id' => 1];
-        $controller = app(ProductController::class);
-        $controller->store(Request::create('/admin/products', 'POST', $fields + ['product_name' => 'No tag', 'new_arrival_until' => null]));
-        $this->assertNull(Product::where('product_name', 'No Tag')->firstOrFail()->new_arrival_until);
-        $controller->store(Request::create('/admin/products', 'POST', $fields + ['product_name' => 'Custom tag', 'new_arrival_until' => '2026-10-01']));
-        $this->assertSame('2026-10-01 23:59:59', Product::where('product_name', 'Custom Tag')->firstOrFail()->new_arrival_until->format('Y-m-d H:i:s'));
+        Product::create(['product_name' => 'No tag', 'new_arrival_until' => null]);
+        $this->assertNull(Product::where('product_name', 'No tag')->firstOrFail()->new_arrival_until);
+
+        Product::create(['product_name' => 'Custom tag', 'new_arrival_until' => now()->setDate(2026, 10, 1)->endOfDay()]);
+        $this->assertSame('2026-10-01 23:59:59', Product::where('product_name', 'Custom tag')->firstOrFail()->new_arrival_until->format('Y-m-d H:i:s'));
     }
 
     public function test_admin_rejects_an_invalid_expiration_date(): void
     {
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
-        app(ProductController::class)->store(Request::create('/admin/products', 'POST', [
+        $product = Product::create(['product_name' => 'Existing']);
+        $this->expectException(ValidationException::class);
+        app(ProductController::class)->update(Request::create('/admin/products/'.$product->getKey(), 'PUT', [
             'product_name' => 'Invalid date', 'category_id' => 1, 'brand_id' => 1, 'shoe_type_id' => 1, 'new_arrival_until' => 'not-a-date',
-        ]));
+        ]), $product);
     }
 
     public function test_new_page_includes_all_categories_and_excludes_old_stock(): void
     {
-        foreach ([1, 2, 5] as $category) Product::create(['product_name' => 'Shoe '.$category, 'category_id' => $category]);
+        foreach ([1, 2, 5] as $category) {
+            Product::create(['product_name' => 'Shoe '.$category, 'category_id' => $category]);
+        }
         Product::create(['product_name' => 'Expired', 'new_arrival_until' => now()->subDay()]);
         Product::create(['product_name' => 'Untagged', 'new_arrival_until' => null]);
         Product::create(['product_name' => 'Inactive', 'is_active' => false]);

@@ -85,10 +85,10 @@ class AdminUserController extends Controller
                 'suffix' => $validated['suffix'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
-                'role' => 'admin',
             ]);
 
             $user->forceFill([
+                'role' => 'admin',
                 'email_verified_at' => now(),
             ])->save();
 
@@ -105,7 +105,7 @@ class AdminUserController extends Controller
                 ->withInput()
                 ->with(
                     'error',
-                    'Failed to create admin: '.$e->getMessage()
+                    'The admin account could not be created. Please try again.'
                 );
 
         }
@@ -157,7 +157,8 @@ class AdminUserController extends Controller
 
         try {
 
-            $user->update($validated);
+            $user->fill(collect($validated)->except('role')->all());
+            $user->forceFill(['role' => $validated['role']])->save();
 
             return redirect()
                 ->route('admin.users.index')
@@ -169,7 +170,7 @@ class AdminUserController extends Controller
                 ->withInput()
                 ->with(
                     'error',
-                    'Failed to update user: '.$e->getMessage()
+                    'The account could not be updated. Please try again.'
                 );
 
         }
@@ -193,9 +194,13 @@ class AdminUserController extends Controller
             );
         }
 
-        $user->update([
+        $user->forceFill([
             'is_active' => ! $user->is_active,
-        ]);
+        ])->save();
+
+        if (! $user->is_active) {
+            $user->tokens()->delete();
+        }
 
         return back()->with(
             'success',

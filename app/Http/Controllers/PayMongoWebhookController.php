@@ -18,14 +18,18 @@ class PayMongoWebhookController extends Controller
     public function handle(Request $request)
     {
         $rawPayload = $request->getContent();
-        if (!$this->payMongoService->verifyWebhookSignature($rawPayload, $request->header('Paymongo-Signature'))) {
+        if (strlen($rawPayload) > 1048576) {
+            return response()->json(['message' => 'Webhook payload too large'], 413);
+        }
+        if (! $this->payMongoService->verifyWebhookSignature($rawPayload, $request->header('Paymongo-Signature'))) {
             Log::warning('PayMongo webhook: signature verification failed.');
+
             return response()->json(['message' => 'Invalid signature'], 401);
         }
         $event = json_decode($rawPayload, true);
         $eventType = $event['data']['attributes']['type'] ?? null;
         $resource = $event['data']['attributes']['data'] ?? null;
-        if (!is_string($eventType) || !is_array($resource)) {
+        if (! is_string($eventType) || ! is_array($resource)) {
             return response()->json(['message' => 'Invalid webhook payload'], 400);
         }
         $context = ['event_id' => $event['data']['id'] ?? null, 'event_type' => $eventType,
@@ -37,8 +41,8 @@ class PayMongoWebhookController extends Controller
                 $context['checkout_session_id'] = $sessionId;
                 $context['paymongo_payment_id'] = $paid['id'] ?? null;
                 $context['order_id'] = Payment::forCheckoutSession($sessionId)->value('order_id');
-                if (!str_starts_with($sessionId, 'cs_') || !$paid
-                    || !isset($paid['attributes']['amount'], $paid['attributes']['currency'])) {
+                if (! str_starts_with($sessionId, 'cs_') || ! $paid
+                    || ! isset($paid['attributes']['amount'], $paid['attributes']['currency'])) {
                     throw new \RuntimeException('Paid event is missing payment details.');
                 }
                 $this->orderService->confirmPayment(
@@ -68,11 +72,11 @@ class PayMongoWebhookController extends Controller
                 // Accept a refund resource, or refunds embedded in a payment resource.
                 $refunds = str_starts_with($resource['id'] ?? '', 'ref_')
                     ? [$resource] : ($resource['attributes']['refunds'] ?? []);
-                if (!$refunds) {
+                if (! $refunds) {
                     throw new \RuntimeException('Refund event contains no refund resource.');
                 }
                 foreach ($refunds as $refund) {
-                    if (!isset($refund['attributes'])) {
+                    if (! isset($refund['attributes'])) {
                         $refund = ['id' => $refund['id'] ?? null, 'attributes' => $refund];
                     }
                     $refund['attributes']['payment_id'] ??= str_starts_with($resource['id'] ?? '', 'pay_')
@@ -93,8 +97,10 @@ class PayMongoWebhookController extends Controller
                 'reason' => get_class($e) === \RuntimeException::class ? $e->getMessage() : null,
                 // No raw API response, billing data, or credentials in logs.
             ]));
+
             return response()->json(['message' => 'Payment processing temporarily unavailable'], 503);
         }
+
         return response()->json(['message' => 'OK']);
     }
 }

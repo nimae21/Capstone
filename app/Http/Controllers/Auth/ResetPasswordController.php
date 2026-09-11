@@ -26,4 +26,10 @@ class ResetPasswordController extends Controller
      * @var string
      */
     protected $redirectTo = '/home';
+
+    public function __construct()
+    {
+        $this->middleware('guest');
+        $this->middleware('throttle:10,1')->only('reset');
+    }
 }

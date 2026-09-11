@@ -5,15 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\ProductImage;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Cache;
 use App\Models\ShoeType;
 use App\Services\ActivityTrackingService;
 use App\Services\RecommendationClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-
+use Illuminate\Support\Facades\Cache;
 
 class PageController extends Controller
 {
@@ -32,43 +29,50 @@ class PageController extends Controller
      * Reusable, filterable product query for category pages.
      */
     private function getProductsByCategory(?int $categoryId, Request $request)
-{
-    $query = Product::with([
-        'brand:brand_id,brand_name',
-        'shoeType:shoe_type_id,shoe_type_name',
-        // Cards need only the first image. This limit is applied per product.
-        'images' => fn ($images) => $images
-            ->select('image_id', 'product_id', 'image_path', 'display_order')
-            ->orderBy('image_id')->limit(1),
-    ])
-        ->where('is_active', true)
-        ->withDisplayPrice();
+    {
+        $filters = $request->validate([
+            'brand' => ['nullable', 'integer', 'exists:brands,brand_id'],
+            'shoe_type' => ['nullable', 'integer', 'exists:shoe_types,shoe_type_id'],
+            'sort' => ['nullable', 'in:price-low-high,price-high-low'],
+            'page' => ['nullable', 'integer', 'min:1', 'max:1000'],
+        ]);
 
-    if ($categoryId === null) {
-        $query->newArrivals();
-    } else {
-        $query->where('category_id', $categoryId);
+        $query = Product::with([
+            'brand:brand_id,brand_name',
+            'shoeType:shoe_type_id,shoe_type_name',
+            // Cards need only the first image. This limit is applied per product.
+            'images' => fn ($images) => $images
+                ->select('image_id', 'product_id', 'image_path', 'display_order')
+                ->orderBy('image_id')->limit(1),
+        ])
+            ->where('is_active', true)
+            ->withDisplayPrice();
+
+        if ($categoryId === null) {
+            $query->newArrivals();
+        } else {
+            $query->where('category_id', $categoryId);
+        }
+
+        if (isset($filters['brand'])) {
+            $query->where('brand_id', $filters['brand']);
+        }
+
+        if (isset($filters['shoe_type'])) {
+            $query->where('shoe_type_id', $filters['shoe_type']);
+        }
+
+        if (isset($filters['sort'])) {
+            $direction = $filters['sort'] === 'price-low-high' ? 'asc' : 'desc';
+            $query->orderBy('display_price', $direction);
+        } elseif ($categoryId === null) {
+            $query->orderByDesc('products.created_at')->orderByDesc('products.product_id');
+        } else {
+            $query->orderBy('product_name');
+        }
+
+        return $query->paginate(9)->withQueryString();
     }
-
-    if ($request->filled('brand')) {
-        $query->where('brand_id', $request->brand);
-    }
-
-    if ($request->filled('shoe_type')) {
-        $query->where('shoe_type_id', $request->shoe_type);
-    }
-
-    if ($request->filled('sort') && in_array($request->sort, ['price-low-high', 'price-high-low'])) {
-        $direction = $request->sort === 'price-low-high' ? 'asc' : 'desc';
-        $query->orderBy('display_price', $direction);
-    } elseif ($categoryId === null) {
-        $query->orderByDesc('products.created_at')->orderByDesc('products.product_id');
-    } else {
-        $query->orderBy('product_name');
-    }
-
-    return $query->paginate(9)->withQueryString();
-}
 
     /**
      * Brands/shoe types relevant to filter dropdowns, scoped to what's
@@ -126,8 +130,10 @@ class PageController extends Controller
     public function showProduct($id)
     {
         $product = Product::with([
-            'images', 'category', 'brand', 'variants.stocks',
-        ])->findOrFail($id);
+            'images', 'category', 'brand',
+            'variants' => fn ($query) => $query->where('is_active', true)
+                ->with(['stocks' => fn ($stocks) => $stocks->where('is_archived', false)]),
+        ])->where('is_active', true)->findOrFail($id);
 
         if (auth()->check()) {
             $this->activityTracker->logView(auth()->user(), $product);
@@ -186,16 +192,23 @@ class PageController extends Controller
             'next_page' => $products->hasMorePages() ? $products->currentPage() + 1 : null,
         ]);
     }
+
     public function search(Request $request)
     {
-        $query = trim((string) $request->input('q'));
+        $validated = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+            'page' => ['nullable', 'integer', 'min:1', 'max:1000'],
+        ]);
+        $query = trim($validated['q'] ?? '');
 
         $products = collect();
 
         if ($query !== '') {
+            $term = mb_strtolower($query);
+            $pattern = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $term);
             $products = Product::with(['variants.stocks', 'images', 'brand', 'category', 'shoeType'])->withDisplayPrice()
                 ->where('is_active', true)
-                ->whereRaw('LOWER(product_name) LIKE ?', ['%'.strtolower($query).'%'])
+                ->whereRaw("LOWER(product_name) LIKE ? ESCAPE '!'", ['%'.$pattern.'%'])
                 ->orderBy('product_name')
                 ->paginate(12)
                 ->withQueryString();
