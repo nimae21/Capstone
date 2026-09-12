@@ -9,6 +9,7 @@ use App\Models\ApprovalRequest;
 use App\Models\User;
 use App\Services\AccountStatusService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
@@ -51,28 +52,56 @@ class UserController extends Controller
                 ->orWhere('last_name', 'like', '%'.$term.'%'));
         }
 
-        return response()->json($query->orderBy('id')->paginate(25)
-            ->through(fn (User $user) => $this->present($user)));
+        $page = $query->orderBy('id')->paginate(25)
+            ->through(fn (User $user) => $this->present($user))
+            ->toArray();
+
+        // Sent with the page so the app does not need a second request for badges.
+        return response()->json($page + ['counts' => $this->countsPayload()]);
     }
 
+    /**
+     * Badge numbers for the accounts tabs. Two round trips instead of eight,
+     * because the database is remote and each query costs real latency.
+     */
     public function counts()
     {
-        $base = fn () => User::query();
+        return response()->json($this->countsPayload());
+    }
 
-        return response()->json([
+    /** Badge numbers for the accounts tabs, in two round trips. */
+    private function countsPayload(): array
+    {
+        $accounts = User::query()->selectRaw(
+            "COALESCE(SUM(CASE WHEN role = 'user' THEN 1 ELSE 0 END), 0) as users_total,
+             COALESCE(SUM(CASE WHEN role = 'user' AND is_active = true THEN 1 ELSE 0 END), 0) as users_active,
+             COALESCE(SUM(CASE WHEN role = 'user' AND is_active = false THEN 1 ELSE 0 END), 0) as users_suspended,
+             COALESCE(SUM(CASE WHEN role = 'admin' THEN 1 ELSE 0 END), 0) as admins_total,
+             COALESCE(SUM(CASE WHEN role = 'admin' AND is_active = true THEN 1 ELSE 0 END), 0) as admins_active,
+             COALESCE(SUM(CASE WHEN role = 'admin' AND is_active = false THEN 1 ELSE 0 END), 0) as admins_suspended"
+        )->first();
+
+        $queues = DB::selectOne(
+            'select
+                (select count(*) from admin_invitations where accepted_at is null and expires_at > ?) as invitations_pending,
+                (select count(*) from approval_requests where status = ?) as approvals_pending',
+            [now(), 'pending']
+        );
+
+        return [
             'users' => [
-                'total' => $base()->where('role', 'user')->count(),
-                'active' => $base()->where('role', 'user')->where('is_active', true)->count(),
-                'suspended' => $base()->where('role', 'user')->where('is_active', false)->count(),
+                'total' => (int) $accounts->users_total,
+                'active' => (int) $accounts->users_active,
+                'suspended' => (int) $accounts->users_suspended,
             ],
             'admins' => [
-                'total' => $base()->where('role', 'admin')->count(),
-                'active' => $base()->where('role', 'admin')->where('is_active', true)->count(),
-                'suspended' => $base()->where('role', 'admin')->where('is_active', false)->count(),
+                'total' => (int) $accounts->admins_total,
+                'active' => (int) $accounts->admins_active,
+                'suspended' => (int) $accounts->admins_suspended,
             ],
-            'invitations_pending' => AdminInvitation::whereNull('accepted_at')->where('expires_at', '>', now())->count(),
-            'approvals_pending' => ApprovalRequest::where('status', 'pending')->count(),
-        ]);
+            'invitations_pending' => (int) $queues->invitations_pending,
+            'approvals_pending' => (int) $queues->approvals_pending,
+        ];
     }
 
     public function show(Request $request, User $user)

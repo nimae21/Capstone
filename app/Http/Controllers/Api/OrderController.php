@@ -46,9 +46,12 @@ class OrderController extends Controller
         }
 
         $orders = $query->orderByDesc('order_id')->paginate(20)
-            ->through(fn (Order $order) => OrderPresenter::summary($order));
+            ->through(fn (Order $order) => OrderPresenter::summary($order))
+            ->toArray();
 
-        return response()->json($orders);
+        // Shipped with the page: a second HTTP round trip costs ~6 queries of
+        // framework overhead, far more than this one aggregate.
+        return response()->json($orders + ['counts' => $this->statusCounts()]);
     }
 
     public function show(Order $order)
@@ -60,16 +63,28 @@ class OrderController extends Controller
 
     public function counts()
     {
-        $counts = Order::where('sale_type', 'online')
-            ->selectRaw('status, COUNT(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status');
+        return response()->json($this->statusCounts());
+    }
 
-        $result = ['all' => (int) $counts->sum()];
-        foreach (OrderStatus::cases() as $status) {
-            $result[$status->value] = (int) ($counts[$status->value] ?? 0);
-        }
+    /** One aggregate instead of one query per status. */
+    private function statusCounts(): array
+    {
+        $row = Order::query()->where('sale_type', 'online')->selectRaw(
+            "COUNT(*) as total,
+             COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) as pending,
+             COALESCE(SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END), 0) as paid,
+             COALESCE(SUM(CASE WHEN status = 'shipped' THEN 1 ELSE 0 END), 0) as shipped,
+             COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) as completed,
+             COALESCE(SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END), 0) as cancelled"
+        )->first();
 
-        return response()->json($result);
+        return [
+            'all' => (int) $row->total,
+            'pending' => (int) $row->pending,
+            'paid' => (int) $row->paid,
+            'shipped' => (int) $row->shipped,
+            'completed' => (int) $row->completed,
+            'cancelled' => (int) $row->cancelled,
+        ];
     }
 }

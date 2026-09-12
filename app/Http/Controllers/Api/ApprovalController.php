@@ -44,8 +44,11 @@ class ApprovalController extends Controller
             });
         }
 
-        return response()->json($query->orderByDesc('id')->paginate(20)
-            ->through(fn (ApprovalRequest $item) => $this->present($item)));
+        $page = $query->orderByDesc('id')->paginate(20)
+            ->through(fn (ApprovalRequest $item) => $this->present($item))
+            ->toArray();
+
+        return response()->json($page + ['counts' => $this->statusCounts()]);
     }
 
     public function show(ApprovalRequest $approval)
@@ -57,11 +60,22 @@ class ApprovalController extends Controller
 
     public function counts()
     {
-        return response()->json([
-            'pending' => ApprovalRequest::where('status', 'pending')->count(),
-            'approved' => ApprovalRequest::where('status', 'approved')->count(),
-            'rejected' => ApprovalRequest::where('status', 'rejected')->count(),
-        ]);
+        return response()->json($this->statusCounts());
+    }
+
+    private function statusCounts(): array
+    {
+        $row = ApprovalRequest::query()->selectRaw(
+            "COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) as pending,
+             COALESCE(SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END), 0) as approved,
+             COALESCE(SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END), 0) as rejected"
+        )->first();
+
+        return [
+            'pending' => (int) $row->pending,
+            'approved' => (int) $row->approved,
+            'rejected' => (int) $row->rejected,
+        ];
     }
 
     public function review(Request $request, ApprovalService $service)

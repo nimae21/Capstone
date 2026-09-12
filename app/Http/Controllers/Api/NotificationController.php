@@ -25,9 +25,13 @@ class NotificationController extends Controller
         }
 
         $notifications = $query->orderByDesc('created_at')->paginate(20)
-            ->through(fn (DatabaseNotification $n) => $this->present($n));
+            ->through(fn (DatabaseNotification $n) => $this->present($n))
+            ->toArray();
 
-        return response()->json($notifications);
+        // The unread badge ships with the list so the screen needs one request.
+        return response()->json($notifications + [
+            'counts' => ['unread' => $request->user()->unreadNotifications()->count()],
+        ]);
     }
 
     public function unreadCount(Request $request)

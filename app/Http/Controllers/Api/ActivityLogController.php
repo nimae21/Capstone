@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Support\ActivitySubjectLoader;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -51,29 +53,41 @@ class ActivityLogController extends Controller
             });
         }
 
-        return response()->json($query->orderByDesc('activity_log_id')->paginate(25)
-            ->through(fn (ActivityLog $log) => $this->present($log)));
+        $logs = $query->orderByDesc('activity_log_id')->paginate(25);
+
+        // The subject is a morphTo: resolving it per row would add one query
+        // per entry on a page of 25. Prime it in bulk instead.
+        ActivitySubjectLoader::prime($logs->getCollection());
+
+        return response()->json($logs->through(fn (ActivityLog $log) => $this->present($log)));
     }
 
     public function show(ActivityLog $log)
     {
-        return response()->json($this->present($log->load('user')));
+        $log->load('user');
+        ActivitySubjectLoader::prime([$log]);
+
+        return response()->json($this->present($log));
     }
 
     /** Filter options for the mobile audit-log screen. */
     public function filters()
     {
-        // Split in PHP: the distinct action list is tiny and this stays portable
-        // between the sqlite test database and the production Postgres database.
-        $actions = ActivityLog::query()->distinct()->orderBy('action')->pluck('action');
+        // Cached: this list only changes when a brand new action type is logged,
+        // and each request otherwise costs several remote round trips.
+        return response()->json(Cache::remember('mobile-log-filters', 300, function () {
+            // Split in PHP: the distinct action list is tiny and this stays
+            // portable between sqlite and the production Postgres database.
+            $actions = ActivityLog::query()->distinct()->orderBy('action')->pluck('action');
 
-        return response()->json([
-            'categories' => $actions->map(fn ($action) => Str::before((string) $action, '.'))->filter()->unique()->values(),
-            'events' => $actions->map(fn ($action) => Str::after((string) $action, '.'))->filter()->unique()->values(),
-            'users' => User::whereIn('id', ActivityLog::query()->select('user_id')->whereNotNull('user_id')->distinct())
-                ->orderBy('first_name')->take(100)->get()
-                ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->full_name, 'role' => $user->role]),
-        ]);
+            return [
+                'categories' => $actions->map(fn ($action) => Str::before((string) $action, '.'))->filter()->unique()->values(),
+                'events' => $actions->map(fn ($action) => Str::after((string) $action, '.'))->filter()->unique()->values(),
+                'users' => User::whereIn('id', ActivityLog::query()->select('user_id')->whereNotNull('user_id')->distinct())
+                    ->orderBy('first_name')->take(100)->get()
+                    ->map(fn (User $user) => ['id' => $user->id, 'name' => $user->full_name, 'role' => $user->role]),
+            ];
+        }));
     }
 
     private function present(ActivityLog $log): array

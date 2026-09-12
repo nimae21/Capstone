@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ActivityLog;
 use App\Models\AdminInvitation;
 use App\Models\ApprovalRequest;
 use App\Models\Brand;
@@ -8,6 +9,8 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\ApprovalService;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 
@@ -161,6 +164,72 @@ it('invites an admin through the existing invitation workflow', function () {
     $this->postJson('/api/admin-invitations', ['email' => $existing->email])->assertUnprocessable();
 });
 
+it('answers the dashboard within a small query budget', function () {
+    Sanctum::actingAs(superAdminUser());
+    superAdminOrder('paid');
+    superAdminOrder('completed');
+    Cache::flush();
+
+    DB::enableQueryLog();
+    $this->getJson('/api/dashboard?fresh=1')->assertOk()
+        ->assertJsonStructure(['badges' => ['unread_notifications', 'pending_approvals'], 'summary', 'sales_trend'])
+        ->assertJsonPath('badges.pending_approvals', 0);
+    $queries = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    // This screen used to run 48 sequential round trips against the remote
+    // database. The budget is what keeps that from creeping back in.
+    expect($queries)->toBeLessThan(16);
+});
+
+it('serves a cached dashboard unless fresh data is requested', function () {
+    Sanctum::actingAs(superAdminUser());
+    superAdminOrder('paid');
+    Cache::flush();
+
+    expect($this->getJson('/api/dashboard')->json('summary.orders_total'))->toBe(1);
+
+    superAdminOrder('paid');
+    // Cached: a new order is not visible until the cache expires...
+    expect($this->getJson('/api/dashboard')->json('summary.orders_total'))->toBe(1);
+    // ...but pull-to-refresh bypasses and re-warms it.
+    expect($this->getJson('/api/dashboard?fresh=1')->json('summary.orders_total'))->toBe(2);
+    expect($this->getJson('/api/dashboard')->json('summary.orders_total'))->toBe(2);
+});
+
+it('loads the audit trail without one query per row', function () {
+    Sanctum::actingAs(superAdminUser());
+    $order = superAdminOrder('paid');
+    foreach (range(1, 12) as $index) {
+        ActivityLog::create([
+            'user_id' => null,
+            'action' => 'order.updated',
+            'subject_type' => Order::class,
+            'subject_id' => $order->order_id,
+        ]);
+    }
+
+    DB::enableQueryLog();
+    $response = $this->getJson('/api/activity-logs')->assertOk()
+        ->assertJsonPath('data.0.subject', 'Buyer Name');
+    $queries = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    expect($response->json('total'))->toBeGreaterThanOrEqual(13);
+    expect($queries)->toBeLessThan(12);
+});
+
+it('answers the account badge counts in two round trips', function () {
+    Sanctum::actingAs(superAdminUser());
+    User::factory()->count(3)->create(['role' => 'user']);
+
+    DB::enableQueryLog();
+    $this->getJson('/api/users/counts')->assertOk()->assertJsonPath('users.total', 3);
+    $queries = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    expect($queries)->toBeLessThan(8);
+});
 it('filters the audit trail and exposes filter options', function () {
     $super = superAdminUser();
     Sanctum::actingAs($super);
