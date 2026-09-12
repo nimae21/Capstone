@@ -554,7 +554,7 @@
         <a href="{{ route('home') }}" class="btn-primary">Shop Now <i class="fas fa-arrow-right"></i></a>
     </div>
     <div class="hero-image reveal reveal-delay-1">
-        <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600" alt="Achilles signature shoe">
+        <x-hero-carousel />
     </div>
 </section>
 

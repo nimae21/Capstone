@@ -242,7 +242,7 @@
         </div>
     </div>
     <div class="hero-image">
-        <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600" alt="Achilles shoe">
+        <x-hero-carousel />
     </div>
 </div>
 
