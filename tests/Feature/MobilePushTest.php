@@ -1,12 +1,15 @@
 <?php
 
 use App\Enums\OrderStatus;
+use App\Models\ApprovalRequest;
 use App\Models\MobilePushDelivery;
 use App\Models\MobilePushDevice;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\User;
 use App\Services\FirebasePushSender;
 use App\Services\MobilePushOutbox;
+use App\Services\OrderService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -18,6 +21,7 @@ function pushLogin($test, ?User $user = null): array
     $token = $user->createToken('mobile-app');
     app('auth')->forgetGuards();
     $test->withToken($token->plainTextToken);
+
     return [$user, $token->accessToken];
 }
 
@@ -25,6 +29,7 @@ function pushRegister($test): MobilePushDevice
 {
     $id = (string) Str::uuid();
     $test->putJson('/api/push/device', ['installation_id' => $id, 'token' => 'test-fcm-token-'.Str::random(30)])->assertOk();
+
     return MobilePushDevice::where('installation_id', $id)->firstOrFail();
 }
 
@@ -41,7 +46,13 @@ function pushOrder(string $status = 'pending', string $saleType = 'online'): Ord
 beforeEach(function () {
     Http::preventStrayRequests();
     Cache::flush();
-    config(['mobile_push.enabled' => true, 'mobile_push.project_id' => 'achilles-test', 'mobile_push.credentials' => 'test-key.json']);
+    // accessToken() is stubbed below, so no credential is ever fetched here:
+    // the value only has to satisfy the sender's credential checks.
+    config([
+        'mobile_push.enabled' => true,
+        'mobile_push.project_id' => 'achilles-test',
+        'mobile_push.credentials_json' => json_encode(serviceAccountFixture()),
+    ]);
     $this->sender = Mockery::mock(FirebasePushSender::class)->makePartial()->shouldAllowMockingProtectedMethods();
     $this->sender->shouldReceive('configured')->andReturn(true);
     $this->sender->shouldReceive('accessToken')->andReturn('fake-oauth-token');
@@ -157,8 +168,8 @@ it('sends a paid-order alert once with a safe order link and no customer details
             && $request['message']['token'] === $device->token
             && $request['message']['android']['notification']['channel_id'] === 'orders'
             && $request['message']['data']['route'] === '/tabs/orders/'.$order->order_id
-            && !str_contains($request->body(), 'Private Recipient')
-            && !str_contains($request->body(), 'Private Street');
+            && ! str_contains($request->body(), 'Private Recipient')
+            && ! str_contains($request->body(), 'Private Street');
     });
     Http::assertSentCount(1);
     expect(MobilePushDelivery::where('kind', 'order_paid')->first()->status)->toBe('sent');
@@ -220,7 +231,7 @@ it('queues a test only for the requesting phone', function () {
 
 it('reports unconfigured Firebase honestly and refuses registration', function () {
     pushLogin($this);
-    $this->app->instance(FirebasePushSender::class, new FirebasePushSender());
+    $this->app->instance(FirebasePushSender::class, new FirebasePushSender);
     config(['mobile_push.enabled' => false]);
     $this->getJson('/api/push/status')->assertOk()->assertJsonPath('configured', false);
     $this->putJson('/api/push/device', ['installation_id' => (string) Str::uuid(), 'token' => str_repeat('a', 40)])->assertStatus(503);
@@ -256,4 +267,142 @@ it('does not let one super admin read another account notification', function ()
 
     pushLogin($this);
     $this->postJson('/api/notifications/'.$id.'/read')->assertNotFound();
+});
+
+it('reaches every phone the super admin is signed in on', function () {
+    [, $token] = pushLogin($this);
+    $phone = pushRegister($this);
+    $tablet = pushRegister($this);
+    expect($tablet->id)->not->toBe($phone->id)
+        ->and($tablet->personal_access_token_id)->toBe($token->id);
+
+    pushOrder()->update(['status' => 'paid']);
+
+    // One alert per registered device, all belonging to the same session.
+    expect(MobilePushDelivery::where('kind', 'order_paid')->count())->toBe(2);
+    expect(MobilePushDelivery::where('kind', 'order_paid')->pluck('device_id')->sort()->values()->all())
+        ->toBe(collect([$phone->id, $tablet->id])->sort()->values()->all());
+});
+
+it('summarises a batch of admin submissions instead of buzzing once per row', function () {
+    [$admin] = pushLogin($this);
+    pushRegister($this);
+    $requester = User::factory()->create(['role' => 'admin']);
+
+    foreach (range(1, 3) as $index) {
+        ApprovalRequest::create([
+            'requester_id' => $requester->id,
+            'entity_type' => 'category',
+            'payload' => ['category_name' => 'Batch '.$index],
+        ]);
+    }
+
+    // The in-app centre keeps every request...
+    $this->assertDatabaseCount('notifications', 3);
+    expect($admin->notifications()->count())->toBe(3);
+
+    // ...but the phone is told once, and tapping opens the whole queue.
+    $this->assertDatabaseCount('mobile_push_deliveries', 1);
+    $delivery = MobilePushDelivery::first();
+    expect($delivery->kind)->toBe('approval_submitted')
+        ->and($delivery->data['title'])->toBe('3 changes awaiting approval')
+        ->and($delivery->data['route'])->toBe('/tabs/approvals')
+        ->and($delivery->data['meta']['digest_count'])->toBe(3)
+        ->and($delivery->notification_id)->toBeNull();
+});
+
+it('never rewrites an alert that has already been sent', function () {
+    pushLogin($this);
+    pushRegister($this);
+    $requester = User::factory()->create(['role' => 'admin']);
+    $submit = fn (int $index) => ApprovalRequest::create([
+        'requester_id' => $requester->id,
+        'entity_type' => 'category',
+        'payload' => ['category_name' => 'After '.$index],
+    ]);
+
+    $submit(1);
+    $submit(2);
+    expect(MobilePushDelivery::count())->toBe(1);
+
+    MobilePushDelivery::first()->update(['status' => 'sent', 'sent_at' => now()]);
+    $submit(3);
+
+    // The delivered summary is untouched; the new request starts a fresh alert.
+    expect(MobilePushDelivery::count())->toBe(2);
+    expect(MobilePushDelivery::where('status', 'pending')->first()->data['title'])
+        ->toBe('Approval needed');
+    expect(MobilePushDelivery::where('status', 'sent')->first()->data['meta']['digest_count'])->toBe(2);
+});
+
+it('alerts the super admin when a refund completes and never twice for the same outcome', function () {
+    [$admin] = pushLogin($this);
+    pushRegister($this);
+
+    $order = pushOrder('paid');
+    $payment = Payment::create([
+        'order_id' => $order->order_id,
+        'checkout_session_id' => 'cs_refund_test',
+        'paymongo_payment_id' => 'pay_refund_test',
+        'method' => 'gcash',
+        'status' => 'completed',
+        'refund_status' => 'pending',
+        'refund_amount' => 250000,
+        'refund_request_key' => 'refund-key-test',
+        'refund_requested_at' => now(),
+    ]);
+    $refund = ['id' => 'ref_refund_test', 'attributes' => [
+        'payment_id' => 'pay_refund_test', 'amount' => 250000, 'status' => 'succeeded', 'updated_at' => 10,
+    ]];
+
+    app(OrderService::class)->syncRefund($refund);
+    // A replayed webhook must not alert the Super Admin a second time.
+    app(OrderService::class)->syncRefund($refund);
+
+    expect($payment->fresh()->refund_status)->toBe('refunded');
+    expect(MobilePushDelivery::where('kind', 'refund_completed')->count())->toBe(1);
+    expect($admin->notifications()->get()->map(fn ($row) => $row->data['title'] ?? null)->all())
+        ->toContain('Refund completed');
+});
+
+it('alerts the super admin when a refund fails', function () {
+    pushLogin($this);
+    pushRegister($this);
+
+    $order = pushOrder('paid');
+    $payment = Payment::create([
+        'order_id' => $order->order_id,
+        'checkout_session_id' => 'cs_refund_failed',
+        'paymongo_payment_id' => 'pay_refund_failed',
+        'method' => 'gcash',
+        'status' => 'completed',
+        'refund_status' => 'pending',
+        'refund_amount' => 250000,
+        'refund_request_key' => 'refund-key-failed',
+        'refund_requested_at' => now(),
+    ]);
+
+    app(OrderService::class)->syncRefund(['id' => 'ref_refund_failed', 'attributes' => [
+        'payment_id' => 'pay_refund_failed', 'amount' => 250000, 'status' => 'failed', 'updated_at' => 10,
+    ]]);
+
+    expect($payment->fresh()->refund_status)->toBe('failed');
+    expect(MobilePushDelivery::where('kind', 'refund_failed')->count())->toBe(1);
+});
+
+it('never delivers to a device whose account is no longer an active super admin', function () {
+    [$admin] = pushLogin($this);
+    pushRegister($this);
+    $order = pushOrder();
+    $order->update(['status' => 'paid']);
+    MobilePushDelivery::where('kind', 'order_placed')->update(['status' => 'skipped']);
+
+    // Demoted after registering: the queued alert must not reach the phone.
+    $admin->role = 'admin';
+    $admin->save();
+
+    Http::fake(['fcm.googleapis.com/*' => Http::response(['name' => 'projects/test/messages/1'])]);
+    expect(app(MobilePushOutbox::class)->deliverPending($this->sender))->toBe(0);
+    Http::assertNothingSent();
+    expect(MobilePushDelivery::where('kind', 'order_paid')->first()->status)->toBe('skipped');
 });

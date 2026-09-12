@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AdminInvitation;
 use App\Models\ApprovalRequest;
+use App\Models\Payment;
 use App\Models\User;
 use App\Notifications\SuperAdminAlert;
 use Illuminate\Notifications\DatabaseNotification;
@@ -119,6 +120,31 @@ class SuperAdminNotifier
     public function securityAlert(string $title, string $body, array $meta = []): void
     {
         $this->alert('security_alert', $title, $body, '/tabs/logs', $meta);
+    }
+
+    /**
+     * Money leaving the business is worth a phone alert, but only for the
+     * outcomes that need a decision: a completed or failed refund. Intermediate
+     * states stay in the payment record.
+     */
+    public function refundSynced(Payment $payment, string $status): void
+    {
+        $failed = $status === 'failed';
+        $amount = number_format(((int) $payment->refund_amount) / 100, 2);
+
+        $this->alert(
+            $failed ? 'refund_failed' : 'refund_completed',
+            $failed ? 'Refund failed' : 'Refund completed',
+            $failed
+                ? 'The refund for order #'.$payment->order_id.' could not be completed. Review the payment.'
+                : 'Order #'.$payment->order_id.' was refunded (PHP '.$amount.').',
+            '/tabs/orders/'.$payment->order_id,
+            [
+                'order_id' => (int) $payment->order_id,
+                'refund_status' => $status,
+                'refund_amount' => (int) $payment->refund_amount,
+            ],
+        );
     }
 
     private function proposedName(array $payload): ?string

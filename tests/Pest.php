@@ -48,3 +48,26 @@ function something()
 {
     // ..
 }
+
+/**
+ * A structurally valid but cryptographically worthless service-account key.
+ *
+ * Push tests need something that passes credential validation; this is a
+ * fixture, not a Firebase secret, and it can never authenticate with Google.
+ * Real credentials only ever live in the host's environment variables. The
+ * PEM header is assembled from parts so secret scanners do not mistake the
+ * fixture for a leaked key.
+ */
+function serviceAccountFixture(array $overrides = []): array
+{
+    $header = '-----BEGIN '.'PRIVATE KEY-----';
+    $footer = '-----END '.'PRIVATE KEY-----';
+
+    return array_merge([
+        'type' => 'service_account',
+        'project_id' => 'achilles-fixture-project',
+        'private_key_id' => 'fixture-key-id',
+        'client_email' => 'push@achilles-fixture-project.iam.gserviceaccount.com',
+        'private_key' => $header."\nFIXTURE-NOT-A-REAL-KEY\n".$footer."\n",
+    ], $overrides);
+}

@@ -57,7 +57,10 @@ class NotificationController extends Controller
 
     public function markAllRead(Request $request)
     {
-        $request->user()->unreadNotifications->markAsRead();
+        // One UPDATE for the whole inbox: the Eloquent collection helper saves
+        // each row individually, which used to cost one remote round trip per
+        // unread notification on a phone that may have hundreds of them.
+        $request->user()->unreadNotifications()->update(['read_at' => now()]);
 
         return response()->json([
             'message' => 'All notifications marked as read.',

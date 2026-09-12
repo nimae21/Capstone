@@ -12,6 +12,16 @@ use Illuminate\Support\Facades\Cache;
 class MobilePushOutbox
 {
     /**
+     * Kinds where one summary beats a burst of separate buzzes. Only alerts
+     * that have not been sent yet are folded together, so this can never
+     * rewrite a notification the Super Admin has already received.
+     */
+    private const DIGESTIBLE = ['approval_submitted', 'order_placed'];
+
+    /** How long a burst of the same kind keeps collecting in one alert. */
+    private const DIGEST_WINDOW_SECONDS = 60;
+
+    /**
      * Queue the paid-order alert for every registered Super Admin phone.
      * Kept as its own method because payment confirmation calls it directly.
      */
@@ -47,6 +57,10 @@ class MobilePushOutbox
             : $kind.':'.substr(hash('sha256', json_encode($payload)), 0, 48));
 
         MobilePushDevice::eligible()->each(function (MobilePushDevice $device) use ($payload, $notificationIds, $eventKey, $orderId, $kind) {
+            if ($this->foldIntoDigest($device, $kind)) {
+                return;
+            }
+
             MobilePushDelivery::firstOrCreate([
                 'device_id' => $device->id,
                 'personal_access_token_id' => $device->personal_access_token_id,
@@ -59,6 +73,64 @@ class MobilePushOutbox
                 'available_at' => now(),
             ]);
         });
+    }
+
+    /**
+     * An admin who submits a batch of changes - or a burst of orders landing
+     * together - should not send the Super Admin one buzz per row. When an
+     * alert of the same kind is still waiting to be sent, it is rewritten as a
+     * summary ("4 changes awaiting approval") instead of queueing another.
+     */
+    private function foldIntoDigest(MobilePushDevice $device, string $kind): bool
+    {
+        if (! in_array($kind, self::DIGESTIBLE, true)) {
+            return false;
+        }
+
+        $waiting = MobilePushDelivery::where('device_id', $device->id)
+            ->where('personal_access_token_id', $device->personal_access_token_id)
+            ->where('kind', $kind)
+            ->where('status', 'pending')
+            // A delivery that is being sent right now already carries its data.
+            ->whereNull('locked_at')
+            ->where('created_at', '>=', now()->subSeconds(self::DIGEST_WINDOW_SECONDS))
+            ->latest('id')
+            ->first();
+
+        if (! $waiting) {
+            return false;
+        }
+
+        $count = (int) ($waiting->data['meta']['digest_count'] ?? 1) + 1;
+        $waiting->update([
+            'data' => $this->digestPayload($kind, $count),
+            // A summary is not tied to one record, so tapping it opens the
+            // queue. The individual notifications stay unread in the app.
+            'notification_id' => null,
+            'available_at' => now(),
+        ]);
+
+        return true;
+    }
+
+    private function digestPayload(string $kind, int $count): array
+    {
+        return match ($kind) {
+            'approval_submitted' => [
+                'type' => $kind,
+                'title' => $count.' changes awaiting approval',
+                'body' => 'Admin submissions are queued for your review.',
+                'route' => '/tabs/approvals',
+                'meta' => ['digest_count' => $count],
+            ],
+            default => [
+                'type' => $kind,
+                'title' => $count.' new orders placed',
+                'body' => 'New online orders came in. Open the orders queue to review them.',
+                'route' => '/tabs/orders',
+                'meta' => ['digest_count' => $count],
+            ],
+        };
     }
 
     public function deliverPending(FirebasePushSender $sender): int
@@ -90,6 +162,7 @@ class MobilePushOutbox
                 || ($delivery->order_id && Order::whereKey($delivery->order_id)->where('status', OrderStatus::Paid)->exists());
             if (! $device || ! $stillRelevant || $delivery->created_at->lt(now()->subDay())) {
                 $delivery->update(['status' => 'skipped', 'locked_at' => null]);
+
                 continue;
             }
             $delivery->increment('attempts');

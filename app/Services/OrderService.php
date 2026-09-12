@@ -424,6 +424,9 @@ class OrderService
                         ? 'PayMongo rejected the refund. Please contact support for review.'
                         : 'Refund outcome is not confirmed. Retry safely or contact support.',
                 ]);
+                if ($definitiveFailure) {
+                    app(SuperAdminNotifier::class)->refundSynced($payment, 'failed');
+                }
                 Log::error('PayMongo refund request failed', array_merge($this->paymentContext($payment), [
                     'http_status' => $status, 'exception' => get_class($e),
                 ]));
@@ -492,6 +495,7 @@ class OrderService
             || ($payment->refund_status === 'failed' && $status === 'pending')) {
             return;
         }
+        $previousStatus = $payment->refund_status;
         $payment->update([
             'paymongo_refund_id' => $refund['id'],
             'refund_status' => $status,
@@ -499,6 +503,11 @@ class OrderService
             'refund_updated_at' => $updatedAt,
             'refund_error' => $status === 'failed' ? 'PayMongo could not complete the refund. Please contact support.' : null,
         ]);
+        // Only a real change of outcome is worth a phone alert, so a replayed
+        // refund webhook cannot notify the Super Admin twice.
+        if ($previousStatus !== $status && in_array($status, ['refunded', 'failed'], true)) {
+            app(SuperAdminNotifier::class)->refundSynced($payment, $status);
+        }
         Log::info('PayMongo refund state updated', array_merge(
             $this->paymentContext($payment), ['refund_status' => $status]
         ));
