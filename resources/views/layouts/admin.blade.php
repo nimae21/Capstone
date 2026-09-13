@@ -7,10 +7,9 @@
     <script src="{{ asset('js/admin-theme.js') . '?v=' . filemtime(public_path('js/admin-theme.js')) }}"></script>
     <title>@yield('title', 'Admin Dashboard') | Achilles</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite('resources/css/vendor-assets.css')
     <link rel="icon" type="image/png" href="{{ asset('images/achilles logo foot.png') }}?v=2">
     <!-- Google Fonts + Font Awesome -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     <style>
         * {

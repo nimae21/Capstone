@@ -6,10 +6,7 @@
 
 @section('styles')
     <!-- Tailwind CSS + Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    @vite('resources/js/chart-vendor.js')
     
     <style>
         * { font-family: 'Inter', sans-serif; }
@@ -742,6 +739,7 @@
         }
     });
 
+document.addEventListener('DOMContentLoaded', function() {
     // Monthly Trend Chart (bar)
 const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
 new Chart(monthlyCtx, {
@@ -816,5 +814,6 @@ if (yearlyData.length > 0) {
         }
     });
 }
+});
 </script>
 @endsection

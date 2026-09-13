@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AddressDataController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminOrderController;
@@ -73,6 +74,11 @@ Route::get('/search', [PageController::class, 'search'])->middleware('throttle:p
 // All products listing (for back to shop button)
 Route::get('/products', [PageController::class, 'home'])->name('products.index');
 Route::middleware(['auth', 'verified', 'isUser'])->group(function () {
+    Route::get('/address-data/barangays/{cityCode}', [AddressDataController::class, 'barangays'])
+        ->middleware('throttle:address-data')
+        ->where('cityCode', '[0-9]{6}')
+        ->name('address-data.barangays');
+
     Route::get('/recommendations/cards', [PageController::class, 'recommendations'])
         ->middleware('throttle:30,1')->name('recommendations.cards');
     Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');

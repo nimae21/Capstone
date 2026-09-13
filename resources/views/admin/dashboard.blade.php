@@ -6,10 +6,7 @@
 
 @section('styles')
     <!-- Tailwind CSS + Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js">
-    </script>
+    @vite('resources/js/chart-vendor.js')
 
     <style>
         * {

@@ -6,18 +6,11 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Achilles') }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite('resources/css/vendor-assets.css')
     <link rel="icon" type="image/png" href="{{ asset('images/achilles logo foot.png') }}">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
-    
-
-
-
-    <!-- Global Cinematic Styles -->
+<!-- Font Awesome -->
+<!-- Global Cinematic Styles -->
     <style>
         :root {
             --app-height: 100vh;

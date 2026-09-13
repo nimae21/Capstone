@@ -6,7 +6,7 @@
                         name="full_name" 
                         id="full_name"
                         placeholder="e.g., Juan Dela Cruz"
-                        value="{{ old('full_name') }}"
+                        value="{{ old('full_name', $address->full_name ?? '') }}"
                         required
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     >
@@ -23,7 +23,7 @@
                         name="phone_number" 
                         id="phone_number"
                         placeholder="e.g., +63 912 345 6789"
-                        value="{{ old('phone_number') }}"
+                        value="{{ old('phone_number', $address->phone_number ?? '') }}"
                         required
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     >
@@ -40,7 +40,7 @@
                         name="street" 
                         id="street"
                         placeholder="e.g., 123 Main Street"
-                        value="{{ old('street') }}"
+                        value="{{ old('street', $address->street ?? '') }}"
                         required
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     >
@@ -71,12 +71,12 @@
 <input
     type="hidden"
     name="latitude"
-    id="latitude" value="{{ old('latitude') }}">
+    id="latitude" value="{{ old('latitude', $address->latitude ?? '') }}">
 
 <input
     type="hidden"
     name="longitude"
-    id="longitude" value="{{ old('longitude') }}">
+    id="longitude" value="{{ old('longitude', $address->longitude ?? '') }}">
     <button
     type="button"
     id="findLocation"
@@ -91,7 +91,7 @@
             id="region"
             name="region"
             required
-            data-default="{{ old('region') }}"
+            data-default="{{ old('region', $address->region ?? '') }}"
             class="w-full px-4 py-2 border border-gray-300 rounded-lg">
             <option value="">Select Region</option>
         </select>
@@ -107,7 +107,7 @@
             name="province"
             id="province"
             required
-            data-default="{{ old('province') }}"
+            data-default="{{ old('province', $address->province ?? '') }}"
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
             <option value="">Select Province</option>
         </select>
@@ -123,7 +123,7 @@
             name="city"
             id="city"
             required
-            data-default="{{ old('city') }}"
+            data-default="{{ old('city', $address->city ?? '') }}"
             disabled
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
             <option value="">Select City/Municipality</option>
@@ -140,7 +140,8 @@
             name="barangay"
             id="barangay"
             required
-            data-default="{{ old('barangay') }}"
+            data-default="{{ old('barangay', $address->barangay ?? '') }}"
+            data-endpoint="{{ route('address-data.barangays', ['cityCode' => '__CITY__']) }}?v={{ config('address-data.version') }}"
             disabled
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
             <option value="">Select Barangay</option>
@@ -158,7 +159,7 @@
                         name="postal_code" 
                         id="postal_code"
                         placeholder="e.g., 1000"
-                        value="{{ old('postal_code') }}"
+                        value="{{ old('postal_code', $address->postal_code ?? '') }}"
                         required
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     >
@@ -174,7 +175,7 @@
                         name="is_default" 
                         id="is_default"
                         value="1"
-                        {{ old('is_default') ? 'checked' : '' }}
+                        {{ old('is_default', $address->is_default ?? false) ? 'checked' : '' }}
                         class="w-4 h-4 text-red-500 rounded focus:ring-2 focus:ring-red-500"
                     >
                     <label for="is_default" class="text-sm font-medium text-gray-700">

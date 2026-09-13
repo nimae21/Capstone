@@ -5,9 +5,7 @@
 @section('page-subtitle', 'Update shoe type details, order, and status.')
 
 @section('styles')
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <style>
+<style>
         * { font-family: 'Inter', sans-serif; }
         body { background: linear-gradient(145deg, #f0f4f8 0%, #e9eef3 100%); }
 

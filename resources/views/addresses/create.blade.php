@@ -5,11 +5,7 @@
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-2xl mx-auto">
-        <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
-        <!-- Header -->
+<!-- Header -->
         <div class="mb-8">
             <a href="{{ route('addresses.index') }}" class="text-red-500 hover:text-red-600 font-semibold mb-4 inline-block">
                 <i class="fas fa-arrow-left mr-2"></i> Back to Addresses
@@ -39,6 +35,5 @@
 </div>
 @endsection
 @push('scripts')
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="{{ asset('js/address-selector.js') }}?v={{ filemtime(public_path('js/address-selector.js')) }}"></script>
+@vite('resources/js/address-selector.js')
 @endpush

@@ -5,9 +5,6 @@
 @section('page-subtitle', 'A full audit trail of admin and customer account activity.')
 
 @section('styles')
-<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
 <style>
     * { font-family: 'Inter', sans-serif; }
     body { background: linear-gradient(145deg, #f0f4f8 0%, #e9eef3 100%); }

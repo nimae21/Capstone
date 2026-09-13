@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
-const source = fs.readFileSync('public/js/checkout-address.js', 'utf8');
+const source = fs.readFileSync('resources/js/checkout-address.js', 'utf8');
 
 function setup(reopen = false) {
     function element() {

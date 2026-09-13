@@ -179,12 +179,9 @@
 @endsection
 
 @section('styles')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="{{ asset('css/checkout.css') }}?v={{ filemtime(public_path('css/checkout.css')) }}">
+@vite('resources/css/checkout.css')
 @endsection
 
 @push('scripts')
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="{{ asset('js/address-selector.js') }}?v={{ filemtime(public_path('js/address-selector.js')) }}"></script>
-<script src="{{ asset('js/checkout-address.js') }}?v={{ filemtime(public_path('js/checkout-address.js')) }}"></script>
+@vite(['resources/js/address-selector.js', 'resources/js/checkout-address.js'])
 @endpush
