@@ -255,23 +255,27 @@
                 </div>
                 <label class="sr-only" for="variantColor">Choose color</label>
                 <select id="variantColor" class="input-premium sm:w-auto">
-                    @foreach($productVariants->groupBy('color') as $color => $colorVariants)
+                    @foreach($productVariants->getCollection()->groupBy('color') as $color => $colorVariants)
                         <option value="{{ $color }}" {{ (string) $color === (string) $variant->color ? 'selected' : '' }}>{{ $color }}</option>
                     @endforeach
                 </select>
             </div>
 
-            @foreach($productVariants->groupBy('color') as $color => $colorVariants)
+            @foreach($productVariants->getCollection()->groupBy('color') as $color => $colorVariants)
                 <div class="size-switcher" data-color="{{ $color }}" {{ (string) $color === (string) $variant->color ? '' : 'hidden' }}>
                     @foreach($colorVariants as $colorVariant)
-                        @php $availableStock = $colorVariant->stocks->sum('remaining_quantity'); @endphp
                         <a href="{{ route('admin.stocks.index', ['variant' => $colorVariant->product_variant_id, 'return_to' => request('return_to', route('admin.products.variants.index', $variant->product_id))]) }}" class="size-switcher-button {{ $colorVariant->product_variant_id === $variant->product_variant_id ? 'current' : '' }}" @if($colorVariant->product_variant_id === $variant->product_variant_id) aria-current="page" @endif>
                             <span>Size {{ $colorVariant->size }}</span>
-                            <span class="size-switcher-stock">{{ $availableStock }} in stock</span>
+                            <span class="size-switcher-stock">{{ (int) ($colorVariant->available_stock ?? 0) }} in stock</span>
                         </a>
                     @endforeach
                 </div>
             @endforeach
+            @if($productVariants->hasPages())
+                <div class="mt-4">
+                    {{ $productVariants->links() }}
+                </div>
+            @endif
         </div>
 
         <!-- Two Column Layout: Add Stock Form + Quick Tip -->
@@ -317,11 +321,11 @@
                     </div>
                     <div class="flex items-center justify-between p-3 bg-white/50 rounded-xl mb-3">
                         <span class="text-sm text-gray-600">Total Stock Entries</span>
-                        <span class="text-2xl font-bold text-gray-800">{{ $stocks->count() }}</span>
+                        <span class="text-2xl font-bold text-gray-800">{{ $stockSummary->entry_count }}</span>
                     </div>
                     <div class="flex items-center justify-between p-3 bg-white/50 rounded-xl mb-3">
                         <span class="text-sm text-gray-600">Remaining Quantity</span>
-                        <span class="text-2xl font-bold text-gray-800">{{ $stocks->sum('remaining_quantity') }}</span>
+                        <span class="text-2xl font-bold text-gray-800">{{ $stockSummary->remaining_quantity }}</span>
                     </div>
                     <div class="tip-3d flex items-center gap-2 text-sm p-3 rounded-lg transition-all mt-4">
                         <span class="font-medium text-gray-800">💡 Tip:</span>
@@ -335,7 +339,7 @@
         <div class="card-3d rounded-2xl overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <h3 class="text-lg font-bold gradient-title">Stock Entries</h3>
-                <span class="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{{ $stocks->count() }} entry(ies)</span>
+                <span class="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{{ $stocks->total() }} entry(ies)</span>
             </div>
             <div class="overflow-x-auto custom-scroll">
                 @if($stocks->count())
@@ -380,6 +384,11 @@
                     </div>
                 @endif
             </div>
+            @if($stocks->hasPages())
+                <div class="px-6 py-4 border-t border-gray-100">
+                    {{ $stocks->links() }}
+                </div>
+            @endif
         </div>
     </div>
 

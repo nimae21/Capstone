@@ -262,15 +262,16 @@
             <h3 class="text-lg font-bold gradient-title">Current Inventory</h3>
         </div>
         
-        <div class="flex gap-3">
-            <input type="text" id="searchInput" placeholder="Search by product, size, or color..." class="search-input">
-            <select id="statusFilter" class="search-input max-w-[150px]">
+        <form method="GET" action="{{ route('admin.inventory.index') }}" class="flex gap-3">
+            <input type="search" name="search" value="{{ request('search') }}" placeholder="Search by product, size, or color..." class="search-input">
+            <select name="status" class="search-input max-w-[150px]">
                 <option value="all">All Status</option>
-                <option value="in-stock">In Stock</option>
-                <option value="low-stock">Low Stock</option>
-                <option value="out-stock">Out of Stock</option>
+                <option value="in-stock" {{ request('status') === 'in-stock' ? 'selected' : '' }}>In Stock</option>
+                <option value="low-stock" {{ request('status') === 'low-stock' ? 'selected' : '' }}>Low Stock</option>
+                <option value="out-stock" {{ request('status') === 'out-stock' ? 'selected' : '' }}>Out of Stock</option>
             </select>
-        </div>
+            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 transition">Filter</button>
+        </form>
     </div>
 
     <!-- Inventory Table -->
@@ -362,6 +363,11 @@
                 </tbody>
             </table>
         </div>
+        @if($inventory->hasPages())
+            <div class="px-6 py-4 border-t border-gray-100">
+                {{ $inventory->links() }}
+            </div>
+        @endif
     </div>
 
     <!-- Low Stock Call to Action -->
@@ -379,52 +385,12 @@
                     <p class="text-sm text-gray-600">You have {{ $lowStock }} items that need restocking soon.</p>
                 </div>
             </div>
-            <button onclick="filterLowStock()" class="px-4 py-2 bg-yellow-500 text-white rounded-lg font-semibold text-sm hover:bg-yellow-600 transition">
+            <a href="{{ route('admin.inventory.index', ['status' => 'low-stock']) }}" class="px-4 py-2 bg-yellow-500 text-white rounded-lg font-semibold text-sm hover:bg-yellow-600 transition">
                 View Low Stock Items
-            </button>
+            </a>
         </div>
     </div>
     @endif
 </div>
 
-<script>
-    // Search and Filter Functionality
-    const searchInput = document.getElementById('searchInput');
-    const statusFilter = document.getElementById('statusFilter');
-    const tableRows = document.querySelectorAll('#inventoryTable tbody tr');
-
-    function filterTable() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const statusValue = statusFilter.value;
-
-        tableRows.forEach(row => {
-            const rowStatus = row.getAttribute('data-status');
-            const rowName = row.getAttribute('data-name') || '';
-            
-            let matchesSearch = rowName.includes(searchTerm);
-            let matchesStatus = statusValue === 'all' || rowStatus === statusValue;
-            
-            if (matchesSearch && matchesStatus) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
-
-    if (searchInput) {
-        searchInput.addEventListener('keyup', filterTable);
-    }
-    if (statusFilter) {
-        statusFilter.addEventListener('change', filterTable);
-    }
-
-    function filterLowStock() {
-        if (statusFilter) {
-            statusFilter.value = 'low-stock';
-            filterTable();
-            document.getElementById('lowStockAlert')?.scrollIntoView({ behavior: 'smooth' });
-        }
-    }
-</script>
 @endsection

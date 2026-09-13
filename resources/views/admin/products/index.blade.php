@@ -672,11 +672,11 @@
                                 @include('partials.new-arrival-badge')
                             </h4>
                             <p class="text-xs text-gray-500 mt-0.5">
-                                {{ $product->category->category_name ?? 'Uncategorized' }}
+                                {{ $product->category_name ?? 'Uncategorized' }}
 •
-{{ $product->brand->brand_name ?? 'No Brand' }}
+{{ $product->brand_name ?? 'No Brand' }}
 •
-{{ $product->shoeType->shoe_type_name ?? 'No Shoe Type' }}
+{{ $product->shoe_type_name ?? 'No Shoe Type' }}
                             </p>
                         </div>
                         <div class="product-actions">
@@ -704,7 +704,7 @@
                     <div class="product-body inventory-summary">
                         @php
                             $variantsByColor = $product->variants->groupBy('color');
-                            $totalStock = $product->variants->sum(fn ($variant) => $variant->stocks->sum('remaining_quantity'));
+                            $totalStock = $product->variants->sum(fn ($variant) => (int) ($variant->available_stock ?? 0));
                         @endphp
 
                         <div class="flex items-center justify-between gap-3 mb-3">
@@ -731,7 +731,7 @@
                                         </div>
                                         <div class="inventory-size-list">
                                             @foreach($colorVariants as $variant)
-                                                @php $stock = $variant->stocks->sum('remaining_quantity'); @endphp
+                                                @php $stock = (int) ($variant->available_stock ?? 0); @endphp
                                                 <span class="inventory-size {{ $stock === 0 ? 'out' : '' }}">
                                                     Size {{ $variant->size }}: <strong>{{ $stock }}</strong>
                                                 </span>

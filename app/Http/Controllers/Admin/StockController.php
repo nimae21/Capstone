@@ -7,25 +7,41 @@ use App\Models\ProductVariant;
 use App\Models\Stock;
 use App\Services\ApprovalService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class StockController extends Controller
 {
-    public function index(ProductVariant $variant)
+    public function index(ProductVariant $variant): View
     {
         $stocks = $variant->stocks()
+            ->select('stock_id', 'product_variant_id', 'remaining_quantity', 'price', 'deliver_date')
             ->where('is_archived', false)
             ->latest()
-            ->get();
+            ->orderByDesc('stock_id')
+            ->paginate(20, ['*'], 'stock_page')
+            ->withQueryString();
+
+        $stockSummary = DB::table('stocks')
+            ->where('product_variant_id', $variant->product_variant_id)
+            ->where('is_archived', false)
+            ->selectRaw('COUNT(*) as entry_count, COALESCE(SUM(remaining_quantity), 0) as remaining_quantity')
+            ->first();
 
         $productVariants = ProductVariant::query()
+            ->select('product_variant_id', 'product_id', 'size', 'color')
             ->where('product_id', $variant->product_id)
             ->where('is_active', true)
-            ->with(['stocks' => fn ($query) => $query->where('is_archived', false)])
+            ->withSum([
+                'stocks as available_stock' => fn ($query) => $query->where('is_archived', false),
+            ], 'remaining_quantity')
+            ->orderByRaw('CASE WHEN product_variant_id = ? THEN 0 ELSE 1 END', [$variant->product_variant_id])
             ->orderBy('color')
             ->orderByRaw('CAST(size AS DECIMAL(4,1))')
-            ->get();
+            ->paginate(24, ['*'], 'variant_page')
+            ->withQueryString();
 
-        return view('admin.stocks.index', compact('variant', 'stocks', 'productVariants'));
+        return view('admin.stocks.index', compact('variant', 'stocks', 'stockSummary', 'productVariants'));
     }
 
     public function store(Request $request, ProductVariant $variant)

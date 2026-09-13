@@ -48,7 +48,12 @@ class GovernanceController extends Controller
     public function accounts(Request $request)
     {
         $request->validate(['search' => 'nullable|string|max:255']);
-        $users = User::when($request->filled('search'), fn ($q) => $q->where('email', 'like', '%'.$request->search.'%'))->orderBy('id')->paginate(25)->withQueryString();
+        $users = User::query()
+            ->select('id', 'first_name', 'last_name', 'email', 'role', 'is_active')
+            ->when($request->filled('search'), fn ($q) => $q->where('email', 'like', '%'.$request->search.'%'))
+            ->orderBy('id')
+            ->paginate(25)
+            ->withQueryString();
 
         return view('admin.governance.accounts', compact('users'));
     }

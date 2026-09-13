@@ -243,8 +243,8 @@ body::before {
                     <label class="block text-sm font-semibold text-gray-700 mb-1">Select Color</label>
                     <select name="color" id="existingColor" class="input-premium" required>
                         <option value="">-- Choose a color --</option>
-                        @foreach($variants->groupBy('color') as $color => $items)
-                            <option value="{{ $color }}" data-used-sizes="{{ $items->pluck('size')->implode(',') }}">{{ $color }}</option>
+                        @foreach($variantColors as $variantColor)
+                            <option value="{{ $variantColor->color }}" data-used-sizes="{{ $variantColor->used_sizes }}">{{ $variantColor->color }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -275,12 +275,12 @@ body::before {
                 <div class="w-1 h-6 bg-gradient-to-b from-red-600 to-black rounded-full"></div>
                 <h2 class="text-xl font-bold gradient-title">All Variants</h2>
             </div>
-            <span class="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{{ $variants->count() }} total variants</span>
+            <span class="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{{ $variants->total() }} total variants</span>
         </div>
 
         @if($variants->count())
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                @foreach($variants->groupBy('color') as $color => $items)
+                @foreach($variants->getCollection()->groupBy('color') as $color => $items)
                     <div class="variant-group-card p-5">
                         {{-- COLOR HEADER WITH BADGE --}}
                         <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
@@ -376,6 +376,11 @@ body::before {
                     </div>
                 @endforeach
             </div>
+            @if($variants->hasPages())
+                <div class="mt-6">
+                    {{ $variants->links() }}
+                </div>
+            @endif
         @else
             <div class="card-cinematic rounded-2xl p-12 text-center">
                 <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l5 5a2 2 0 01.586 1.414V19a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>

@@ -8,7 +8,9 @@ use App\Models\ProductVariant;
 use App\Services\ApprovalService;
 use App\Services\ProductImageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class ProductVariantController extends Controller
 {
@@ -19,16 +21,29 @@ class ProductVariantController extends Controller
     /**
      * Display all variants of a product.
      */
-    public function index(Product $product)
+    public function index(Product $product): View
     {
-        $variants = ProductVariant::where('product_id', $product->product_id)
+        $variants = ProductVariant::query()
+            ->select('product_variant_id', 'product_id', 'size', 'color')
+            ->where('product_id', $product->product_id)
             ->where('is_active', true)
+            ->orderBy('color')
             ->orderByRaw('CAST(size AS DECIMAL(4,1))')
+            ->paginate(20)
+            ->withQueryString();
+
+        $variantColors = DB::table('product_variants')
+            ->select('color')
+            ->selectRaw($this->sizeListExpression().' as used_sizes')
+            ->where('product_id', $product->product_id)
+            ->where('is_active', true)
+            ->groupBy('color')
+            ->orderBy('color')
             ->get();
 
-        $product->load('images');
+        $product->load(['images' => fn ($query) => $query->select('image_id', 'product_id', 'color')]);
 
-        return view('admin.variants.index', compact('product', 'variants'));
+        return view('admin.variants.index', compact('product', 'variants', 'variantColors'));
     }
 
     /**
@@ -109,5 +124,14 @@ class ProductVariantController extends Controller
                     : number_format($value, 1, '.', '');
             })
             ->all();
+    }
+
+    private function sizeListExpression(): string
+    {
+        return match (DB::connection()->getDriverName()) {
+            'pgsql' => "STRING_AGG(size, ',' ORDER BY CAST(size AS DECIMAL(4,1)))",
+            'sqlite' => "GROUP_CONCAT(size, ',')",
+            default => "GROUP_CONCAT(size ORDER BY CAST(size AS DECIMAL(4,1)) SEPARATOR ',')",
+        };
     }
 }

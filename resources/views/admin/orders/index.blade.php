@@ -169,7 +169,7 @@
 <div class="text-xs text-gray-500">{{ $order->user->email }}</div>
                                 </td>
                                 <td class="px-6 py-3 text-gray-700">
-                                    {{ $order->items->count() }} item(s)
+                                    {{ $order->items_count }} item(s)
                                 </td>
                                 <td class="px-6 py-3 text-right font-bold text-gray-900">
                                     ₱{{ number_format($order->total_amount, 2) }}

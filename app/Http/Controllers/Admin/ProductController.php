@@ -12,6 +12,7 @@ use App\Services\ApprovalService;
 use App\Services\ProductImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
@@ -26,37 +27,69 @@ class ProductController extends Controller
         $brand = $request->brand;
         $shoeType = $request->shoe_type;
 
-        $products = Product::with(['category', 'brand', 'shoeType', 'variants.stocks'])
-            ->where('is_active', true)
+        $products = Product::query()
+            ->select(
+                'products.product_id',
+                'products.category_id',
+                'products.brand_id',
+                'products.shoe_type_id',
+                'products.product_name',
+                'products.product_description',
+                'products.is_active',
+                'products.new_arrival_until',
+                'categories.category_name',
+                'brands.brand_name',
+                'shoe_types.shoe_type_name',
+            )
+            ->join('categories', 'categories.category_id', '=', 'products.category_id')
+            ->join('brands', 'brands.brand_id', '=', 'products.brand_id')
+            ->join('shoe_types', 'shoe_types.shoe_type_id', '=', 'products.shoe_type_id')
+            ->with([
+                'variants' => fn ($query) => $query
+                    ->select('product_variant_id', 'product_id', 'size', 'color')
+                    ->withSum('stocks as available_stock', 'remaining_quantity')
+                    ->orderBy('color')
+                    ->orderByRaw('CAST(size AS DECIMAL(4,1))'),
+            ])
+            ->where('products.is_active', true)
 
             ->when($search, function ($query) use ($search) {
                 $search = strtolower($search);
 
                 $query->where(function ($q) use ($search) {
-                    $q->whereRaw('LOWER(product_name) LIKE ?', ["%{$search}%"])
-                        ->orWhereRaw('LOWER(product_description) LIKE ?', ["%{$search}%"])
-                        ->orWhereHas('brand', fn ($q) => $q->whereRaw('LOWER(brand_name) LIKE ?', ["%{$search}%"]))
-                        ->orWhereHas('category', fn ($q) => $q->whereRaw('LOWER(category_name) LIKE ?', ["%{$search}%"]))
-                        ->orWhereHas('shoeType', fn ($q) => $q->whereRaw('LOWER(shoe_type_name) LIKE ?', ["%{$search}%"]));
+                    $q->whereRaw('LOWER(products.product_name) LIKE ?', ["%{$search}%"])
+                        ->orWhereRaw('LOWER(products.product_description) LIKE ?', ["%{$search}%"])
+                        ->orWhereRaw('LOWER(brands.brand_name) LIKE ?', ["%{$search}%"])
+                        ->orWhereRaw('LOWER(categories.category_name) LIKE ?', ["%{$search}%"])
+                        ->orWhereRaw('LOWER(shoe_types.shoe_type_name) LIKE ?', ["%{$search}%"]);
                 });
             })
 
-            ->when($category, fn ($query) => $query->where('category_id', $category))
-            ->when($brand, fn ($query) => $query->where('brand_id', $brand))
-            ->when($shoeType, fn ($query) => $query->where('shoe_type_id', $shoeType))
+            ->when($category, fn ($query) => $query->where('products.category_id', $category))
+            ->when($brand, fn ($query) => $query->where('products.brand_id', $brand))
+            ->when($shoeType, fn ($query) => $query->where('products.shoe_type_id', $shoeType))
 
-            ->orderBy('product_name')
+            ->orderBy('products.product_name')
+            ->orderBy('products.product_id')
             ->paginate(5)
             ->withQueryString();
 
+        $counts = DB::query()
+            ->selectSub(Product::query()->where('is_active', true)->selectRaw('COUNT(*)'), 'total_products')
+            ->selectSub(ProductVariant::query()->selectRaw('COUNT(*)'), 'total_variants')
+            ->first();
+
         return view('admin.products.index', [
             'products' => $products,
-            'categories' => Category::where('is_active', true)->orderBy('category_name')->get(),
-            'brands' => Brand::where('is_active', true)->orderBy('brand_name')->get(),
-            'shoeTypes' => ShoeType::where('is_active', true)->orderBy('display_order')->get(),
+            'categories' => DB::table('categories')->where('is_active', true)
+                ->select('category_id', 'category_name')->orderBy('category_name')->get(),
+            'brands' => DB::table('brands')->where('is_active', true)
+                ->select('brand_id', 'brand_name')->orderBy('brand_name')->get(),
+            'shoeTypes' => DB::table('shoe_types')->where('is_active', true)
+                ->select('shoe_type_id', 'shoe_type_name')->orderBy('display_order')->get(),
             'search' => $search,
-            'totalProducts' => Product::where('is_active', true)->count(),
-            'totalVariants' => ProductVariant::count(),
+            'totalProducts' => (int) $counts->total_products,
+            'totalVariants' => (int) $counts->total_variants,
         ]);
     }
 

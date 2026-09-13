@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateOrderStatusRequest;
 use App\Models\Order;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AdminOrderController extends Controller
 {
@@ -18,24 +19,35 @@ class AdminOrderController extends Controller
     ) {}
 
     public function index(Request $request)
-{
-    $query = Order::with(['user', 'items']);
+    {
+        $query = Order::query()
+            ->select('order_id', 'user_id', 'total_amount', 'status', 'created_at')
+            ->with('user:id,first_name,last_name,email')
+            ->withCount('items');
 
-    if ($request->filled('sale_type')) {
-        $query->where('sale_type', $request->sale_type);
+        if ($request->filled('sale_type')) {
+            $query->where('sale_type', $request->sale_type);
+        }
+
+        $orders = $query->orderByDesc('created_at')->orderByDesc('order_id')->paginate(20)->withQueryString();
+        $summary = Order::query()
+            ->selectRaw(
+                'COUNT(*) as total_orders,
+                 COALESCE(SUM(CASE WHEN status = ? THEN 1 ELSE 0 END), 0) as pending,
+                 COALESCE(SUM(CASE WHEN status = ? THEN 1 ELSE 0 END), 0) as completed,
+                 COALESCE(SUM(CASE WHEN status = ? THEN total_amount ELSE 0 END), 0) as total_revenue',
+                [OrderStatus::Pending->value, OrderStatus::Completed->value, OrderStatus::Completed->value],
+            )
+            ->first();
+        $stats = [
+            'total_orders' => (int) $summary->total_orders,
+            'pending' => (int) $summary->pending,
+            'completed' => (int) $summary->completed,
+            'total_revenue' => (float) $summary->total_revenue,
+        ];
+
+        return view('admin.orders.index', compact('orders', 'stats'));
     }
-
-    $orders = $query->latest()->paginate(20)->withQueryString();
-
-    $stats = [
-        'total_orders'  => Order::count(),
-        'pending'       => Order::where('status', OrderStatus::Pending)->count(),
-        'completed'     => Order::where('status', OrderStatus::Completed)->count(),
-        'total_revenue' => Order::where('status', OrderStatus::Completed)->sum('total_amount'),
-    ];
-
-    return view('admin.orders.index', compact('orders', 'stats'));
-}
 
     public function show(Order $order)
     {
@@ -55,9 +67,10 @@ class AdminOrderController extends Controller
         } catch (InvalidOrderTransitionException|OrderNotCancellableException $e) {
             return back()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Admin order transition could not finish', [
+            Log::error('Admin order transition could not finish', [
                 'order_id' => $order->order_id, 'exception' => get_class($e),
             ]);
+
             return back()->with('error', 'Payment processing could not be confirmed. Check the order and refund status before retrying.');
         }
     }
