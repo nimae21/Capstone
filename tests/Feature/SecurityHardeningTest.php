@@ -23,7 +23,7 @@ it('adds browser security headers and prevents sensitive pages from being cached
         ->assertHeader('X-Content-Type-Options', 'nosniff')
         ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
         ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
-        ->assertHeader('Content-Security-Policy', "frame-ancestors 'self'")
+        ->assertHeader('Content-Security-Policy', "frame-ancestors 'self'; object-src 'none'; base-uri 'self'")
         ->assertHeader('Cache-Control', 'no-store, private');
 });
 

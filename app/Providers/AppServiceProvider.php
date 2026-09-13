@@ -53,7 +53,7 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinutes(10, 3)->by('register-email:'.hash('sha256', strtolower(trim((string) $request->email))))->response($error)];
         });
         RateLimiter::for('api-login', fn ($request) => [
-            Limit::perMinute(5)->by(hash('sha256', strtolower(trim((string) $request->email)).'|'.$request->ip())),
+            Limit::perMinute(5)->by(hash('sha256', strtolower(trim((string) $request->email)))),
             Limit::perMinute(30)->by('login-ip:'.$request->ip())]);
         RateLimiter::for('password-reset', fn ($request) => [
             Limit::perMinute(3)->by('password-email:'.hash('sha256', strtolower(trim((string) $request->email))).'|'.$request->ip()),

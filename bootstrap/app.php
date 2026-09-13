@@ -23,7 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(at: '*');
+        $middleware->trustProxies(at: array_values(array_filter(array_map(
+            'trim', explode(',', (string) env('TRUSTED_PROXIES', ''))
+        ))));
         $middleware->trustHosts(
             at: fn () => app()->environment('production')
                 ? array_values(array_filter(array_map(

@@ -333,12 +333,19 @@ function updateGalleryForColor(color)
     document.getElementById('mainProductImage').src = toShow[0].url;
 
     const gallery = document.getElementById('thumbnailGallery');
-    gallery.innerHTML = toShow.map(img => `
-        <div class="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-red-500 transition-all"
-             onclick="document.getElementById('mainProductImage').src = '${img.url}'">
-            <img src="${img.url}" alt="Thumbnail" class="w-full h-full object-cover">
-        </div>
-    `).join('');
+    gallery.replaceChildren(...toShow.map(img => {
+        const thumbnail = document.createElement('div');
+        thumbnail.className = 'w-20 h-20 bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-red-500 transition-all';
+        thumbnail.addEventListener('click', () => {
+            document.getElementById('mainProductImage').src = img.url;
+        });
+        const image = document.createElement('img');
+        image.src = img.url;
+        image.alt = 'Thumbnail';
+        image.className = 'w-full h-full object-cover';
+        thumbnail.append(image);
+        return thumbnail;
+    }));
 }
 
 /*

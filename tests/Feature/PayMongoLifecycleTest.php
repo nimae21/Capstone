@@ -614,3 +614,59 @@ it('never redirects a retry to a reused session or intent', function (string $se
     expect($f['payment']->fresh()->checkout_session_id)->toBe('cs_fixture');
     $this->assertDatabaseCount('stock_movements', 0);
 })->with([['cs_fixture', 'pi_new'], ['cs_new', 'pi_fixture']]);
+
+it('submits refunds without opening a database transaction around the HTTP call', function () {
+    $f = lifecycleOrder();
+    lifecycleConfirm();
+    $baseline = DB::transactionLevel(); // RefreshDatabase owns the test transaction.
+    $observed = null;
+    Http::fake(['api.paymongo.com/v1/refunds' => function () use (&$observed) {
+        $observed = DB::transactionLevel();
+
+        return Http::response(['data' => lifecycleRefund()]);
+    }]);
+
+    app(OrderService::class)->cancel($f['order']);
+    expect($observed)->toBe($baseline);
+});
+
+it('does not overwrite a successful refund webhook when the HTTP request later fails', function () {
+    $f = lifecycleOrder();
+    lifecycleConfirm();
+    Http::fake(['api.paymongo.com/v1/refunds' => function () {
+        app(OrderService::class)->syncRefund(lifecycleRefund('succeeded', 200));
+        throw new ConnectionException('Response lost after provider completion');
+    }]);
+
+    app(OrderService::class)->cancel($f['order']);
+    expect($f['payment']->fresh()->refund_status)->toBe('refunded')
+        ->and($f['payment']->fresh()->refund_error)->toBeNull();
+});
+
+it('verifies cancellation with no additional database transaction around provider calls', function () {
+    $f = lifecycleOrder();
+    $baseline = DB::transactionLevel();
+    $levels = [];
+    Http::fake(function ($request) use (&$levels) {
+        $levels[] = DB::transactionLevel();
+
+        return Http::response(['data' => lifecycleSession(false, 'expired')]);
+    });
+    app(OrderService::class)->cancel($f['order']);
+    expect($levels)->not->toBeEmpty();
+    foreach ($levels as $level) {
+        expect($level)->toBe($baseline);
+    }
+});
+
+it('rejects cancellation if checkout changes while provider verification is in flight', function () {
+    $f = lifecycleOrder();
+    Http::fake(function () use ($f) {
+        $f['payment']->update(['checkout_session_id' => 'cs_replacement']);
+
+        return Http::response(['data' => lifecycleSession(false, 'expired')]);
+    });
+    expect(fn () => app(OrderService::class)->cancel($f['order']))
+        ->toThrow(OrderNotCancellableException::class);
+    expect($f['order']->fresh()->status)->toBe(OrderStatus::Pending);
+});

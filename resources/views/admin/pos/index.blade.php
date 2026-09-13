@@ -385,49 +385,45 @@ function clearCart() {
 
 function renderCart() {
     const container = document.getElementById('cartItems');
-    const emptyMsg = document.getElementById('emptyCartMsg');
     const entries = Object.values(cart);
-
+    const element = (tag, classes, text) => {
+        const node = document.createElement(tag);
+        node.className = classes;
+        if (text !== undefined) node.textContent = text;
+        return node;
+    };
+    container.replaceChildren();
     if (entries.length === 0) {
-    container.innerHTML = `
-        <div class="empty-cart">
-            <i class="fas fa-cash-register text-4xl mb-3 block opacity-30"></i>
-            No items yet. Tap a product to add it.
-        </div>
-    `;
-    document.getElementById('checkoutBtn').disabled = true;
-    document.getElementById('cartTotal').textContent = '₱0.00';
-    return;
-}
-
-    let html = '';
+        const empty = element('div', 'empty-cart');
+        empty.append(element('i', 'fas fa-cash-register text-4xl mb-3 block opacity-30'),
+            document.createTextNode('No items yet. Tap a product to add it.'));
+        container.append(empty);
+        document.getElementById('checkoutBtn').disabled = true;
+        document.getElementById('cartTotal').textContent = '\u20b10.00';
+        return;
+    }
     let total = 0;
-
     entries.forEach(item => {
         const subtotal = item.price * item.quantity;
         total += subtotal;
-
-        html += `
-            <div class="cart-item-row">
-                <div class="flex-1">
-                    <div class="cart-item-name">${item.name}</div>
-                    <div class="cart-item-meta">${item.size} / ${item.color} · ₱${item.price.toLocaleString()} each</div>
-                </div>
-                <div class="qty-control">
-                    <button class="qty-btn" onclick="decreaseQty(${item.variantId})">−</button>
-                    <span class="text-sm font-bold w-5 text-center">${item.quantity}</span>
-                    <button class="qty-btn" onclick="increaseQty(${item.variantId})">+</button>
-                </div>
-                <div class="text-sm font-bold text-gray-800 w-16 text-right">₱${subtotal.toLocaleString()}</div>
-            </div>
-        `;
+        const row = element('div', 'cart-item-row');
+        const details = element('div', 'flex-1');
+        details.append(element('div', 'cart-item-name', item.name),
+            element('div', 'cart-item-meta', `${item.size} / ${item.color} \u00b7 \u20b1${item.price.toLocaleString()} each`));
+        const controls = element('div', 'qty-control');
+        const decrease = element('button', 'qty-btn', '\u2212');
+        const increase = element('button', 'qty-btn', '+');
+        decrease.type = increase.type = 'button';
+        decrease.addEventListener('click', () => decreaseQty(item.variantId));
+        increase.addEventListener('click', () => increaseQty(item.variantId));
+        controls.append(decrease, element('span', 'text-sm font-bold w-5 text-center', item.quantity), increase);
+        row.append(details, controls,
+            element('div', 'text-sm font-bold text-gray-800 w-16 text-right', `\u20b1${subtotal.toLocaleString()}`));
+        container.append(row);
     });
-
-    container.innerHTML = html;
-    document.getElementById('cartTotal').textContent = '₱' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
+    document.getElementById('cartTotal').textContent = '\u20b1' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
     document.getElementById('checkoutBtn').disabled = false;
 }
-
 function showError(message) {
     const toast = document.getElementById('errorToast');
     toast.textContent = message;

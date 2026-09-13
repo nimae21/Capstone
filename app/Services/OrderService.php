@@ -115,7 +115,17 @@ class OrderService
             throw new \RuntimeException('Missing PayMongo payment ID.');
         }
         $hint = Payment::forCheckoutSession($checkoutSessionId)->firstOrFail();
-        $refundPaymentId = DB::transaction(function () use ($hint, $checkoutSessionId, $paymentMethodUsed, $paymongoPaymentId, $amount, $currency) {
+        $replacement = null;
+        if ($hint->checkout_session_id !== $checkoutSessionId && $hint->status !== 'completed') {
+            $snapshotOrder = Order::findOrFail($hint->order_id);
+            if ($snapshotOrder->sale_type !== SaleType::Online || $currency !== 'PHP'
+                || ($amount !== null && $amount !== (int) round($snapshotOrder->total_amount * 100))
+                || ($hint->paymongo_payment_id && $hint->paymongo_payment_id !== $paymongoPaymentId)) {
+                throw new \RuntimeException('Payment needs manual verification.');
+            }
+            $replacement = $this->payMongoService->expireCheckoutSession($hint->checkout_session_id);
+        }
+        $refundPaymentId = DB::transaction(function () use ($hint, $replacement, $checkoutSessionId, $paymentMethodUsed, $paymongoPaymentId, $amount, $currency) {
             $order = Order::whereKey($hint->order_id)->lockForUpdate()->firstOrFail();
             $payment = Payment::whereKey($hint->getKey())->lockForUpdate()->firstOrFail();
             if ($order->sale_type !== SaleType::Online) {
@@ -129,7 +139,9 @@ class OrderService
             }
             if ($payment->checkout_session_id !== $checkoutSessionId && $payment->status !== 'completed') {
                 // A delayed paid event from a retired session must close its replacement.
-                $replacement = $this->payMongoService->expireCheckoutSession($payment->checkout_session_id);
+                if ($payment->checkout_session_id !== $hint->checkout_session_id || $replacement === null) {
+                    throw new \RuntimeException('Checkout changed during verification. Please retry.');
+                }
                 if ($this->payMongoService->paidPayment($replacement)) {
                     throw new \RuntimeException('Multiple paid checkout sessions require manual payment reconciliation.');
                 }
@@ -290,7 +302,23 @@ class OrderService
 
     public function cancel(Order $order): Order
     {
-        $refundPaymentId = DB::transaction(function () use ($order) {
+        $snapshot = $order->fresh('payment');
+        if ($snapshot->status !== OrderStatus::Cancelled && ! $snapshot->status->isCancellable()) {
+            throw new OrderNotCancellableException("Order #{$snapshot->order_id} can no longer be cancelled.");
+        }
+        $snapshotPayment = $snapshot->payment;
+        $session = null;
+        if ($snapshot->sale_type === SaleType::Online && $snapshotPayment && $snapshotPayment->method !== 'cash_pos') {
+            if (! in_array($snapshotPayment->status, ['completed', 'cancelled'], true) && $snapshotPayment->checkout_session_id) {
+                $session = $this->payMongoService->expireCheckoutSession($snapshotPayment->checkout_session_id);
+            } elseif ($snapshotPayment->status === 'completed' && ! $snapshotPayment->paymongo_payment_id) {
+                if (! $snapshotPayment->checkout_session_id) {
+                    throw new OrderNotCancellableException('Payment needs manual verification before a refund can be requested.');
+                }
+                $session = $this->payMongoService->retrieveCheckoutSession($snapshotPayment->checkout_session_id);
+            }
+        }
+        $refundPaymentId = DB::transaction(function () use ($order, $snapshotPayment, $session) {
             $current = Order::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
             $payment = $current->payment()->lockForUpdate()->first();
             $alreadyCancelled = $current->status === OrderStatus::Cancelled;
@@ -306,9 +334,9 @@ class OrderService
 
             if ($onlinePayment) {
                 if ($payment->status !== 'completed' && $payment->status !== 'cancelled' && $payment->checkout_session_id) {
-                    // Verify/expire while holding the order lock. If payment wins,
-                    // record it and refund rather than wrongly treating it as unpaid.
-                    $session = $this->payMongoService->expireCheckoutSession($payment->checkout_session_id);
+                    if ($session === null || $payment->checkout_session_id !== $snapshotPayment?->checkout_session_id) {
+                        throw new OrderNotCancellableException('Checkout changed during verification. Please retry cancellation.');
+                    }
                     $paid = $this->payMongoService->paidPayment($session);
                     if ($paid) {
                         $this->recordPaymentForCancellation($current, $payment, $paid);
@@ -317,7 +345,9 @@ class OrderService
                     if (! $payment->checkout_session_id) {
                         throw new OrderNotCancellableException('Payment needs manual verification before a refund can be requested.');
                     }
-                    $session = $this->payMongoService->retrieveCheckoutSession($payment->checkout_session_id);
+                    if ($session === null || $payment->checkout_session_id !== $snapshotPayment?->checkout_session_id) {
+                        throw new OrderNotCancellableException('Checkout changed during verification. Please retry cancellation.');
+                    }
                     $paid = $this->payMongoService->paidPayment($session);
                     if (! $paid) {
                         throw new OrderNotCancellableException('PayMongo has not confirmed this payment. Please verify it before cancelling.');
@@ -391,26 +421,45 @@ class OrderService
 
     private function requestRefund(int $paymentId): void
     {
+        // The durable intent and provider idempotency key were committed by the
+        // caller. Concurrent workers may submit the same key, never a new one.
         $hint = Payment::findOrFail($paymentId);
-        $failure = DB::transaction(function () use ($hint) {
+        if ($hint->refund_status !== 'pending' || $hint->paymongo_refund_id) {
+            return;
+        }
+        if (! $hint->refund_requested_at || $hint->refund_requested_at->lte(now()->subHours(23))) {
+            Payment::whereKey($paymentId)->where('refund_status', 'pending')
+                ->whereNull('paymongo_refund_id')
+                ->update(['refund_error' => 'Refund outcome needs manual verification before another request.']);
+            Log::warning('PayMongo refund requires reconciliation', $this->paymentContext($hint));
+
+            return;
+        }
+
+        $refund = null;
+        $failure = null;
+        try {
+            $refund = $this->payMongoService->refundPayment(
+                $hint->paymongo_payment_id, $hint->refund_amount,
+                $hint->refund_request_key, $hint->order_id,
+            );
+        } catch (\Throwable $e) {
+            $failure = $e;
+        }
+
+        $failure = DB::transaction(function () use ($hint, $refund, $failure) {
             Order::whereKey($hint->order_id)->lockForUpdate()->firstOrFail();
             $payment = Payment::whereKey($hint->getKey())->lockForUpdate()->firstOrFail();
-            if ($payment->refund_status !== 'pending' || $payment->paymongo_refund_id) {
-                return null;
-            }
-            // Provider keys expire after 24h. Never blindly submit an ambiguous
-            // request after that window: it needs provider-side reconciliation.
-            if (! $payment->refund_requested_at || $payment->refund_requested_at->lte(now()->subHours(23))) {
-                $payment->update(['refund_error' => 'Refund outcome needs manual verification before another request.']);
-                Log::warning('PayMongo refund requires reconciliation', $this->paymentContext($payment));
-
+            // A webhook or another worker may have reconciled the refund while
+            // the HTTP request was in flight. Never overwrite its newer state.
+            if ($payment->refund_status !== 'pending' || $payment->paymongo_refund_id
+                || $payment->refund_request_key !== $hint->refund_request_key) {
                 return null;
             }
             try {
-                $refund = $this->payMongoService->refundPayment(
-                    $payment->paymongo_payment_id, $payment->refund_amount,
-                    $payment->refund_request_key, $payment->order_id,
-                );
+                if ($failure) {
+                    throw $failure;
+                }
                 $this->applyRefund($payment, $refund);
 
                 return null;
@@ -431,7 +480,6 @@ class OrderService
                     'http_status' => $status, 'exception' => get_class($e),
                 ]));
 
-                // Commit the error state, then propagate transient failures for webhook retry.
                 return $definitiveFailure ? null : $e;
             }
         });

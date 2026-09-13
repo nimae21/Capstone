@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\AccountEmail;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
 {
@@ -52,7 +53,39 @@ class LoginController extends Controller
 
     protected function throttleKey(Request $request)
     {
-        return hash('sha256', strtolower(trim((string) $request->email)).'|'.$request->ip());
+        return hash('sha256', strtolower(trim((string) $request->email)));
+    }
+
+    protected function hasTooManyLoginAttempts(Request $request)
+    {
+        return $this->limiter()->tooManyAttempts($this->throttleKey($request), $this->maxAttempts())
+            || $this->limiter()->tooManyAttempts($this->ipThrottleKey($request), 30);
+    }
+
+    protected function incrementLoginAttempts(Request $request)
+    {
+        $this->limiter()->hit($this->throttleKey($request), $this->decayMinutes() * 60);
+        $this->limiter()->hit($this->ipThrottleKey($request), $this->decayMinutes() * 60);
+    }
+
+    protected function sendLockoutResponse(Request $request)
+    {
+        $seconds = max(
+            $this->limiter()->availableIn($this->throttleKey($request)),
+            $this->limiter()->availableIn($this->ipThrottleKey($request)),
+        );
+
+        throw ValidationException::withMessages([
+            $this->username() => [trans('auth.throttle', [
+                'seconds' => $seconds,
+                'minutes' => ceil($seconds / 60),
+            ])],
+        ])->status(429);
+    }
+
+    private function ipThrottleKey(Request $request): string
+    {
+        return 'login-ip:'.$request->ip();
     }
 
     protected function credentials(Request $request)
