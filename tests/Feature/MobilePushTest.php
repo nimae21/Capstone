@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\OrderStatus;
+use App\Jobs\DeliverMobilePush;
 use App\Models\ApprovalRequest;
 use App\Models\MobilePushDelivery;
 use App\Models\MobilePushDevice;
@@ -13,6 +14,7 @@ use App\Services\OrderService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 
 function pushLogin($test, ?User $user = null): array
@@ -143,8 +145,8 @@ it('rolls back notification and alert creation together with a failed payment tr
 
     DB::beginTransaction();
     $order->update(['status' => 'paid']);
-    $this->assertDatabaseCount('notifications', 2);
-    expect(MobilePushDelivery::where('kind', 'order_paid')->count())->toBe(1);
+    $this->assertDatabaseCount('notifications', 1);
+    expect(MobilePushDelivery::where('kind', 'order_paid')->count())->toBe(0);
     DB::rollBack();
 
     $this->assertDatabaseCount('notifications', 1);
@@ -222,11 +224,14 @@ it('skips expired sessions and orders already handled on the website', function 
 });
 
 it('queues a test only for the requesting phone', function () {
+    Queue::fake();
+    config(['mobile_push.auto_dispatch' => true]);
     pushLogin($this);
     $device = pushRegister($this);
     $this->postJson('/api/push/test', ['installation_id' => $device->installation_id])->assertStatus(202);
     expect(MobilePushDelivery::first()->kind)->toBe('test');
     expect(MobilePushDelivery::first()->device_id)->toBe($device->id);
+    Queue::assertPushed(DeliverMobilePush::class, 1);
 });
 
 it('reports unconfigured Firebase honestly and refuses registration', function () {

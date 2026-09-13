@@ -104,7 +104,7 @@ it('keeps retention disabled unless an operator configures it', function () {
     expect(UserActivity::count())->toBe(1);
 });
 
-it('preserves aggregate strength when the schema migration is rolled back', function () {
+it('requires bounded preparation and preserves strength when aggregation is rolled back', function () {
     $user = User::factory()->create();
     [$product] = activityProducts(1);
     $service = app(ActivityTrackingService::class);
@@ -113,6 +113,11 @@ it('preserves aggregate strength when the schema migration is rolled back', func
     $migration = require database_path('migrations/2026_09_13_000003_add_user_activity_aggregation.php');
 
     try {
+        expect(fn () => $migration->down())->toThrow(RuntimeException::class);
+        $this->artisan('activities:prepare-aggregation-rollback', [
+            '--max-copies' => 1,
+            '--batch' => 1,
+        ])->assertSuccessful();
         $migration->down();
 
         expect(Schema::hasColumn('user_activities', 'activity_count'))->toBeFalse()
@@ -120,4 +125,40 @@ it('preserves aggregate strength when the schema migration is rolled back', func
     } finally {
         $migration->up();
     }
+});
+
+it('refuses rollback preparation when its copy budget is exhausted', function () {
+    $user = User::factory()->create();
+    [$product] = activityProducts(1);
+    $service = app(ActivityTrackingService::class);
+
+    foreach (range(1, 4) as $minute) {
+        $service->recordNow(
+            $user->id,
+            [$product->product_id],
+            'view',
+            sprintf('2026-09-13T13:%02d:00+08:00', $minute),
+        );
+    }
+
+    $this->artisan('activities:prepare-aggregation-rollback', [
+        '--max-copies' => 1,
+        '--batch' => 1,
+    ])->assertFailed();
+
+    expect(UserActivity::count())->toBe(2)
+        ->and(UserActivity::sum('activity_count'))->toBe(4)
+        ->and(UserActivity::where('activity_count', '>', 1)->exists())->toBeTrue();
+
+    $migration = require database_path('migrations/2026_09_13_000003_add_user_activity_aggregation.php');
+    expect(fn () => $migration->down())->toThrow(RuntimeException::class);
+
+    $this->artisan('activities:prepare-aggregation-rollback', [
+        '--max-copies' => 10,
+        '--batch' => 2,
+    ])->assertSuccessful();
+
+    expect(UserActivity::count())->toBe(4)
+        ->and(UserActivity::sum('activity_count'))->toBe(4)
+        ->and(UserActivity::where('activity_count', '>', 1)->exists())->toBeFalse();
 });

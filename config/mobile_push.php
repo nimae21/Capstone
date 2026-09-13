@@ -2,6 +2,7 @@
 
 return [
     'enabled' => env('MOBILE_PUSH_ENABLED', false),
+    'auto_dispatch' => env('MOBILE_PUSH_AUTO_DISPATCH', true),
 
     /*
     |----------------------------------------------------------------------

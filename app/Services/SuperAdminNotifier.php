@@ -2,13 +2,19 @@
 
 namespace App\Services;
 
+use App\Jobs\ProcessAdminAlert;
 use App\Models\AdminInvitation;
 use App\Models\ApprovalRequest;
+use App\Models\BackgroundOperation;
+use App\Models\InventoryAlertState;
 use App\Models\Payment;
+use App\Models\ProductVariant;
 use App\Models\User;
 use App\Notifications\SuperAdminAlert;
 use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Ramsey\Uuid\Uuid;
 
 /**
  * Single entry point for "something happened that the Super Admin should know
@@ -19,14 +25,15 @@ class SuperAdminNotifier
 {
     public function __construct(protected MobilePushOutbox $outbox) {}
 
-    public function alert(string $type, string $title, string $body, ?string $route = null, array $meta = []): int
-    {
-        $users = User::where('role', 'super_admin')->where('is_active', true)->get();
-
-        if ($users->isEmpty()) {
-            return 0;
-        }
-
+    public function alert(
+        string $type,
+        string $title,
+        string $body,
+        ?string $route = null,
+        array $meta = [],
+        ?string $eventKey = null,
+    ): int {
+        $eventKey ??= $type.':'.Str::uuid();
         $payload = [
             'type' => $type,
             'title' => $title,
@@ -34,34 +41,90 @@ class SuperAdminNotifier
             'route' => $route,
             'meta' => $meta,
         ];
-
         $now = now();
-        $notificationIds = [];
+        DB::table('background_operations')->insertOrIgnore([
+            'operation_key' => $eventKey,
+            'type' => 'admin_alert',
+            'payload' => json_encode($payload, JSON_THROW_ON_ERROR),
+            'available_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        app(ReliableJobDispatcher::class)->dispatch(new ProcessAdminAlert($eventKey));
 
-        foreach ($users as $user) {
-            $id = (string) Str::uuid();
-            DatabaseNotification::create([
-                'id' => $id,
-                'type' => SuperAdminAlert::class,
-                'notifiable_type' => $user->getMorphClass(),
-                'notifiable_id' => $user->getKey(),
-                'data' => $payload,
-                'read_at' => null,
-                'created_at' => $now,
-                'updated_at' => $now,
+        return 1;
+    }
+
+    public function queueInventoryCheck(int $variantId): void
+    {
+        $eventKey = 'inventory-check:'.Str::uuid();
+        $now = now();
+        DB::table('background_operations')->insert([
+            'operation_key' => $eventKey,
+            'type' => 'inventory_check',
+            'payload' => json_encode(['variant_id' => $variantId], JSON_THROW_ON_ERROR),
+            'available_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        app(ReliableJobDispatcher::class)->dispatch(new ProcessAdminAlert($eventKey));
+    }
+
+    public function materializeOperation(string $eventKey): bool
+    {
+        return DB::transaction(function () use ($eventKey): bool {
+            $operation = BackgroundOperation::where('operation_key', $eventKey)
+                ->lockForUpdate()->first();
+            if (! $operation || $operation->processed_at) {
+                return false;
+            }
+
+            $payload = $operation->payload;
+            if ($operation->type === 'inventory_check') {
+                $payload = $this->inventoryPayload((int) ($payload['variant_id'] ?? 0));
+                if ($payload === null) {
+                    $operation->update([
+                        'attempts' => $operation->attempts + 1,
+                        'processed_at' => now(),
+                        'last_error' => null,
+                    ]);
+
+                    return false;
+                }
+            } elseif ($operation->type !== 'admin_alert') {
+                throw new \RuntimeException("Unsupported background operation [{$operation->type}].");
+            }
+
+            $users = User::where('role', 'super_admin')->where('is_active', true)->get();
+            $now = now();
+            $notificationIds = [];
+
+            foreach ($users as $user) {
+                $id = Uuid::uuid5(
+                    Uuid::NAMESPACE_URL,
+                    'achilles-admin-alert:'.$eventKey.':'.$user->getKey(),
+                )->toString();
+                DatabaseNotification::firstOrCreate(['id' => $id], [
+                    'type' => SuperAdminAlert::class,
+                    'notifiable_type' => $user->getMorphClass(),
+                    'notifiable_id' => $user->getKey(),
+                    'data' => $payload,
+                    'read_at' => null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+                $notificationIds[$user->getKey()] = $id;
+            }
+
+            $this->outbox->alert($payload, $notificationIds, $eventKey);
+            $operation->update([
+                'attempts' => $operation->attempts + 1,
+                'processed_at' => now(),
+                'last_error' => null,
             ]);
-            $notificationIds[$user->getKey()] = $id;
-        }
 
-        try {
-            $this->outbox->alert($payload, $notificationIds);
-        } catch (\Throwable $e) {
-            // The in-app notification is the source of truth. A push provider
-            // outage must never fail the business action that triggered it.
-            report($e);
-        }
-
-        return count($notificationIds);
+            return $users->isNotEmpty();
+        });
     }
 
     public function approvalSubmitted(ApprovalRequest $request): void
@@ -76,6 +139,7 @@ class SuperAdminNotifier
             trim(($requester?->full_name ?? 'An admin').' submitted '.$label.($name ? ' "'.$name.'"' : '').' for review.'),
             '/tabs/approvals/'.$request->getKey(),
             ['approval_id' => $request->getKey(), 'entity_type' => $request->entity_type],
+            'approval-submitted:'.$request->getKey(),
         );
     }
 
@@ -89,6 +153,7 @@ class SuperAdminNotifier
             ($admin?->full_name ?? $invitation->email).' accepted the admin invitation.',
             '/tabs/users/admins',
             ['invitation_id' => $invitation->getKey(), 'email' => $invitation->email],
+            'invitation-accepted:'.$invitation->getKey(),
         );
     }
 
@@ -103,17 +168,8 @@ class SuperAdminNotifier
             $account->full_name.' ('.$role.') was '.($active ? 'reactivated' : 'suspended').$by.'.',
             $account->role === 'admin' ? '/tabs/users/admins/'.$account->getKey() : '/tabs/users/'.$account->getKey(),
             ['user_id' => $account->getKey(), 'role' => $account->role, 'is_active' => $active],
-        );
-    }
-
-    public function inventoryAlert(string $level, string $product, string $variant, int $remaining): void
-    {
-        $this->alert(
-            $level === 'out' ? 'inventory_out_of_stock' : 'inventory_low_stock',
-            $level === 'out' ? 'Variant out of stock' : 'Low stock alert',
-            $product.' - '.$variant.' now has '.$remaining.' unit(s) left.',
-            '/tabs/inventory',
-            ['product' => $product, 'variant' => $variant, 'remaining' => $remaining],
+            'account-status:'.$account->getKey().':'.($active ? 'active:' : 'inactive:')
+                .($account->updated_at?->format('U.u') ?? now()->format('U.u')),
         );
     }
 
@@ -144,7 +200,52 @@ class SuperAdminNotifier
                 'refund_status' => $status,
                 'refund_amount' => (int) $payment->refund_amount,
             ],
+            'refund:'.$payment->getKey().':'.$status,
         );
+    }
+
+    private function inventoryPayload(int $variantId): ?array
+    {
+        $variant = ProductVariant::with('product')->find($variantId);
+        if (! $variant || ! $variant->product) {
+            return null;
+        }
+
+        $remaining = (int) $variant->stocks()->where('is_archived', false)->sum('remaining_quantity');
+        if ($remaining > 5) {
+            return null;
+        }
+
+        $level = $remaining <= 0 ? 'out' : 'low';
+        $now = now();
+        DB::table('inventory_alert_states')->insertOrIgnore([
+            'product_variant_id' => $variantId,
+            'level' => $level,
+            'last_notified_at' => $now->copy()->subHours(13),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $state = InventoryAlertState::where('product_variant_id', $variantId)
+            ->where('level', $level)->lockForUpdate()->firstOrFail();
+
+        if ($state->last_notified_at->gt(now()->subHours(12))) {
+            return null;
+        }
+
+        $state->update(['last_notified_at' => now()]);
+        $variantLabel = 'Size '.$variant->size.' / '.$variant->color;
+
+        return [
+            'type' => $level === 'out' ? 'inventory_out_of_stock' : 'inventory_low_stock',
+            'title' => $level === 'out' ? 'Variant out of stock' : 'Low stock alert',
+            'body' => $variant->product->product_name.' - '.$variantLabel.' now has '.max(0, $remaining).' unit(s) left.',
+            'route' => '/tabs/inventory',
+            'meta' => [
+                'product' => $variant->product->product_name,
+                'variant' => $variantLabel,
+                'remaining' => max(0, $remaining),
+            ],
+        ];
     }
 
     private function proposedName(array $payload): ?string

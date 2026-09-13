@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\MobilePushDevice;
+use App\Jobs\DeliverMobilePush;
 use App\Models\MobilePushDelivery;
+use App\Models\MobilePushDevice;
 use App\Services\FirebasePushSender;
+use App\Services\QueueMonitor;
+use App\Services\ReliableJobDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +22,7 @@ class PushDeviceController extends Controller
         $token = $request->user()->currentAccessToken();
         abort_unless($token instanceof PersonalAccessToken && $token->exists, 403, 'A mobile login session is required.');
         abort_unless($request->user()->is_active, 403, 'This account is inactive.');
+
         return $token->id;
     }
 
@@ -29,7 +33,8 @@ class PushDeviceController extends Controller
         $device = isset($input['installation_id'])
             ? MobilePushDevice::eligible()->where('personal_access_token_id', $tokenId)->where('installation_id', $input['installation_id'])->first()
             : null;
-        $lastSeen = Cache::get('mobile-push-worker-last-seen');
+        $lastSeen = Cache::get(QueueMonitor::HEARTBEAT_KEY);
+
         return response()->json([
             'configured' => $sender->configured(),
             'worker_running' => $lastSeen && $lastSeen >= now()->subMinute()->timestamp,
@@ -56,6 +61,7 @@ class PushDeviceController extends Controller
                 'token' => $input['token'], 'token_hash' => $hash, 'enabled' => true, 'last_seen_at' => now(),
             ]);
         });
+
         return response()->json(['registered' => true]);
     }
 
@@ -64,6 +70,7 @@ class PushDeviceController extends Controller
         $tokenId = $this->tokenId($request);
         $input = $request->validate(['installation_id' => ['required', 'uuid']]);
         MobilePushDevice::where('personal_access_token_id', $tokenId)->where('installation_id', $input['installation_id'])->delete();
+
         return response()->json(['registered' => false]);
     }
 
@@ -78,6 +85,10 @@ class PushDeviceController extends Controller
             'device_id' => $device->id, 'personal_access_token_id' => $tokenId,
             'event_key' => 'test:'.Str::uuid(), 'kind' => 'test', 'available_at' => now(),
         ]);
+        if (config('mobile_push.auto_dispatch', true)) {
+            app(ReliableJobDispatcher::class)->dispatch(new DeliverMobilePush);
+        }
+
         return response()->json(['message' => 'Test queued. Wait for the notification on this phone.'], 202);
     }
 }

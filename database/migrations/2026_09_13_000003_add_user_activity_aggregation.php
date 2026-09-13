@@ -23,37 +23,11 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Preserve recommendation strength if this migration is intentionally
-        // rolled back after aggregated events have already been recorded.
-        DB::table('user_activities')
-            ->where('activity_count', '>', 1)
-            ->orderBy('activity_id')
-            ->chunkById(100, function ($activities) {
-                $copies = [];
-
-                foreach ($activities as $activity) {
-                    for ($copy = 1; $copy < $activity->activity_count; $copy++) {
-                        $copies[] = [
-                            'user_id' => $activity->user_id,
-                            'product_id' => $activity->product_id,
-                            'activity_type' => $activity->activity_type,
-                            'activity_window' => null,
-                            'activity_count' => 1,
-                            'created_at' => $activity->created_at,
-                            'updated_at' => $activity->updated_at,
-                        ];
-
-                        if (count($copies) === 500) {
-                            DB::table('user_activities')->insert($copies);
-                            $copies = [];
-                        }
-                    }
-                }
-
-                if ($copies !== []) {
-                    DB::table('user_activities')->insert($copies);
-                }
-            }, 'activity_id');
+        if (DB::table('user_activities')->where('activity_count', '>', 1)->exists()) {
+            throw new RuntimeException(
+                'Aggregated activity remains. Run activities:prepare-aggregation-rollback until it succeeds, then retry the migration rollback.'
+            );
+        }
 
         Schema::table('user_activities', function (Blueprint $table) {
             $table->dropUnique('user_activities_window_unique');

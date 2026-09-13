@@ -32,6 +32,7 @@ class MobileOrderObserver
             'Order #'.$order->order_id.' - '.$this->peso($order).' placed.',
             '/tabs/orders/'.$order->order_id,
             ['order_id' => $order->order_id, 'status' => 'pending'],
+            'order-placed:'.$order->order_id,
         );
     }
 
@@ -56,6 +57,7 @@ class MobileOrderObserver
             'Order #'.$order->order_id.' - '.$this->peso($order).'.',
             '/tabs/orders/'.$order->order_id,
             ['order_id' => $order->order_id, 'status' => $status->value],
+            'order-status:'.$order->order_id.':'.$status->value,
         );
     }
 

@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Jobs\RecordUserActivities;
+use App\Models\BackgroundOperation;
 use App\Models\Product;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ActivityTrackingService
 {
@@ -48,10 +50,74 @@ class ActivityTrackingService
             return;
         }
 
-        RecordUserActivities::dispatch($userId, $productIds, $type, now()->toIso8601String());
+        $occurredAt = now()->toIso8601String();
+        $operationKey = 'activity:'.Str::uuid();
+        $now = now();
+
+        DB::table('background_operations')->insertOrIgnore([
+            'operation_key' => $operationKey,
+            'type' => 'user_activity',
+            'payload' => json_encode([
+                'user_id' => $userId,
+                'product_ids' => $productIds,
+                'activity_type' => $type,
+                'occurred_at' => $occurredAt,
+            ], JSON_THROW_ON_ERROR),
+            'available_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        app(ReliableJobDispatcher::class)->dispatch(new RecordUserActivities(
+            $userId,
+            $productIds,
+            $type,
+            $occurredAt,
+            $operationKey,
+        ));
+    }
+
+    public function processOperation(string $operationKey): void
+    {
+        $invalidateUser = DB::transaction(function () use ($operationKey): ?int {
+            $operation = BackgroundOperation::where('operation_key', $operationKey)
+                ->lockForUpdate()->first();
+
+            if (! $operation || $operation->processed_at || $operation->type !== 'user_activity') {
+                return null;
+            }
+
+            $payload = $operation->payload;
+            $this->recordRows(
+                (int) $payload['user_id'],
+                (array) $payload['product_ids'],
+                (string) $payload['activity_type'],
+                (string) $payload['occurred_at'],
+            );
+            $operation->update([
+                'attempts' => $operation->attempts + 1,
+                'processed_at' => now(),
+                'last_error' => null,
+            ]);
+
+            return $payload['activity_type'] === 'view' ? null : (int) $payload['user_id'];
+        });
+
+        if ($invalidateUser) {
+            $this->invalidateRecommendations($invalidateUser);
+        }
     }
 
     public function recordNow(int $userId, array $productIds, string $type, string $occurredAt): void
+    {
+        $this->recordRows($userId, $productIds, $type, $occurredAt);
+
+        if ($type !== 'view') {
+            $this->invalidateRecommendations($userId);
+        }
+    }
+
+    private function recordRows(int $userId, array $productIds, string $type, string $occurredAt): void
     {
         if (! array_key_exists($type, self::WEIGHTS)) {
             throw new \InvalidArgumentException("Unsupported activity type [{$type}].");
@@ -89,9 +155,14 @@ class ActivityTrackingService
             ['user_id', 'product_id', 'activity_type', 'activity_window'],
             ['activity_count' => $counter, 'updated_at' => $now],
         );
+    }
 
-        if ($type !== 'view') {
+    private function invalidateRecommendations(int $userId): void
+    {
+        try {
             app(RecommendationClient::class)->forgetForUser($userId);
+        } catch (\Throwable $exception) {
+            report($exception);
         }
     }
 

@@ -95,6 +95,7 @@ class MobilePushOutbox
             ->whereNull('locked_at')
             ->where('created_at', '>=', now()->subSeconds(self::DIGEST_WINDOW_SECONDS))
             ->latest('id')
+            ->lockForUpdate()
             ->first();
 
         if (! $waiting) {
@@ -138,7 +139,7 @@ class MobilePushOutbox
         if (! $sender->configured()) {
             return 0;
         }
-        Cache::put('mobile-push-worker-last-seen', now()->timestamp, now()->addMinutes(5));
+        Cache::put(QueueMonitor::HEARTBEAT_KEY, now()->timestamp, now()->addMinutes(5));
         $ids = MobilePushDelivery::where('status', 'pending')->where('available_at', '<=', now())
             ->where(fn ($q) => $q->whereNull('locked_at')->orWhere('locked_at', '<', now()->subMinutes(5)))
             ->orderBy('id')->limit(25)->pluck('id');
@@ -184,7 +185,7 @@ class MobilePushOutbox
                     'locked_at' => null,
                 ]);
             }
-            Cache::put('mobile-push-worker-last-seen', now()->timestamp, now()->addMinutes(5));
+            Cache::put(QueueMonitor::HEARTBEAT_KEY, now()->timestamp, now()->addMinutes(5));
         }
 
         return $sent;
