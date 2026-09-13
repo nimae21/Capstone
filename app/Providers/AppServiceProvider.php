@@ -5,11 +5,17 @@ namespace App\Providers;
 use App\Listeners\LogAuthenticationActivity;
 use App\Models\AdminInvitation;
 use App\Models\ApprovalRequest;
+use App\Models\Brand;
 use App\Models\Cart;
+use App\Models\Category;
 use App\Models\Order;
+use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\ShoeType;
 use App\Models\Stock;
 use App\Models\User;
 use App\Observers\AdminInvitationObserver;
+use App\Observers\AnalyticsCacheObserver;
 use App\Observers\ApprovalRequestObserver;
 use App\Observers\MobileOrderObserver;
 use App\Observers\StockObserver;
@@ -69,6 +75,18 @@ class AppServiceProvider extends ServiceProvider
         AdminInvitation::observe(AdminInvitationObserver::class);
         User::observe(UserObserver::class);
         Stock::observe(StockObserver::class);
+        foreach ([
+            Order::class,
+            Product::class,
+            ProductVariant::class,
+            Stock::class,
+            User::class,
+            Category::class,
+            Brand::class,
+            ShoeType::class,
+        ] as $analyticsModel) {
+            $analyticsModel::observe(AnalyticsCacheObserver::class);
+        }
         Event::listen(Login::class, [LogAuthenticationActivity::class, 'handleLogin']);
         Event::listen(Logout::class, [LogAuthenticationActivity::class, 'handleLogout']);
         Event::listen(Failed::class, [LogAuthenticationActivity::class, 'handleFailed']);

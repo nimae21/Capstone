@@ -29,7 +29,7 @@ it('renders customer pages with the shared responsive assets', function (string 
 })->with(['/home', '/men', '/women', '/kids', '/new', '/search?q=shoe', '/profile', '/addresses', '/addresses/create', '/orders', '/cart']);
 
 it('renders admin pages without the runtime css compiler', function (string $path) {
-    if (DB::getDriverName() === 'sqlite' && in_array($path, ['/admin/reports', '/admin/logs'])) {
+    if (DB::getDriverName() === 'sqlite' && $path === '/admin/logs') {
         $this->markTestSkipped('This controller uses database-specific SQL unsupported by the SQLite test database.');
     }
     $admin = User::factory()->create(['role' => 'admin', 'email_verified_at' => now()]);

@@ -353,7 +353,7 @@
                                 <td class="px-6 py-3 text-sm text-gray-500">{{ $index + 1 }}</td>
                                 <td class="px-6 py-3">
                                     <span class="font-medium text-gray-800">
-    {{ $customer->user->full_name ?? 'Guest User' }}
+    {{ $customer->customer_name }}
 </span>
                                 </td>
                                 <td class="px-6 py-3 text-right font-semibold text-gray-800">

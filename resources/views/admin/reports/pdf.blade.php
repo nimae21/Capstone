@@ -81,7 +81,7 @@
         <tbody>
             @foreach($topCustomers as $customer)
                 <tr>
-                    <td>{{ $customer->user->full_name ?? 'Guest User' }}</td>
+                    <td>{{ $customer->customer_name }}</td>
                     <td class="text-right">₱{{ number_format($customer->total_spent, 2) }}</td>
                 </tr>
             @endforeach
