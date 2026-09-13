@@ -63,14 +63,13 @@
                                 <div class="border rounded-2xl p-4 sm:p-5 flex flex-col gap-4 sm:flex-row sm:gap-5 hover:shadow-md transition">
 
     <div class="w-24 h-24 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-        @php $imageUrl = $item->variant->product->images->first()?->image_url; @endphp
-        @if($imageUrl)
-            <img src="{{ $imageUrl }}"
-                 alt="{{ $item->variant->product->product_name }}"
-                 class="w-full h-full object-cover" loading="lazy" decoding="async"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        @php $image = $item->variant->product->images->first(); @endphp
+        @if($image)
+            <x-product-image :image="$image" :alt="$item->variant->product->product_name"
+                             class="w-full h-full object-cover" sizes="96px"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
         @endif
-        <div class="w-full h-full flex items-center justify-center" style="{{ $imageUrl ? 'display: none;' : '' }}" aria-hidden="true">
+        <div class="w-full h-full flex items-center justify-center" style="{{ $image ? 'display: none;' : '' }}" aria-hidden="true">
             <i class="fas fa-shoe-prints text-3xl text-gray-400"></i>
         </div>
     </div>

@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\CleanupProductImageObjects;
 use App\Jobs\ProcessAdminAlert;
+use App\Jobs\ProcessProductImageVariants;
 use App\Jobs\RecordUserActivities;
 use App\Models\BackgroundOperation;
 use App\Services\ReliableJobDispatcher;
@@ -13,13 +15,13 @@ class ReconcileBackgroundOperations extends Command
 {
     protected $signature = 'background:reconcile';
 
-    protected $description = 'Redispatch durable activity and admin-alert operations missed by the queue';
+    protected $description = 'Redispatch durable background operations missed by the queue';
 
     public function handle(ReliableJobDispatcher $dispatcher): int
     {
         $operations = BackgroundOperation::whereNull('processed_at')
             ->where('available_at', '<=', now())
-            ->whereIn('type', ['user_activity', 'admin_alert', 'inventory_check'])
+            ->whereIn('type', ['user_activity', 'admin_alert', 'inventory_check', 'product_image_cleanup', 'product_image_variants'])
             ->orderBy('id')
             ->limit((int) config('background_jobs.reconcile_batch', 100))
             ->get();
@@ -36,6 +38,10 @@ class ReconcileBackgroundOperations extends Command
                         (string) $payload['occurred_at'],
                         $operation->operation_key,
                     ));
+                } elseif ($operation->type === 'product_image_cleanup') {
+                    $queued = $dispatcher->dispatch(new CleanupProductImageObjects($operation->operation_key));
+                } elseif ($operation->type === 'product_image_variants') {
+                    $queued = $dispatcher->dispatch(new ProcessProductImageVariants($operation->operation_key));
                 } else {
                     $queued = $dispatcher->dispatch(new ProcessAdminAlert($operation->operation_key));
                 }

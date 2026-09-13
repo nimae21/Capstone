@@ -62,6 +62,27 @@ class NewArrivalTest extends TestCase
         Schema::create('product_images', function (Blueprint $table) {
             $table->increments('image_id');
             $table->integer('product_id');
+            $table->string('image_path')->nullable();
+            $table->string('thumbnail_path')->nullable();
+            $table->string('medium_path')->nullable();
+            $table->string('large_path')->nullable();
+            $table->unsignedInteger('image_width')->nullable();
+            $table->unsignedInteger('image_height')->nullable();
+            $table->unsignedInteger('thumbnail_width')->nullable();
+            $table->unsignedInteger('thumbnail_height')->nullable();
+            $table->unsignedInteger('medium_width')->nullable();
+            $table->unsignedInteger('medium_height')->nullable();
+            $table->unsignedInteger('large_width')->nullable();
+            $table->unsignedInteger('large_height')->nullable();
+            $table->string('image_mime', 32)->nullable();
+            $table->unsignedBigInteger('image_size')->nullable();
+            $table->unsignedBigInteger('thumbnail_size')->nullable();
+            $table->unsignedBigInteger('medium_size')->nullable();
+            $table->unsignedBigInteger('large_size')->nullable();
+            $table->string('variant_mime', 32)->nullable();
+            $table->string('content_hash', 64)->nullable();
+            $table->timestamp('variants_generated_at')->nullable();
+            $table->boolean('is_primary')->default(false);
             $table->integer('display_order');
         });
     }

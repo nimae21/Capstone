@@ -15,7 +15,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -24,6 +23,11 @@ class ApprovalService
 {
     private const MODELS = ['category' => Category::class, 'brand' => Brand::class, 'shoe_type' => ShoeType::class,
         'product' => Product::class, 'variant' => ProductVariant::class, 'stock' => Stock::class, 'images' => ProductImage::class];
+
+    public function __construct(
+        private readonly ProductImageProcessor $imageProcessor,
+        private readonly ProductImageService $imageService,
+    ) {}
 
     private function rules(string $type): array
     {
@@ -46,7 +50,7 @@ class ApprovalService
     {
         $data = Validator::make($payload, $this->rules($type))->validate();
         $name = match ($type) {
-            'category' => 'category_name','brand' => 'brand_name','shoe_type' => 'shoe_type_name','product' => 'product_name',default => null
+            'category' => 'category_name', 'brand' => 'brand_name', 'shoe_type' => 'shoe_type_name', 'product' => 'product_name', default => null
         };
         if ($name) {
             $data[$name] = ucwords(strtolower(preg_replace('/\s+/', ' ', trim($data[$name]))));
@@ -73,14 +77,19 @@ class ApprovalService
     {
         abort_unless($request->user()?->role === 'admin' && $request->user()->is_active, 403);
         $data = $this->validatePayload($type, array_merge($request->all(), $parent));
-        $request->validate(['images' => 'sometimes|array|max:10', 'images.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120']);
+        $maxCount = (int) config('product_images.max_count');
+        $maxKilobytes = (int) config('product_images.max_filesize_kb');
+        $request->validate([
+            'images' => ['sometimes', 'array', 'max:'.$maxCount],
+            'images.*' => ['required', 'file', 'max:'.$maxKilobytes],
+            'image' => ['nullable', 'file', 'max:'.$maxKilobytes],
+        ]);
         $files = $request->file('images', []);
         if ($request->hasFile('image')) {
             $files[] = $request->file('image');
         }
-        if (count($files) > 10) {
-            throw ValidationException::withMessages(['images' => 'Upload at most 10 images per request.']);
+        if (count($files) > $maxCount) {
+            throw ValidationException::withMessages(['images' => "Upload at most {$maxCount} images per request."]);
         }
         if ($files && ! in_array($type, ['product', 'variant', 'images'], true)) {
             throw ValidationException::withMessages(['images' => 'Images can only be submitted for products and variants.']);
@@ -88,23 +97,17 @@ class ApprovalService
         if ($type === 'images' && ! $files) {
             throw ValidationException::withMessages(['images' => 'Select at least one image.']);
         }
-        $paths = [];
+
+        $descriptors = [];
         try {
-            foreach ($files as $file) {
-                $path = $file->store('products/pending', 'supabase');
-                if (! $path) {
-                    throw new \RuntimeException('Image staging failed.');
-                }
-                $paths[] = $path;
-            }
-            $data['_images'] = $paths;
+            $descriptors = $this->imageProcessor->stageMany($files, false);
+            $data['_images'] = $descriptors;
             $approval = ApprovalRequest::create(['requester_id' => $request->user()->id, 'entity_type' => $type, 'payload' => $data]);
-        } catch (\Throwable $e) {
-            foreach ($paths as $path) {
-                Storage::disk('supabase')->delete($path);
-            }
-            throw $e;
+        } catch (\Throwable $exception) {
+            $this->imageProcessor->deleteQuietly($this->imageService->pathsFromDescriptors($descriptors));
+            throw $exception;
         }
+
         $message = 'Request #'.$approval->id.' submitted for Super Admin approval. Nothing has been added to the live catalog yet.';
         if ($request->expectsJson()) {
             return response()->json(['pending' => true, 'request_id' => $approval->id, 'message' => $message], 202);
@@ -149,12 +152,24 @@ class ApprovalService
                     $product = Product::whereKey($productId)->lockForUpdate()->firstOrFail();
                     $order = $product->images()->max('display_order') ?? 0;
                     $primary = $product->images()->where('is_primary', true)->exists();
-                    foreach ($item->payload['_images'] ?? [] as $path) {
-                        ProductImage::create(['product_id' => $productId, 'image_path' => $path, 'color' => $data['color'] ?? null, 'display_order' => ++$order, 'is_primary' => ! $primary]);
+                    foreach ($item->payload['_images'] ?? [] as $descriptor) {
+                        $attributes = is_array($descriptor) ? $descriptor : ['image_path' => $descriptor];
+                        $created = ProductImage::create(array_merge($attributes, [
+                            'product_id' => $productId,
+                            'color' => $data['color'] ?? null,
+                            'display_order' => ++$order,
+                            'is_primary' => ! $primary,
+                        ]));
+                        $this->imageService->scheduleVariantGeneration($created);
                         $primary = true;
                     }
                 }
                 $item->entity_id = $entity->getKey();
+            } elseif (! empty($item->payload['_images'])) {
+                $this->imageService->scheduleCleanup(
+                    $this->imageService->pathsFromDescriptors($item->payload['_images']),
+                    'approval-rejected:'.$item->getKey(),
+                );
             }
             $item->fill(['status' => $decision, 'reviewer_id' => $reviewer->id, 'reviewed_at' => now(), 'rejection_reason' => $decision === 'rejected' ? $reason : null])->save();
         }, 3);

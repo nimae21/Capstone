@@ -395,10 +395,11 @@
             @php
                 /*
                  * IMPORTANT:
-                 * Use the same image_url field as the fixed
+                 * Use the same responsive image source as the fixed
                  * Men's Collection page.
                  */
-                $image = $product->images->first()?->image_url
+                $imageRecord = $product->images->first();
+                $image = $imageRecord?->thumbnail_url
                     ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400';
 
                 /*
@@ -422,10 +423,14 @@
                 @if ($product->is_new_arrival)<span class="shoe-badge">NEW</span>@endif
 
                 {{-- Product Image --}}
-                <img class="shoe-image"
-                     src="{{ $image }}"
-                     alt="{{ $product->product_name }}"
-                     onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400';">
+                @if($imageRecord)
+                    <x-product-image :image="$imageRecord" :alt="$product->product_name" class="shoe-image"
+                                     sizes="(max-width: 700px) 100vw, (max-width: 1000px) 50vw, 33vw"
+                                     onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400';" />
+                @else
+                    <img class="shoe-image" src="{{ $image }}" alt="{{ $product->product_name }}"
+                         width="400" height="400" loading="lazy" decoding="async">
+                @endif
 
                 {{-- Brand / Shoe Type --}}
                 @if($brandName || $shoeTypeName)

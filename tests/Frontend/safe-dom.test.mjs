@@ -12,6 +12,7 @@ class Element {
     append(...children) { this.children.push(...children); }
     replaceChildren(...children) { this.children = children; }
     addEventListener(name, callback) { this.events[name] = callback; }
+    removeAttribute(name) { delete this[name]; }
 }
 function documentDouble() {
     const elements = new Map();
@@ -57,9 +58,13 @@ test('POS renders malicious product values as text and preserves quantity contro
 test('gallery URLs cannot become markup or inline event handlers', () => {
     const document = documentDouble();
     const url = "https://images.example/a' onclick='alert(1).jpg";
-    const context = { document, productImages: [{ color: 'red', url }] };
-    const source = functionSource('../../resources/views/product/show.blade.php', 'updateGalleryForColor', '/*');
-    runInNewContext(source + "\nupdateGalleryForColor('red');", context);
+    const context = {
+        document,
+        productImages: [{ image_id: 1, color: 'red', url, thumbnail: url, srcset: '', width: 800, height: 600 }],
+    };
+    const setMain = functionSource('../../resources/views/product/show.blade.php', 'setMainProductImage', 'document.querySelectorAll');
+    const update = functionSource('../../resources/views/product/show.blade.php', 'updateGalleryForColor', '/*');
+    runInNewContext(setMain + '\n' + update + "\nupdateGalleryForColor('red');", context);
     const thumbnail = document.getElementById('thumbnailGallery').children[0];
     assert.equal(thumbnail.children[0].src, url);
     thumbnail.events.click();

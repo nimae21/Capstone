@@ -39,7 +39,7 @@ class PageController extends Controller
                 'brand:brand_id,brand_name',
                 'shoeType:shoe_type_id,shoe_type_name',
                 'images' => fn ($images) => $images
-                    ->select('image_id', 'product_id', 'image_path', 'is_primary', 'display_order')
+                    ->select('image_id', 'product_id', 'image_path', 'thumbnail_path', 'medium_path', 'large_path', 'image_width', 'image_height', 'thumbnail_width', 'thumbnail_height', 'medium_width', 'medium_height', 'large_width', 'large_height', 'is_primary', 'display_order')
                     ->reorder()->orderByDesc('is_primary')->orderBy('display_order')->orderBy('image_id')->limit(1),
             ])
             ->where('products.is_active', true);
@@ -139,7 +139,7 @@ class PageController extends Controller
     public function showProduct($id)
     {
         $product = Product::with([
-            'images:image_id,product_id,color,image_path,is_primary,display_order',
+            'images:image_id,product_id,color,image_path,thumbnail_path,medium_path,large_path,image_width,image_height,thumbnail_width,thumbnail_height,medium_width,medium_height,large_width,large_height,is_primary,display_order',
             'category:category_id,category_name',
             'brand:brand_id,brand_name',
             'variants' => fn ($query) => $query
@@ -187,13 +187,13 @@ class PageController extends Controller
         $products->getCollection()->load([
             'images' => fn ($images) => $images->reorder()
                 ->orderByDesc('is_primary')->orderBy('display_order')->orderBy('image_id')
-                ->select('image_id', 'product_id', 'image_path')->limit(1),
+                ->select('image_id', 'product_id', 'image_path', 'thumbnail_path', 'medium_path', 'large_path', 'image_width', 'image_height', 'thumbnail_width', 'thumbnail_height', 'medium_width', 'medium_height', 'large_width', 'large_height')->limit(1),
         ]);
 
         return response()->json([
             'products' => $products->getCollection()->map(fn (Product $product) => [
                 'name' => $product->product_name,
-                'image' => $product->images->first()?->image_url,
+                'image' => $product->images->first()?->thumbnail_url,
                 'url' => route('product.show', $product->product_id),
             ])->values(),
             'next_page' => $products->hasMorePages() ? $products->currentPage() + 1 : null,
@@ -219,7 +219,7 @@ class PageController extends Controller
                     'category:category_id,category_name',
                     'shoeType:shoe_type_id,shoe_type_name',
                     'images' => fn ($images) => $images
-                        ->select('image_id', 'product_id', 'image_path', 'is_primary', 'display_order')
+                        ->select('image_id', 'product_id', 'image_path', 'thumbnail_path', 'medium_path', 'large_path', 'image_width', 'image_height', 'thumbnail_width', 'thumbnail_height', 'medium_width', 'medium_height', 'large_width', 'large_height', 'is_primary', 'display_order')
                         ->reorder()->orderByDesc('is_primary')->orderBy('display_order')->orderBy('image_id')->limit(1),
                 ])
                 ->where('products.is_active', true)

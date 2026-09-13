@@ -161,7 +161,9 @@
                                             <!-- Product Image -->
                                             <div class="w-full h-48 sm:w-28 sm:h-28 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl shrink-0 flex items-center justify-center overflow-hidden shadow-md">
                                                 @if($product->images->first())
-                                                    <img src="{{ $product->images->first()->image_url }}" alt="{{ $product->product_name }}" class="w-full h-full object-cover rounded-xl transition-transform duration-300 hover:scale-110">
+                                                    <x-product-image :image="$product->images->first()" :alt="$product->product_name"
+                                                                     class="w-full h-full object-cover rounded-xl transition-transform duration-300 hover:scale-110"
+                                                                     sizes="(max-width: 640px) 100vw, 112px" />
                                                 @else
                                                     <i class="fas fa-shoe-prints text-gray-400 text-3xl"></i>
                                                 @endif

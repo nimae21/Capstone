@@ -301,7 +301,8 @@
         @forelse($products as $product)
         @php
     $price = $product->display_price;
-    $image = $product->images->first()?->image_url ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400';
+    $imageRecord = $product->images->first();
+    $image = $imageRecord?->thumbnail_url ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400';
     $description = $product->product_description ?? 'Premium performance footwear engineered for the relentless athlete.';
     $brandName = $product->brand->brand_name ?? null;
     $shoeTypeName = $product->shoeType->shoe_type_name ?? null;
@@ -310,7 +311,13 @@
         
         <a href="{{ route('product.show', ['id' => $product->product_id, 'return_to' => request()->fullUrl()]) }}" class="shoe-card" data-price="{{ $price }}" aria-label="View {{ $product->product_name }}">
             @if ($product->is_new_arrival)<span class="shoe-badge">NEW</span>@endif
-            <img class="shoe-image" src="{{ $image }}" alt="{{ $product->product_name }}">
+            @if($imageRecord)
+                <x-product-image :image="$imageRecord" :alt="$product->product_name" class="shoe-image"
+                                 sizes="(max-width: 700px) 100vw, (max-width: 1000px) 50vw, 33vw" />
+            @else
+                <img class="shoe-image" src="{{ $image }}" alt="{{ $product->product_name }}"
+                     width="400" height="400" loading="lazy" decoding="async">
+            @endif
             @if($brandName || $shoeTypeName)
                 <div class="shoe-meta">
                     @if($brandName)

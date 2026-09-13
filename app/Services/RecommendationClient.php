@@ -113,7 +113,7 @@ class RecommendationClient
                 ->limit(1)])
             ->with([
                 'brand:brand_id,brand_name',
-                'primaryImage:image_id,product_id,image_path,is_primary',
+                'primaryImage:image_id,product_id,image_path,thumbnail_path,medium_path,large_path,image_width,image_height,thumbnail_width,thumbnail_height,medium_width,medium_height,large_width,large_height,is_primary',
             ])
             ->whereIn('products.product_id', $productIds)
             ->where('products.is_active', true)

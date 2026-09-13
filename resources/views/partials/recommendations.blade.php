@@ -239,12 +239,9 @@
 @endphp
 
 @if($image)
-    <img
-        src="{{ $image->image_url }}"
-        alt="{{ $product->product_name }}"
-        loading="lazy"
-        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-    >
+    <x-product-image :image="$image" :alt="$product->product_name"
+                     sizes="(max-width: 768px) 50vw, 240px"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
 
     <div class="rec-image-placeholder" style="display: none;">
         <i class="fas fa-shoe-prints"></i>

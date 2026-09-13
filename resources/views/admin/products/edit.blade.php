@@ -152,9 +152,8 @@
 
                     <div class="border rounded-xl p-3 bg-white shadow">
 
-                        <img
-                            src="{{ $image->image_url }}"
-                            class="w-full h-32 object-cover rounded-lg">
+                        <x-product-image :image="$image" :alt="$product->product_name"
+                                         class="w-full h-32 object-cover rounded-lg" sizes="320px" />
 
                         <p class="text-xs text-gray-500 mt-2 text-center">
                             {{ $image->color ? 'Color: ' . $image->color : 'No color assigned' }}

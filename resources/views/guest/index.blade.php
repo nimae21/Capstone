@@ -609,7 +609,8 @@
             @php($image = $product->images->first())
             <a href="{{ route('product.show', $product->product_id) }}" class="product-card reveal" aria-label="View {{ $product->product_name }}">
                 @if ($image)
-                    <img class="product-img" src="{{ $image->image_url }}" alt="{{ $product->product_name }}" loading="lazy">
+                    <x-product-image :image="$image" :alt="$product->product_name"
+                                     class="product-img" sizes="(max-width: 700px) 100vw, (max-width: 1000px) 50vw, 33vw" />
                 @else
                     <span class="product-img product-placeholder"><i class="fas fa-shoe-prints" aria-hidden="true"></i></span>
                 @endif

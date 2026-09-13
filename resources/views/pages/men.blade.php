@@ -519,7 +519,8 @@
             @foreach($products as $product)
                 @php
     $price = $product->display_price;
-    $image = $product->images->first()?->image_url ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400';
+    $imageRecord = $product->images->first();
+    $image = $imageRecord?->thumbnail_url ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400';
     $description = $product->product_description ?? 'Premium performance footwear engineered for the relentless athlete.';
     $brandName = $product->brand->brand_name ?? null;
     $shoeTypeName = $product->shoeType->shoe_type_name ?? null;
@@ -530,9 +531,13 @@
                     @if ($product->is_new_arrival)<span class="shoe-badge">NEW</span>@endif
 
                     <div class="shoe-media">
-                    <img class="shoe-image" loading="lazy" decoding="async" width="400" height="400"
-                         src="{{ $image }}"
-                         alt="{{ $product->product_name }}">
+                    @if($imageRecord)
+                        <x-product-image :image="$imageRecord" :alt="$product->product_name" class="shoe-image"
+                                         sizes="(max-width: 700px) 100vw, (max-width: 1000px) 50vw, 33vw" />
+                    @else
+                        <img class="shoe-image" loading="lazy" decoding="async" width="400" height="400"
+                             src="{{ $image }}" alt="{{ $product->product_name }}">
+                    @endif
                     </div>
 
                     @if($brandName || $shoeTypeName)

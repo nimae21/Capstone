@@ -100,14 +100,14 @@
                         <div class="mb-6 pb-6 border-b border-gray-200 space-y-3 max-h-64 overflow-y-auto">
                             @forelse($cart->items as $item)
                                 <div class="flex justify-between gap-3 text-sm">
-                                    @php $imageUrl = $item->variant->product->images->first()?->image_url; @endphp
+                                    @php $image = $item->variant->product->images->first(); @endphp
                                     <div class="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                                        @if($imageUrl)
-                                            <img src="{{ $imageUrl }}" alt="{{ $item->variant->product->product_name }}"
-                                                 class="w-full h-full object-cover" loading="lazy" decoding="async"
-                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        @if($image)
+                                            <x-product-image :image="$image" :alt="$item->variant->product->product_name"
+                                                             class="w-full h-full object-cover" sizes="48px"
+                                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
                                         @endif
-                                        <div class="w-full h-full flex items-center justify-center" style="{{ $imageUrl ? 'display: none;' : '' }}" aria-hidden="true">
+                                        <div class="w-full h-full flex items-center justify-center" style="{{ $image ? 'display: none;' : '' }}" aria-hidden="true">
                                             <i class="fas fa-shoe-prints text-gray-400"></i>
                                         </div>
                                     </div>

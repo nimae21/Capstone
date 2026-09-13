@@ -192,10 +192,10 @@
                 <div class="glass-card rounded-2xl p-4 shadow-xl overflow-hidden">
                     <div class="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center">
                         @if($product->images->count() > 0)
-                            <img id="mainProductImage"
-                                 src="{{ $product->images->first()->image_url }}"
-                                 alt="{{ $product->product_name }}"
-                                 class="w-full h-full object-cover rounded-xl transition-transform duration-500 hover:scale-110">
+                            <x-product-image id="mainProductImage" :image="$product->images->first()" variant="large"
+                                             :alt="$product->product_name" sizes="(max-width: 1024px) 100vw, 50vw"
+                                             :eager="true"
+                                             class="w-full h-full object-cover rounded-xl transition-transform duration-500 hover:scale-110" />
                         @else
                             <i class="fas fa-shoe-prints text-gray-400 text-6xl"></i>
                         @endif
@@ -204,10 +204,13 @@
 
                 <div id="thumbnailGallery" class="flex gap-3 overflow-x-auto pb-2 custom-scroll">
                     @foreach($product->images->where('color', $product->images->first()?->color) as $image)
-                        <div class="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-red-500 transition-all"
-                             onclick="document.getElementById('mainProductImage').src = '{{ $image->image_url }}'">
-                            <img src="{{ $image->image_url }}" alt="Thumbnail" class="w-full h-full object-cover">
-                        </div>
+                        <button type="button"
+                                class="gallery-thumbnail w-20 h-20 bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-red-500 transition-all"
+                                data-gallery-id="{{ $image->image_id }}"
+                                aria-label="Show {{ $product->product_name }} image {{ $loop->iteration }}">
+                            <x-product-image :image="$image" :alt="$product->product_name . ' thumbnail'"
+                                             class="w-full h-full object-cover" sizes="80px" />
+                        </button>
                     @endforeach
                 </div>
             </div>
@@ -306,16 +309,45 @@
 </div>
 
 
+@php
+$productImageData = $product->images->map(fn($img) => [
+    'image_id' => $img->image_id,
+    'url' => $img->large_url,
+    'thumbnail' => $img->thumbnail_url,
+    'srcset' => $img->responsive_srcset,
+    'width' => $img->large_width ?: $img->image_width,
+    'height' => $img->large_height ?: $img->image_height,
+    'color' => $img->color,
+])->values();
+@endphp
 <script>
 const variants = @json($product->variants);
-
-const productImages = @json($product->images->map(fn($img) => [
-    'url' => $img->image_url,
-    'color' => $img->color,
-]));
+const productImages = @json($productImageData);
 
 let selectedColor = null;
 let selectedVariant = null;
+
+function setMainProductImage(image)
+{
+    const main = document.getElementById('mainProductImage');
+    main.src = image.url;
+    if (image.srcset) {
+        main.srcset = image.srcset;
+        main.sizes = '(max-width: 1024px) 100vw, 50vw';
+    } else {
+        main.removeAttribute('srcset');
+        main.removeAttribute('sizes');
+    }
+    if (image.width) main.width = image.width;
+    if (image.height) main.height = image.height;
+}
+
+document.querySelectorAll('[data-gallery-id]').forEach(button => {
+    button.addEventListener('click', () => {
+        const image = productImages.find(item => Number(item.image_id) === Number(button.dataset.galleryId));
+        if (image) setMainProductImage(image);
+    });
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -330,19 +362,21 @@ function updateGalleryForColor(color)
 
     if (toShow.length === 0) return;
 
-    document.getElementById('mainProductImage').src = toShow[0].url;
+    setMainProductImage(toShow[0]);
 
     const gallery = document.getElementById('thumbnailGallery');
     gallery.replaceChildren(...toShow.map(img => {
         const thumbnail = document.createElement('div');
         thumbnail.className = 'w-20 h-20 bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-red-500 transition-all';
-        thumbnail.addEventListener('click', () => {
-            document.getElementById('mainProductImage').src = img.url;
-        });
+        thumbnail.addEventListener('click', () => setMainProductImage(img));
         const image = document.createElement('img');
-        image.src = img.url;
-        image.alt = 'Thumbnail';
+        image.src = img.thumbnail;
+        image.alt = '{{ addslashes($product->product_name) }} thumbnail';
         image.className = 'w-full h-full object-cover';
+        image.width = 80;
+        image.height = 80;
+        image.loading = 'lazy';
+        image.decoding = 'async';
         thumbnail.append(image);
         return thumbnail;
     }));

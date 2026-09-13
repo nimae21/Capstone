@@ -35,7 +35,7 @@ class CartController extends Controller
                 'items.variant.product' => fn ($products) => $products
                     ->select('product_id', 'product_name')
                     ->with(['images' => fn ($images) => $images
-                        ->select('image_id', 'product_id', 'image_path', 'is_primary', 'display_order')
+                        ->select('image_id', 'product_id', 'image_path', 'thumbnail_path', 'medium_path', 'large_path', 'image_width', 'image_height', 'thumbnail_width', 'thumbnail_height', 'medium_width', 'medium_height', 'large_width', 'large_height', 'is_primary', 'display_order')
                         ->reorder()->orderByDesc('is_primary')->orderBy('display_order')->orderBy('image_id')->limit(1)]),
             ])
             ->where('user_id', auth()->id())

@@ -10,9 +10,15 @@
                aria-label="View {{ $product->product_name }}"
                aria-hidden="{{ $loop->first ? 'false' : 'true' }}"
                tabindex="{{ $loop->first ? '0' : '-1' }}" @if (!$loop->first) inert @endif>
-                <img src="{{ $product->images->first()?->image_url ?? $fallback }}"
-                     data-fallback="{{ $fallback }}" alt="{{ $product->product_name }}"
-                     loading="{{ $loop->first ? 'eager' : 'lazy' }}" decoding="async">
+                @if($product->images->first())
+                    <x-product-image :image="$product->images->first()" variant="large"
+                                     :alt="$product->product_name" sizes="(max-width: 900px) 100vw, 50vw"
+                                     :eager="$loop->first" data-fallback="{{ $fallback }}" />
+                @else
+                    <img src="{{ $fallback }}" data-fallback="{{ $fallback }}" alt="{{ $product->product_name }}"
+                         width="800" height="800" loading="{{ $loop->first ? 'eager' : 'lazy' }}"
+                         decoding="async" @if($loop->first) fetchpriority="high" @endif>
+                @endif
             </a>
         @empty
             <div class="achilles-hero-carousel__slide is-active">

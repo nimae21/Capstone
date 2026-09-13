@@ -11,6 +11,8 @@ return [
     'activity_timeout' => max(10, min(120, (int) env('ACTIVITY_JOB_TIMEOUT', 30))),
     'notification_timeout' => max(10, min(120, (int) env('NOTIFICATION_JOB_TIMEOUT', 45))),
     'push_timeout' => max(10, min(120, (int) env('PUSH_JOB_TIMEOUT', 60))),
+    'image_cleanup_timeout' => max(10, min(300, (int) env('IMAGE_CLEANUP_JOB_TIMEOUT', 60))),
+    'image_processing_timeout' => max(30, min(600, (int) env('IMAGE_PROCESSING_JOB_TIMEOUT', 180))),
     'backoff' => $backoff === [] ? [10, 30, 60, 300] : $backoff,
     'unique_for' => max(60, min(3600, (int) env('QUEUE_JOB_UNIQUE_FOR', 600))),
     'reconcile_batch' => max(10, min(500, (int) env('BACKGROUND_RECONCILE_BATCH', 100))),

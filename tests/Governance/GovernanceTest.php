@@ -220,7 +220,7 @@ class GovernanceTest extends TestCase
         foreach (ApprovalRequest::pluck('id') as $id) {
             $service->review($id, $super, 'approved');
         }
-        $this->post('/admin/products', ['product_name' => 'Product', 'category_id' => Category::first()->getKey(), 'brand_id' => Brand::first()->getKey(), 'shoe_type_id' => ShoeType::first()->getKey(), 'images' => [UploadedFile::fake()->createWithContent('shoe.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aOZkAAAAASUVORK5CYII='))]])->assertRedirect();
+        $this->post('/admin/products', ['product_name' => 'Product', 'category_id' => Category::first()->getKey(), 'brand_id' => Brand::first()->getKey(), 'shoe_type_id' => ShoeType::first()->getKey(), 'images' => [UploadedFile::fake()->image('shoe.png', 20, 20)]])->assertRedirect();
         $this->assertDatabaseCount('products', 0);
         $this->assertDatabaseCount('product_images', 0);
         $service->review(ApprovalRequest::max('id'), $super, 'approved');
@@ -235,7 +235,7 @@ class GovernanceTest extends TestCase
         $service->review(ApprovalRequest::max('id'), $super, 'approved');
         $this->assertEquals(12, Stock::first()->remaining_quantity);
         $this->assertDatabaseHas('stock_movements', ['quantity' => 12, 'type' => 'in']);
-        $this->post('/admin/products/'.$product->getKey().'/images', ['images' => [UploadedFile::fake()->createWithContent('second.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aOZkAAAAASUVORK5CYII='))]])->assertRedirect();
+        $this->post('/admin/products/'.$product->getKey().'/images', ['images' => [UploadedFile::fake()->image('second.png', 20, 20)]])->assertRedirect();
         $this->assertDatabaseCount('product_images', 1);
         $service->review(ApprovalRequest::max('id'), $super, 'approved');
         $this->assertDatabaseCount('product_images', 2);

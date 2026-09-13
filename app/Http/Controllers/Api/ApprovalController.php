@@ -143,7 +143,7 @@ class ApprovalController extends Controller
         if ($withPayload) {
             $presented['fields'] = $this->fields($item->entity_type, $payload);
             $presented['images'] = collect($payload['_images'] ?? [])
-                ->map(fn ($path) => ['path' => $path, 'url' => Storage::disk('supabase')->url($path)])
+                ->map(fn ($path) => ['path' => is_array($path) ? $path['image_path'] : $path, 'url' => Storage::disk(config('product_images.disk'))->url(is_array($path) ? $path['image_path'] : $path)])
                 ->values();
             $presented['raw_payload'] = collect($payload)->except('_images');
         }
