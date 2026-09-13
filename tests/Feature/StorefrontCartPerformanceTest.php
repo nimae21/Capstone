@@ -256,6 +256,24 @@ it('enforces one active cart and one variant row per cart while allowing history
     ]))->toThrow(QueryException::class);
 });
 
+it('projects grouped keys in cart integrity existence checks for PostgreSQL', function () {
+    $migration = require database_path('migrations/2026_09_13_000007_enforce_cart_integrity.php');
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    foreach (['duplicateActiveCartsExist', 'duplicateItemsExist'] as $methodName) {
+        (new ReflectionMethod($migration, $methodName))->invoke($migration);
+    }
+
+    $queries = collect(DB::getQueryLog())->pluck('query');
+    DB::disableQueryLog();
+
+    expect($queries)->toContain(
+        'select exists(select "user_id" from "carts" where "status" = ? group by "user_id" having COUNT(*) > 1) as "exists"',
+        'select exists(select "cart_id", "product_variant_id" from "cart_items" group by "cart_id", "product_variant_id" having COUNT(*) > 1) as "exists"',
+    );
+});
 it('audits then merges bounded duplicates without losing quantity and supports rollback', function () {
     $migration = require database_path('migrations/2026_09_13_000007_enforce_cart_integrity.php');
     $migration->down();

@@ -88,6 +88,7 @@ return new class extends Migration
     private function duplicateActiveCartsExist(): bool
     {
         return DB::table('carts')
+            ->select('user_id')
             ->where('status', 0)
             ->groupBy('user_id')
             ->havingRaw('COUNT(*) > 1')
@@ -97,6 +98,7 @@ return new class extends Migration
     private function duplicateItemsExist(): bool
     {
         return DB::table('cart_items')
+            ->select('cart_id', 'product_variant_id')
             ->groupBy('cart_id', 'product_variant_id')
             ->havingRaw('COUNT(*) > 1')
             ->exists();

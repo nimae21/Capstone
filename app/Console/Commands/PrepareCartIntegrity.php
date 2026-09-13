@@ -94,9 +94,10 @@ class PrepareCartIntegrity extends Command
             }
         }
 
-        $activeRemain = DB::table('carts')->where('status', 0)
+        $activeRemain = DB::table('carts')->select('user_id')->where('status', 0)
             ->groupBy('user_id')->havingRaw('COUNT(*) > 1')->exists();
         $itemsRemain = DB::table('cart_items')
+            ->select('cart_id', 'product_variant_id')
             ->groupBy('cart_id', 'product_variant_id')->havingRaw('COUNT(*) > 1')->exists();
 
         if ($activeRemain || $itemsRemain) {
