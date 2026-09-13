@@ -73,6 +73,8 @@ Route::get('/search', [PageController::class, 'search'])->middleware('throttle:p
 // All products listing (for back to shop button)
 Route::get('/products', [PageController::class, 'home'])->name('products.index');
 Route::middleware(['auth', 'verified', 'isUser'])->group(function () {
+    Route::get('/recommendations/cards', [PageController::class, 'recommendations'])
+        ->middleware('throttle:30,1')->name('recommendations.cards');
     Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
 
     /*

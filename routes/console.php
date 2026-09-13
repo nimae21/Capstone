@@ -19,3 +19,6 @@ Artisan::command('registrations:prune', function () {
 Schedule::command('registrations:prune')->hourly()->withoutOverlapping();
 Schedule::command('checkout-retries:recover')
     ->everyMinute()->withoutOverlapping(5);
+Schedule::command('activities:prune')
+    ->daily()->withoutOverlapping()
+    ->when(fn () => (int) config('activity_tracking.retention_days') > 0);

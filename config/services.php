@@ -44,6 +44,9 @@ return [
     'recommendation' => [
         'url' => env('RECOMMENDATION_SERVICE_URL', 'http://127.0.0.1:5000'),
         'key' => env('RECOMMENDATION_SERVICE_KEY'),
+        'connect_timeout' => max(1, min(3, (int) env('RECOMMENDATION_CONNECT_TIMEOUT', 1))),
+        'timeout' => max(1, min(5, (int) env('RECOMMENDATION_TIMEOUT', 2))),
+        'cache_minutes' => max(5, min(15, (int) env('RECOMMENDATION_CACHE_MINUTES', 10))),
     ],
 
 ];

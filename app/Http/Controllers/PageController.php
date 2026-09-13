@@ -91,8 +91,26 @@ class PageController extends Controller
     private function recommendationsForCurrentUser(): Collection
     {
         return auth()->check()
-            ? app(RecommendationClient::class)->forUser(auth()->id())
+            ? app(RecommendationClient::class)->cachedForUser(auth()->id())
             : collect();
+    }
+
+    public function recommendations(Request $request)
+    {
+        $validated = $request->validate([
+            'exclude_product_id' => ['nullable', 'integer', 'min:1'],
+        ]);
+        $recommendations = app(RecommendationClient::class)->forUser(auth()->id());
+
+        if (isset($validated['exclude_product_id'])) {
+            $recommendations = $recommendations->reject(
+                fn (Product $product) => $product->product_id === (int) $validated['exclude_product_id'],
+            );
+        }
+
+        return response()->view('partials.recommendations', [
+            'recommendations' => $recommendations,
+        ]);
     }
 
     public function men(Request $request)
@@ -146,10 +164,12 @@ class PageController extends Controller
         }
 
         $recommendations = auth()->check()
-           ? app(RecommendationClient::class)->forUser(auth()->id())->reject(fn ($p) => $p->product_id === $product->product_id)
+           ? app(RecommendationClient::class)->cachedForUser(auth()->id())->reject(fn ($p) => $p->product_id === $product->product_id)
            : collect();
 
-        return view('product.show', compact('product', 'recommendations'));
+        $recommendationExcludeProductId = $product->product_id;
+
+        return view('product.show', compact('product', 'recommendations', 'recommendationExcludeProductId'));
     }
 
     public function searchSuggestions(Request $request)
@@ -217,9 +237,7 @@ class PageController extends Controller
             // the signal used later by the recommendation engine, treating
             // "appeared in a matching search" as a moderate interest signal.
             if (auth()->check()) {
-                foreach ($products->take(5) as $product) {
-                    $this->activityTracker->logSearch(auth()->user(), $product);
-                }
+                $this->activityTracker->logSearchResults(auth()->user(), $products->take(5));
             }
         }
 

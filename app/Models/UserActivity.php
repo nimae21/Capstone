@@ -12,6 +12,13 @@ class UserActivity extends Model
         'user_id',
         'product_id',
         'activity_type',
+        'activity_window',
+        'activity_count',
+    ];
+
+    protected $casts = [
+        'activity_window' => 'datetime',
+        'activity_count' => 'integer',
     ];
 
     public function user()

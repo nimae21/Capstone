@@ -215,7 +215,9 @@
     }
 </style>
 
-<div class="rec-section">
+<div class="rec-section"
+     @auth data-recommendations-url="{{ route('recommendations.cards', isset($recommendationExcludeProductId) ? ['exclude_product_id' => $recommendationExcludeProductId] : []) }}"
+     data-recommendations-pending="{{ app(\App\Services\RecommendationClient::class)->isCachedForUser(auth()->id()) ? '0' : '1' }}" @endauth>
 
     @if($recommendations->isNotEmpty())
 
@@ -233,7 +235,7 @@
 
                     <div class="rec-image-wrap">
                         @php
-    $image = $product->images->first();
+    $image = $product->primaryImage;
 @endphp
 
 @if($image)

@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\Stock;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -26,29 +28,46 @@ class RecommendationClient
     public function forUser(int $userId, int $limit = 8): Collection
     {
         $limit = max(1, min(20, $limit));
-        $cacheKey = "recommendations.user.{$userId}.{$limit}";
+        $productIds = Cache::remember(
+            $this->cacheKey($userId, $limit),
+            now()->addMinutes((int) config('services.recommendation.cache_minutes', 10)),
+            fn () => $this->fetchProductIds($userId, $limit),
+        );
 
-        return Cache::remember($cacheKey, now()->addSeconds(60), function () use ($userId, $limit): Collection {
-            return $this->fetchForUser($userId, $limit);
-        });
+        return $this->loadCards($productIds);
+    }
+
+    public function cachedForUser(int $userId, int $limit = 8): Collection
+    {
+        $limit = max(1, min(20, $limit));
+        $productIds = Cache::get($this->cacheKey($userId, $limit));
+
+        return is_array($productIds) ? $this->loadCards($productIds) : collect();
+    }
+
+    public function isCachedForUser(int $userId, int $limit = 8): bool
+    {
+        return Cache::has($this->cacheKey($userId, max(1, min(20, $limit))));
     }
 
     public function forgetForUser(int $userId): void
     {
-        Cache::forget("recommendations.user.{$userId}.8");
+        $versionKey = "recommendations.user.{$userId}.version";
+        Cache::forever($versionKey, ((int) Cache::get($versionKey, 1)) + 1);
     }
 
-    private function fetchForUser(int $userId, int $limit): Collection
+    private function fetchProductIds(int $userId, int $limit): array
     {
         try {
             $key = (string) config('services.recommendation.key');
             if ($key === '') {
                 Log::warning('Recommendation service key is not configured.');
 
-                return collect();
+                return [];
             }
 
-            $response = Http::connectTimeout(1)->timeout(5)
+            $response = Http::connectTimeout((int) config('services.recommendation.connect_timeout', 1))
+                ->timeout((int) config('services.recommendation.timeout', 2))
                 ->withHeaders(['X-Recommendation-Key' => $key])
                 ->get("{$this->baseUrl}/recommendations/{$userId}", [
                     'limit' => $limit,
@@ -57,37 +76,56 @@ class RecommendationClient
             if ($response->failed()) {
                 Log::warning("Recommendation service returned an error for user {$userId}: ".$response->status());
 
-                return collect();
+                return [];
             }
 
             $productIds = $response->json('product_ids', []);
 
-            if (empty($productIds)) {
-                return collect();
-            }
-
-            // Preserve the order the service returned (its ranking),
-            // rather than whatever order the DB happens to return rows in.
-            $products = Product::with(['images', 'brand', 'variants.stocks'])
-                ->whereIn('product_id', $productIds)
-                ->where('is_active', true)
-                ->get()
-                ->sortBy(fn ($product) => array_search($product->product_id, $productIds))
-                ->values();
-
-            foreach ($products as $product) {
-                $variant = $product->variants->first();
-                $product->display_price = $variant?->stocks->sortByDesc('deliver_date')->first()?->price ?? 0;
-            }
-
-            return $products;
+            return collect($productIds)->filter(fn ($id) => is_int($id) || ctype_digit((string) $id))
+                ->map(fn ($id) => (int) $id)->unique()->take($limit)->values()->all();
 
         } catch (\Throwable $e) {
             // Connection refused, timeout, DNS failure, etc. — the
             // Python service being unreachable should degrade silently.
             Log::warning('Recommendation service unreachable.', ['exception' => get_class($e)]);
 
+            return [];
+        }
+    }
+
+    private function loadCards(array $productIds): Collection
+    {
+        if ($productIds === []) {
             return collect();
         }
+
+        return Product::query()
+            ->select('products.product_id', 'products.product_name', 'products.brand_id',
+                'products.is_active', 'products.new_arrival_until')
+            ->addSelect(['display_price' => Stock::query()
+                ->select('stocks.price')
+                ->where('stocks.product_variant_id', ProductVariant::query()
+                    ->select('product_variants.product_variant_id')
+                    ->whereColumn('product_variants.product_id', 'products.product_id')
+                    ->orderBy('product_variants.product_variant_id')
+                    ->limit(1))
+                ->orderByDesc('stocks.deliver_date')
+                ->limit(1)])
+            ->with([
+                'brand:brand_id,brand_name',
+                'primaryImage:image_id,product_id,image_path,is_primary',
+            ])
+            ->whereIn('products.product_id', $productIds)
+            ->where('products.is_active', true)
+            ->get()
+            ->sortBy(fn ($product) => array_search($product->product_id, $productIds, true))
+            ->values();
+    }
+
+    private function cacheKey(int $userId, int $limit): string
+    {
+        $version = (int) Cache::get("recommendations.user.{$userId}.version", 1);
+
+        return "recommendations.user.{$userId}.v{$version}.{$limit}";
     }
 }
