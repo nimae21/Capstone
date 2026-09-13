@@ -9,6 +9,7 @@ use App\Exceptions\InsufficientStockException;
 use App\Exceptions\InvalidOrderTransitionException;
 use App\Exceptions\OrderNotCancellableException;
 use App\Models\Cart;
+use App\Models\CheckoutRetryOperation;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -243,7 +244,7 @@ class OrderService
 
     public function retryCheckout(Order $order, ?string $expectedSessionId): ?string
     {
-        return DB::transaction(function () use ($order, $expectedSessionId) {
+        $operation = DB::transaction(function () use ($order, $expectedSessionId) {
             $current = Order::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
             $payment = $current->payment()->lockForUpdate()->first();
             if ($current->sale_type !== SaleType::Online || $current->status !== OrderStatus::Pending
@@ -255,49 +256,166 @@ class OrderService
             if ($payment->checkout_session_id !== $expectedSessionId) {
                 return null;
             }
-            if ($payment->checkout_session_id) {
-                $session = $this->payMongoService->expireCheckoutSession($payment->checkout_session_id);
-                if ($paid = $this->payMongoService->paidPayment($session)) {
-                    $this->confirmPayment($session['id'], $paid['attributes']['source']['type'] ?? 'unknown',
-                        $paid['id'], $paid['attributes']['amount'], $paid['attributes']['currency']);
-
-                    return null;
-                }
-            }
             foreach ($current->items()->with('variant.stocks')->get() as $item) {
                 if (! $this->stockService->hasStock($item->variant, $item->quantity)) {
                     throw new InsufficientStockException('An item is no longer in stock. Please contact support or cancel this order.');
                 }
             }
-            $idempotencyKey = 'checkout-retry-'.$current->order_id.'-'.hash('sha256', $payment->checkout_session_id);
-            $session = $this->payMongoService->createCheckoutSession(
-                $current,
-                route('checkout.success', $current->order_id),
-                route('checkout.cancel', $current->order_id),
-                $idempotencyKey
-            );
-            if ($session['id'] === $payment->checkout_session_id
+
+            return CheckoutRetryOperation::firstOrCreate([
+                'payment_id' => $payment->getKey(),
+                'source_session_id' => $expectedSessionId,
+            ], [
+                'operation_key' => (string) Str::uuid(),
+                'status' => 'pending',
+            ]);
+        });
+
+        return $operation ? $this->processCheckoutRetry($operation) : null;
+    }
+
+    public function recoverPendingCheckoutRetries(int $limit = 50): int
+    {
+        $operations = CheckoutRetryOperation::whereIn('status', ['pending', 'target_created', 'reconcile'])
+            ->orderBy('updated_at')
+            ->limit(max(1, min($limit, 500)))
+            ->get();
+
+        $recovered = 0;
+        foreach ($operations as $operation) {
+            try {
+                $this->processCheckoutRetry($operation);
+                $recovered++;
+            } catch (\Throwable $error) {
+                report($error);
+            }
+        }
+
+        return $recovered;
+    }
+
+    private function processCheckoutRetry(CheckoutRetryOperation $operation): ?string
+    {
+        $operation->refresh();
+        if (in_array($operation->status, ['completed', 'reconciled', 'failed'], true)) {
+            return null;
+        }
+
+        $payment = $operation->payment()->with('order.items.variant.product', 'order.user')->firstOrFail();
+        $session = $operation->target_session_id ? [
+            'id' => $operation->target_session_id,
+            'checkout_url' => $operation->checkout_url,
+            'payment_intent_id' => $operation->target_payment_intent_id,
+        ] : null;
+
+        if (! $session) {
+            CheckoutRetryOperation::whereKey($operation->getKey())->increment('attempts');
+            try {
+                $source = $this->payMongoService->expireCheckoutSession($operation->source_session_id);
+                if ($paid = $this->payMongoService->paidPayment($source)) {
+                    $this->confirmPayment($source['id'], $paid['attributes']['source']['type'] ?? 'unknown',
+                        $paid['id'], $paid['attributes']['amount'], $paid['attributes']['currency']);
+                    $operation->update(['status' => 'reconciled', 'last_error' => null]);
+
+                    return null;
+                }
+
+                $session = $this->payMongoService->createCheckoutSession(
+                    $payment->order,
+                    route('checkout.success', $payment->order_id),
+                    route('checkout.cancel', $payment->order_id),
+                    'checkout-retry-'.$operation->operation_key,
+                );
+            } catch (\Throwable $error) {
+                $operation->update(['last_error' => class_basename($error).': checkout provider operation incomplete']);
+                throw $error;
+            }
+
+            $payment->refresh();
+            if ($session['id'] === $operation->source_session_id
                 || in_array($session['id'], $payment->previous_checkout_session_ids ?? [], true)
                 || (! empty($session['payment_intent_id']) && $session['payment_intent_id'] === $payment->paymongo_payment_intent_id)) {
+                $operation->update(['status' => 'failed', 'last_error' => 'Provider returned a previously used payment attempt.']);
                 throw new \RuntimeException('PayMongo retry returned a previously used payment attempt.');
             }
-            $previous = $payment->previous_checkout_session_ids ?? [];
-            if ($payment->checkout_session_id) {
-                $previous[] = $payment->checkout_session_id;
+
+            DB::transaction(function () use ($operation, $session) {
+                $locked = CheckoutRetryOperation::whereKey($operation->getKey())->lockForUpdate()->firstOrFail();
+                if ($locked->target_session_id && $locked->target_session_id !== $session['id']) {
+                    throw new \RuntimeException('Conflicting checkout sessions returned for one retry operation.');
+                }
+                $locked->update([
+                    'target_session_id' => $session['id'],
+                    'target_payment_intent_id' => $session['payment_intent_id'] ?? null,
+                    'checkout_url' => $session['checkout_url'],
+                    'status' => 'target_created',
+                    'last_error' => null,
+                ]);
+            });
+        }
+
+        $result = DB::transaction(function () use ($operation) {
+            $locked = CheckoutRetryOperation::whereKey($operation->getKey())->lockForUpdate()->firstOrFail();
+            $payment = Payment::whereKey($locked->payment_id)->lockForUpdate()->firstOrFail();
+            $order = Order::whereKey($payment->order_id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status === 'completed') {
+                return 'duplicate';
             }
-            $payment->update([
-                'previous_checkout_session_ids' => array_values(array_unique($previous)),
+            if ($order->sale_type === SaleType::Online && $order->status === OrderStatus::Pending
+                && ! $payment->refund_status && in_array($payment->status, ['pending', 'failed', 'expired'], true)
+                && $payment->checkout_session_id === $locked->source_session_id) {
+                $previous = array_values(array_unique(array_merge(
+                    $payment->previous_checkout_session_ids ?? [], [$locked->source_session_id]
+                )));
+                $payment->update([
+                    'previous_checkout_session_ids' => $previous,
+                    'checkout_session_id' => $locked->target_session_id,
+                    'paymongo_payment_intent_id' => $locked->target_payment_intent_id,
+                    'status' => 'pending',
+                    'method' => 'pending',
+                ]);
+                $locked->update(['status' => 'completed', 'last_error' => null]);
+
+                return 'activated';
+            }
+
+            $previous = array_values(array_unique(array_merge(
+                $payment->previous_checkout_session_ids ?? [], [$locked->target_session_id]
+            )));
+            $payment->update(['previous_checkout_session_ids' => $previous]);
+            $locked->update(['status' => 'reconcile']);
+
+            return 'reconcile';
+        });
+
+        if ($result === 'activated') {
+            Log::info('PayMongo checkout retry created', [
+                'order_id' => $payment->order_id,
                 'checkout_session_id' => $session['id'],
-                'paymongo_payment_intent_id' => $session['payment_intent_id'] ?? null,
-                'status' => 'pending', 'method' => 'pending',
+                'previous_checkout_session_id' => $operation->source_session_id,
+                'payment_intent_id' => $session['payment_intent_id'] ?? null,
             ]);
-            Log::info('PayMongo checkout retry created', array_merge($this->paymentContext($payment), [
-                'previous_checkout_session_id' => $expectedSessionId,
-                'payment_intent_id' => $payment->paymongo_payment_intent_id,
-            ]));
 
             return $session['checkout_url'];
-        });
+        }
+        if ($result === 'duplicate') {
+            return null;
+        }
+
+        try {
+            $target = $this->payMongoService->expireCheckoutSession($session['id']);
+            if ($paid = $this->payMongoService->paidPayment($target)) {
+                $this->confirmPayment($target['id'], $paid['attributes']['source']['type'] ?? 'unknown',
+                    $paid['id'], $paid['attributes']['amount'], $paid['attributes']['currency']);
+            }
+            $operation->update(['status' => 'reconciled', 'last_error' => null]);
+        } catch (\Throwable $error) {
+            $operation->update(['last_error' => class_basename($error).': checkout reconciliation incomplete']);
+            throw $error;
+        }
+
+        return null;
     }
 
     public function cancel(Order $order): Order

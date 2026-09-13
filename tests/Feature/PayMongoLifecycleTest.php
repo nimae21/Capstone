@@ -3,6 +3,7 @@
 use App\Enums\OrderStatus;
 use App\Exceptions\InvalidOrderTransitionException;
 use App\Exceptions\OrderNotCancellableException;
+use App\Models\CheckoutRetryOperation;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
@@ -669,4 +670,91 @@ it('rejects cancellation if checkout changes while provider verification is in f
     expect(fn () => app(OrderService::class)->cancel($f['order']))
         ->toThrow(OrderNotCancellableException::class);
     expect($f['order']->fresh()->status)->toBe(OrderStatus::Pending);
+});
+
+it('runs every retry provider call outside application transactions and reuses its durable key', function () {
+    $f = lifecycleOrder();
+    $f['payment']->update(['status' => 'failed']);
+    $baseline = DB::transactionLevel();
+    $levels = [];
+    $keys = [];
+    $creates = 0;
+    Http::fake(function ($request) use (&$levels, &$keys, &$creates) {
+        $levels[] = DB::transactionLevel();
+        if ($request->method() === 'POST' && $request->url() === 'https://api.paymongo.com/v1/checkout_sessions') {
+            $keys[] = $request->header('Idempotency-Key')[0];
+            $creates++;
+            if ($creates === 1) {
+                throw new ConnectionException('Provider accepted request but response was lost');
+            }
+
+            return Http::response(['data' => [
+                'id' => 'cs_retry',
+                'attributes' => ['checkout_url' => 'https://checkout.paymongo.com/retry',
+                    'payment_intent' => ['id' => 'pi_retry']],
+            ]]);
+        }
+
+        return Http::response(['data' => lifecycleSession(false, 'expired')]);
+    });
+
+    expect(fn () => app(OrderService::class)->retryCheckout($f['order'], 'cs_fixture'))
+        ->toThrow(ConnectionException::class);
+    $operation = CheckoutRetryOperation::sole();
+    expect($operation->status)->toBe('pending')->and($operation->attempts)->toBe(1);
+
+    expect(app(OrderService::class)->retryCheckout($f['order'], 'cs_fixture'))
+        ->toBe('https://checkout.paymongo.com/retry');
+    expect($keys)->toHaveCount(2)->and($keys[0])->toBe($keys[1]);
+    foreach ($levels as $level) {
+        expect($level)->toBe($baseline);
+    }
+    expect(CheckoutRetryOperation::sole()->status)->toBe('completed')
+        ->and($f['payment']->fresh()->checkout_session_id)->toBe('cs_retry');
+});
+
+it('recovers a crash after the target session was durably recorded', function () {
+    $f = lifecycleOrder();
+    $f['payment']->update(['status' => 'failed']);
+    CheckoutRetryOperation::create([
+        'payment_id' => $f['payment']->getKey(),
+        'operation_key' => (string) Str::uuid(),
+        'source_session_id' => 'cs_fixture',
+        'target_session_id' => 'cs_retry',
+        'target_payment_intent_id' => 'pi_retry',
+        'checkout_url' => 'https://checkout.paymongo.com/retry',
+        'status' => 'target_created',
+        'attempts' => 1,
+    ]);
+
+    $this->artisan('checkout-retries:recover')->assertSuccessful();
+    expect($f['payment']->fresh()->checkout_session_id)->toBe('cs_retry')
+        ->and(CheckoutRetryOperation::sole()->status)->toBe('completed');
+    Http::assertNothingSent();
+});
+
+it('expires a newly created retry when the order becomes stale during the provider call', function () {
+    $f = lifecycleOrder();
+    $f['payment']->update(['status' => 'failed']);
+    Http::fake(function ($request) use ($f) {
+        if ($request->method() === 'POST' && $request->url() === 'https://api.paymongo.com/v1/checkout_sessions') {
+            $f['order']->update(['status' => OrderStatus::Cancelled]);
+
+            return Http::response(['data' => [
+                'id' => 'cs_retry',
+                'attributes' => ['checkout_url' => 'https://checkout.paymongo.com/retry',
+                    'payment_intent' => ['id' => 'pi_retry']],
+            ]]);
+        }
+        $session = lifecycleSession(false, 'expired');
+        $session['id'] = str_ends_with($request->url(), 'cs_retry') ? 'cs_retry' : 'cs_fixture';
+
+        return Http::response(['data' => $session]);
+    });
+
+    expect(app(OrderService::class)->retryCheckout($f['order'], 'cs_fixture'))->toBeNull();
+    expect(CheckoutRetryOperation::sole()->status)->toBe('reconciled')
+        ->and($f['payment']->fresh()->checkout_session_id)->toBe('cs_fixture')
+        ->and($f['payment']->fresh()->previous_checkout_session_ids)->toContain('cs_retry');
+    Http::assertSent(fn ($request) => $request->url() === 'https://api.paymongo.com/v1/checkout_sessions/cs_retry');
 });

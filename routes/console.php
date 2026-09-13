@@ -17,3 +17,5 @@ Artisan::command('registrations:prune', function () {
     $this->info("Removed {$count} expired pending registrations.");
 })->purpose('Remove expired temporary registrations only');
 Schedule::command('registrations:prune')->hourly()->withoutOverlapping();
+Schedule::command('checkout-retries:recover')
+    ->everyMinute()->withoutOverlapping(5);
