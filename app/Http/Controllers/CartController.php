@@ -5,28 +5,39 @@ namespace App\Http\Controllers;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\ProductVariant;
+use App\Models\User;
 use App\Services\ActivityTrackingService;
+use App\Services\CartSummary;
 use App\Services\StockService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
 {
     public function __construct(
         protected StockService $stockService,
-        protected ActivityTrackingService $activityTracker
+        protected ActivityTrackingService $activityTracker,
+        protected CartSummary $cartSummary,
     ) {}
 
-    /**
-     * Display cart
-     */
     public function index()
     {
-        $cart = Cart::with([
-            'items.variant.product',
-            'items.variant.stocks',
-        ])
+        $cart = Cart::query()
+            ->with([
+                'items' => fn ($items) => $items
+                    ->select('cart_item_id', 'cart_id', 'product_variant_id', 'quantity', 'price')
+                    ->orderBy('cart_item_id'),
+                'items.variant' => fn ($variants) => $variants
+                    ->select('product_variant_id', 'product_id', 'size', 'color', 'is_active')
+                    ->withStorefrontStock(),
+                'items.variant.product' => fn ($products) => $products
+                    ->select('product_id', 'product_name')
+                    ->with(['images' => fn ($images) => $images
+                        ->select('image_id', 'product_id', 'image_path', 'is_primary', 'display_order')
+                        ->reorder()->orderByDesc('is_primary')->orderBy('display_order')->orderBy('image_id')->limit(1)]),
+            ])
             ->where('user_id', auth()->id())
             ->where('status', 0)
             ->first();
@@ -34,10 +45,7 @@ class CartController extends Controller
         return view('cart.index', compact('cart'));
     }
 
-    /**
-     * Add product to cart
-     */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'product_variant_id' => ['required', 'integer', 'exists:product_variants,product_variant_id'],
@@ -49,145 +57,199 @@ class CartController extends Controller
             ->whereHas('product', fn ($query) => $query->where('is_active', true))
             ->findOrFail($validated['product_variant_id']);
 
-        $availableStock = $this->stockService->availableQuantity($variant);
+        $result = DB::transaction(function () use ($validated, $variant) {
+            User::whereKey(auth()->id())->lockForUpdate()->firstOrFail();
 
-        if ($availableStock <= 0) {
-            return back()->with('error', 'This item is out of stock.');
-        }
+            $cart = Cart::where('user_id', auth()->id())
+                ->where('status', 0)
+                ->orderBy('cart_id')
+                ->lockForUpdate()
+                ->first();
 
-        if ($validated['quantity'] > $availableStock) {
-            return back()->with('error', "Only {$availableStock} item(s) available.");
-        }
-
-        $cart = Cart::firstOrCreate([
-            'user_id' => auth()->id(),
-            'status' => 0,
-        ]);
-
-        $item = CartItem::where('cart_id', $cart->cart_id)
-            ->where('product_variant_id', $variant->product_variant_id)
-            ->first();
-
-        if ($item) {
-
-            $newQuantity = $item->quantity + $validated['quantity'];
-
-            if ($newQuantity > $availableStock) {
-                return back()->with('error', "Only {$availableStock} item(s) available.");
+            if (! $cart) {
+                $now = now();
+                DB::table('carts')->insertOrIgnore([
+                    'user_id' => auth()->id(),
+                    'status' => 0,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+                $cart = Cart::where('user_id', auth()->id())
+                    ->where('status', 0)
+                    ->orderBy('cart_id')
+                    ->lockForUpdate()
+                    ->firstOrFail();
             }
 
-            $item->update([
-                'quantity' => $newQuantity,
-            ]);
+            $item = CartItem::where('cart_id', $cart->cart_id)
+                ->where('product_variant_id', $variant->product_variant_id)
+                ->lockForUpdate()
+                ->first();
 
-        } else {
+            $availableStock = $this->stockService->availableQuantity($variant);
+            $newQuantity = (int) ($item?->quantity ?? 0) + $validated['quantity'];
 
-            CartItem::create([
-                'cart_id' => $cart->cart_id,
-                'product_variant_id' => $variant->product_variant_id,
-                'quantity' => $validated['quantity'],
-                'price' => $this->stockService->currentPrice($variant),
-            ]);
+            if ($availableStock <= 0) {
+                return ['error' => 'This item is out of stock.'];
+            }
 
+            if ($newQuantity > $availableStock) {
+                return ['error' => "Only {$availableStock} item(s) available."];
+            }
+
+            if ($item) {
+                $item->update(['quantity' => $newQuantity]);
+            } else {
+                $now = now();
+                $inserted = DB::table('cart_items')->insertOrIgnore([
+                    'cart_id' => $cart->cart_id,
+                    'product_variant_id' => $variant->product_variant_id,
+                    'quantity' => $validated['quantity'],
+                    'price' => $this->stockService->currentPrice($variant),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+
+                if ($inserted === 0) {
+                    $item = CartItem::where('cart_id', $cart->cart_id)
+                        ->where('product_variant_id', $variant->product_variant_id)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+                    $newQuantity = $item->quantity + $validated['quantity'];
+                    if ($newQuantity > $availableStock) {
+                        return ['error' => "Only {$availableStock} item(s) available."];
+                    }
+                    $item->update(['quantity' => $newQuantity]);
+                }
+            }
+
+            return ['error' => null];
+        }, 3);
+
+        if ($result['error']) {
+            return back()->with('error', $result['error']);
         }
 
         $this->activityTracker->logAddToCart(auth()->user(), $variant->product);
 
-        return redirect()
-            ->route('cart.index')
-            ->with('success', 'Product added to cart.');
+        return redirect()->route('cart.index')->with('success', 'Product added to cart.');
     }
 
-    /**
-     * Increase quantity
-     */
     public function increase(Request $request, $id): JsonResponse|RedirectResponse
     {
-        $item = CartItem::with('cart', 'variant')->findOrFail($id);
+        $item = $this->ownedItem($id);
 
-        abort_if($item->cart->user_id != auth()->id(), 403);
+        $result = DB::transaction(function () use ($item) {
+            User::whereKey(auth()->id())->lockForUpdate()->firstOrFail();
+            $locked = CartItem::query()
+                ->whereKey($item->getKey())
+                ->whereHas('cart', fn ($cart) => $cart
+                    ->where('user_id', auth()->id())->where('status', 0))
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $availableStock = $this->stockService->availableQuantity($item->variant);
+            $variant = ProductVariant::findOrFail($locked->product_variant_id);
+            $availableStock = $this->stockService->availableQuantity($variant);
 
-        if ($item->quantity >= $availableStock) {
-            return back()->with('error', 'Maximum stock reached.');
+            if ($locked->quantity >= $availableStock) {
+                return ['item' => $locked, 'error' => 'Maximum stock reached.'];
+            }
+
+            $locked->increment('quantity');
+            $locked->refresh();
+
+            return ['item' => $locked, 'error' => null];
+        }, 3);
+
+        if ($result['error']) {
+            return back()->with('error', $result['error']);
         }
 
-        $item->increment('quantity');
-
-        return $this->quantityUpdateResponse($request, $item, 'Cart quantity updated.');
+        return $this->quantityUpdateResponse($request, $result['item'], 'Cart quantity updated.');
     }
 
-    /**
-     * Decrease quantity
-     */
     public function decrease(Request $request, $id): JsonResponse|RedirectResponse
     {
-        $item = CartItem::with('cart')->findOrFail($id);
+        $item = $this->ownedItem($id);
 
-        abort_if($item->cart->user_id != auth()->id(), 403);
+        $item = DB::transaction(function () use ($item) {
+            User::whereKey(auth()->id())->lockForUpdate()->firstOrFail();
+            $locked = CartItem::query()
+                ->whereKey($item->getKey())
+                ->whereHas('cart', fn ($cart) => $cart
+                    ->where('user_id', auth()->id())->where('status', 0))
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        if ($item->quantity <= 1) {
+            if ($locked->quantity <= 1) {
+                $locked->delete();
 
-            $item->delete();
+                return $locked;
+            }
 
-            return $this->quantityUpdateResponse($request, $item, 'Item removed from cart.');
-        }
+            $locked->decrement('quantity');
 
-        $item->decrement('quantity');
+            return $locked->refresh();
+        }, 3);
 
-        return $this->quantityUpdateResponse($request, $item, 'Cart quantity updated.');
+        return $this->quantityUpdateResponse(
+            $request,
+            $item,
+            $item->exists ? 'Cart quantity updated.' : 'Item removed from cart.',
+        );
     }
 
-    private function quantityUpdateResponse(Request $request, CartItem $item, string $message): JsonResponse|RedirectResponse
+    public function remove($id): RedirectResponse
     {
-        if (! $request->expectsJson()) {
-            return back()->with('success', $message);
-        }
+        $item = $this->ownedItem($id);
 
-        $cart = $item->cart()->with('items')->first();
-        $quantity = $item->exists ? $item->quantity : 0;
-        $itemSubtotal = $item->exists ? $item->price * $quantity : 0;
-
-        return response()->json([
-            'quantity' => $quantity,
-            'item_subtotal' => $itemSubtotal,
-            'cart_total' => $cart?->items->sum(fn (CartItem $cartItem): float|int => $cartItem->price * $cartItem->quantity) ?? 0,
-            'cart_count' => $cart?->items->sum('quantity') ?? 0,
-            'message' => $message,
-        ]);
-    }
-
-    /**
-     * Remove item
-     */
-    public function remove($id)
-    {
-        $item = CartItem::with('cart')->findOrFail($id);
-
-        abort_if($item->cart->user_id != auth()->id(), 403);
-
-        $item->delete();
+        DB::transaction(function () use ($item) {
+            User::whereKey(auth()->id())->lockForUpdate()->firstOrFail();
+            CartItem::query()
+                ->whereKey($item->getKey())
+                ->whereHas('cart', fn ($cart) => $cart
+                    ->where('user_id', auth()->id())->where('status', 0))
+                ->lockForUpdate()
+                ->firstOrFail()
+                ->delete();
+        }, 3);
 
         return back()->with('success', 'Item removed from cart.');
     }
 
-    /**
-     * Cart count
-     */
-    public function count()
+    public function count(): JsonResponse
     {
-        $cart = Cart::with('items')
-            ->where('user_id', auth()->id())
-            ->where('status', 0)
-            ->first();
+        return response()->json([
+            'count' => $this->cartSummary->quantityForUser(auth()->id()),
+        ]);
+    }
 
-        $count = $cart
-            ? $cart->items->sum('quantity')
-            : 0;
+    private function ownedItem(int|string $id): CartItem
+    {
+        $item = CartItem::with('cart:cart_id,user_id,status')->findOrFail($id);
+        abort_if($item->cart->user_id !== auth()->id() || $item->cart->status !== 0, 403);
+
+        return $item;
+    }
+
+    private function quantityUpdateResponse(
+        Request $request,
+        CartItem $item,
+        string $message,
+    ): JsonResponse|RedirectResponse {
+        if (! $request->expectsJson()) {
+            return back()->with('success', $message);
+        }
+
+        $summary = $this->cartSummary->forCart((int) $item->cart_id);
+        $quantity = $item->exists ? (int) $item->quantity : 0;
 
         return response()->json([
-            'count' => $count,
+            'quantity' => $quantity,
+            'item_subtotal' => $item->exists ? (float) $item->price * $quantity : 0,
+            'cart_total' => $summary['total'],
+            'cart_count' => $summary['quantity'],
+            'message' => $message,
         ]);
     }
 }

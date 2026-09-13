@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrderStatus;
 use App\Exceptions\EmptyCartException;
 use App\Exceptions\InsufficientStockException;
 use App\Exceptions\OrderNotCancellableException;
@@ -11,7 +12,10 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Services\OrderService;
 use App\Services\PayMongoService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CheckoutController extends Controller
 {
@@ -22,12 +26,24 @@ class CheckoutController extends Controller
 
     public function checkout()
     {
-        $cart = Cart::with('items.variant.product.images')
+        $cart = Cart::query()
+            ->with([
+                'items' => fn ($items) => $items
+                    ->select('cart_item_id', 'cart_id', 'product_variant_id', 'quantity', 'price')
+                    ->orderBy('cart_item_id'),
+                'items.variant' => fn ($variants) => $variants
+                    ->select('product_variant_id', 'product_id', 'size', 'color'),
+                'items.variant.product' => fn ($products) => $products
+                    ->select('product_id', 'product_name')
+                    ->with(['images' => fn ($images) => $images
+                        ->select('image_id', 'product_id', 'image_path', 'is_primary', 'display_order')
+                        ->reorder()->orderByDesc('is_primary')->orderBy('display_order')->orderBy('image_id')->limit(1)]),
+            ])
             ->where('user_id', auth()->id())
             ->where('status', 0)
             ->first();
 
-        if (!$cart || $cart->items->isEmpty()) {
+        if (! $cart || $cart->items->isEmpty()) {
             return back()->with('error', 'Cart is empty');
         }
 
@@ -50,7 +66,7 @@ class CheckoutController extends Controller
                 route('checkout.cancel', $order->order_id),
             );
 
-            $order = \Illuminate\Support\Facades\DB::transaction(function () use ($order, $session) {
+            $order = DB::transaction(function () use ($order, $session) {
                 $current = Order::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
                 Payment::create([
                     'order_id' => $current->order_id,
@@ -59,24 +75,28 @@ class CheckoutController extends Controller
                     'method' => 'pending',
                     'status' => 'pending',
                 ]);
+
                 return $current;
             });
 
             // A cancellation can arrive while the checkout API call is running.
             // Persist its session, then close it instead of opening a cancelled order.
-            if ($order->status === \App\Enums\OrderStatus::Cancelled) {
+            if ($order->status === OrderStatus::Cancelled) {
                 try {
                     $this->orderService->cancel($order);
+
                     return redirect()->route('orders.show', $order->order_id);
                 } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::error('Cancelled order session could not be closed', [
+                    Log::error('Cancelled order session could not be closed', [
                         'order_id' => $order->order_id, 'checkout_session_id' => $session['id'],
                         'exception' => get_class($e),
                     ]);
+
                     return redirect()->route('orders.show', $order->order_id)
                         ->with('error', 'The checkout session could not be closed. Retry cancellation below.');
                 }
             }
+
             return redirect()->away($session['checkout_url']);
 
         } catch (EmptyCartException|InsufficientStockException $e) {
@@ -106,6 +126,7 @@ class CheckoutController extends Controller
         return redirect()->route('orders.show', $order->order_id)
             ->with('error', 'Checkout was closed. Your order is not cancelled. Check its payment status below; you can retry payment or cancel the order.');
     }
+
     public function myOrders()
     {
         $orders = Order::where('user_id', auth()->id())
@@ -127,31 +148,34 @@ class CheckoutController extends Controller
             $this->orderService->refreshCheckoutPayment($order);
             $order->refresh();
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('PayMongo checkout status refresh unavailable', [
+            Log::warning('PayMongo checkout status refresh unavailable', [
                 'order_id' => $order->order_id, 'checkout_session_id' => $order->payment?->checkout_session_id,
                 'exception' => get_class($e),
             ]);
             session()->flash('error', 'Payment status could not be verified yet. Please try again shortly.');
         }
+
         return view('orders.show', compact('order'));
     }
 
-    public function retryPayment(\Illuminate\Http\Request $request, Order $order)
+    public function retryPayment(Request $request, Order $order)
     {
         abort_if($order->user_id != auth()->id(), 403);
         $data = $request->validate(['checkout_session_id' => ['present', 'nullable', 'string', 'max:255']]);
         try {
             $url = $this->orderService->retryCheckout($order, $data['checkout_session_id']);
+
             return $url ? redirect()->away($url)
                 : redirect()->route('orders.show', $order->order_id)
                     ->with('success', 'Payment status changed. Review the current order status below.');
         } catch (InsufficientStockException $e) {
             return back()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('PayMongo checkout retry unavailable', [
+            Log::warning('PayMongo checkout retry unavailable', [
                 'order_id' => $order->order_id, 'checkout_session_id' => $order->payment?->checkout_session_id,
                 'exception' => get_class($e),
             ]);
+
             return back()->with('error', 'Payment retry could not be started. Check the order status and try again shortly.');
         }
     }
@@ -165,13 +189,15 @@ class CheckoutController extends Controller
         try {
             $updated = $this->orderService->cancel($order);
             $label = $updated->payment?->refund_label;
-            return back()->with('success', 'Order cancelled.' . ($label ? ' '.$label.'.' : ''));
+
+            return back()->with('success', 'Order cancelled.'.($label ? ' '.$label.'.' : ''));
         } catch (OrderNotCancellableException $e) {
             return back()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Order cancellation could not finish', [
+            Log::error('Order cancellation could not finish', [
                 'order_id' => $order->order_id, 'exception' => get_class($e),
             ]);
+
             return back()->with('error', 'Cancellation or refund could not be confirmed. Check the order below and retry if available.');
         }
     }

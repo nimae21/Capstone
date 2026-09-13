@@ -151,7 +151,7 @@
                                     @php
                                         $variant = $item->variant;
                                         $product = $variant->product;
-                                        $availableStock = $item->variant->stocks->sum('remaining_quantity');
+                                        $availableStock = (int) ($item->variant->available_stock ?? 0);
                                         $subtotal = $item->price * $item->quantity;
                                         $total += $subtotal;
                                     @endphp

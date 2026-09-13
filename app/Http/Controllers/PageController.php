@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Brand;
-use App\Models\Category;
 use App\Models\Product;
 use App\Models\ShoeType;
 use App\Services\ActivityTrackingService;
@@ -25,9 +24,6 @@ class PageController extends Controller
         return view('pages.home', compact('recommendations'));
     }
 
-    /**
-     * Reusable, filterable product query for category pages.
-     */
     private function getProductsByCategory(?int $categoryId, Request $request)
     {
         $filters = $request->validate([
@@ -37,47 +33,42 @@ class PageController extends Controller
             'page' => ['nullable', 'integer', 'min:1', 'max:1000'],
         ]);
 
-        $query = Product::with([
-            'brand:brand_id,brand_name',
-            'shoeType:shoe_type_id,shoe_type_name',
-            // Cards need only the first image. This limit is applied per product.
-            'images' => fn ($images) => $images
-                ->select('image_id', 'product_id', 'image_path', 'display_order')
-                ->orderBy('image_id')->limit(1),
-        ])
-            ->where('is_active', true)
-            ->withDisplayPrice();
+        $query = Product::query()
+            ->forStorefrontCards()
+            ->with([
+                'brand:brand_id,brand_name',
+                'shoeType:shoe_type_id,shoe_type_name',
+                'images' => fn ($images) => $images
+                    ->select('image_id', 'product_id', 'image_path', 'is_primary', 'display_order')
+                    ->reorder()->orderByDesc('is_primary')->orderBy('display_order')->orderBy('image_id')->limit(1),
+            ])
+            ->where('products.is_active', true);
 
         if ($categoryId === null) {
             $query->newArrivals();
         } else {
-            $query->where('category_id', $categoryId);
+            $query->where('products.category_id', $categoryId);
         }
 
         if (isset($filters['brand'])) {
-            $query->where('brand_id', $filters['brand']);
+            $query->where('products.brand_id', $filters['brand']);
         }
 
         if (isset($filters['shoe_type'])) {
-            $query->where('shoe_type_id', $filters['shoe_type']);
+            $query->where('products.shoe_type_id', $filters['shoe_type']);
         }
 
         if (isset($filters['sort'])) {
-            $direction = $filters['sort'] === 'price-low-high' ? 'asc' : 'desc';
-            $query->orderBy('display_price', $direction);
+            $query->orderBy('display_price', $filters['sort'] === 'price-low-high' ? 'asc' : 'desc');
         } elseif ($categoryId === null) {
             $query->orderByDesc('products.created_at')->orderByDesc('products.product_id');
         } else {
-            $query->orderBy('product_name');
+            $query->orderBy('products.product_name')->orderBy('products.product_id');
         }
 
         return $query->paginate(9)->withQueryString();
     }
 
-    /**
-     * Brands/shoe types relevant to filter dropdowns, scoped to what's
-     * actually active — avoids showing filter options with zero products.
-     */
     private function filterOptions(): array
     {
         return Cache::remember('catalog.filter-options.v1', now()->addMinutes(10), fn () => [
@@ -148,24 +139,24 @@ class PageController extends Controller
     public function showProduct($id)
     {
         $product = Product::with([
-            'images', 'category', 'brand',
-            'variants' => fn ($query) => $query->where('is_active', true)
-                ->with(['stocks' => fn ($stocks) => $stocks->where('is_archived', false)]),
+            'images:image_id,product_id,color,image_path,is_primary,display_order',
+            'category:category_id,category_name',
+            'brand:brand_id,brand_name',
+            'variants' => fn ($query) => $query
+                ->select('product_variant_id', 'product_id', 'size', 'color', 'is_active')
+                ->where('is_active', true)
+                ->withStorefrontStock()
+                ->orderBy('color')->orderBy('size')->orderBy('product_variant_id'),
         ])->where('is_active', true)->findOrFail($id);
 
         if (auth()->check()) {
             $this->activityTracker->logView(auth()->user(), $product);
         }
 
-        foreach ($product->variants as $variant) {
-            $variant->available_stock = $variant->stocks->sum('remaining_quantity');
-            $latestStock = $variant->stocks->sortByDesc('deliver_date')->first();
-            $variant->current_price = $latestStock?->price ?? 0;
-        }
-
         $recommendations = auth()->check()
-           ? app(RecommendationClient::class)->cachedForUser(auth()->id())->reject(fn ($p) => $p->product_id === $product->product_id)
-           : collect();
+            ? app(RecommendationClient::class)->cachedForUser(auth()->id())
+                ->reject(fn ($p) => $p->product_id === $product->product_id)
+            : collect();
 
         $recommendationExcludeProductId = $product->product_id;
 
@@ -185,18 +176,14 @@ class PageController extends Controller
         }
 
         $term = mb_strtolower($query);
-        // Treat SQL wildcard characters as literal search text.
         $pattern = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $term);
         $products = Product::select('product_id', 'product_name')
             ->where('is_active', true)
             ->whereRaw("LOWER(product_name) LIKE ? ESCAPE '!'", ['%'.$pattern.'%'])
             ->orderByRaw("CASE WHEN LOWER(product_name) = ? THEN 0 WHEN LOWER(product_name) LIKE ? ESCAPE '!' THEN 1 ELSE 2 END", [$term, $pattern.'%'])
-            ->orderBy('product_name')
-            ->orderBy('product_id')
-            // No total-count query; fetch just enough to detect another batch.
+            ->orderBy('product_name')->orderBy('product_id')
             ->simplePaginate(3, ['*'], 'page', $validated['page'] ?? 1);
 
-        // Fetch images only for the three selected products, after matching/sorting.
         $products->getCollection()->load([
             'images' => fn ($images) => $images->reorder()
                 ->orderByDesc('is_primary')->orderBy('display_order')->orderBy('image_id')
@@ -220,22 +207,26 @@ class PageController extends Controller
             'page' => ['nullable', 'integer', 'min:1', 'max:1000'],
         ]);
         $query = trim($validated['q'] ?? '');
-
         $products = collect();
 
         if ($query !== '') {
             $term = mb_strtolower($query);
             $pattern = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $term);
-            $products = Product::with(['variants.stocks', 'images', 'brand', 'category', 'shoeType'])->withDisplayPrice()
-                ->where('is_active', true)
-                ->whereRaw("LOWER(product_name) LIKE ? ESCAPE '!'", ['%'.$pattern.'%'])
-                ->orderBy('product_name')
-                ->paginate(12)
-                ->withQueryString();
+            $products = Product::query()
+                ->forStorefrontCards()
+                ->with([
+                    'brand:brand_id,brand_name',
+                    'category:category_id,category_name',
+                    'shoeType:shoe_type_id,shoe_type_name',
+                    'images' => fn ($images) => $images
+                        ->select('image_id', 'product_id', 'image_path', 'is_primary', 'display_order')
+                        ->reorder()->orderByDesc('is_primary')->orderBy('display_order')->orderBy('image_id')->limit(1),
+                ])
+                ->where('products.is_active', true)
+                ->whereRaw("LOWER(products.product_name) LIKE ? ESCAPE '!'", ['%'.$pattern.'%'])
+                ->orderBy('products.product_name')->orderBy('products.product_id')
+                ->paginate(12)->withQueryString();
 
-            // Log a 'search' activity for the top results shown — this is
-            // the signal used later by the recommendation engine, treating
-            // "appeared in a matching search" as a moderate interest signal.
             if (auth()->check()) {
                 $this->activityTracker->logSearchResults(auth()->user(), $products->take(5));
             }

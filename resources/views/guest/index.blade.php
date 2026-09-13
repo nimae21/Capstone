@@ -607,7 +607,7 @@
     <h2 class="section-title reveal"><i class="fas fa-fire"></i> Bestsellers</h2>
     <div class="featured-grid">
         @forelse ($products as $product)
-            @php($image = $product->primaryImage ?? $product->images->first())
+            @php($image = $product->images->first())
             <a href="{{ route('product.show', $product->product_id) }}" class="product-card reveal" aria-label="View {{ $product->product_name }}">
                 @if ($image)
                     <img class="product-img" src="{{ $image->image_url }}" alt="{{ $product->product_name }}" loading="lazy">

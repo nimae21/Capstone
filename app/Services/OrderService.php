@@ -40,7 +40,16 @@ class OrderService
      */
     public function createPendingOrderFromCart(User $user, int $addressId): Order
     {
-        $cart = Cart::with('items.variant.stocks', 'items.variant.product')
+        $cart = Cart::query()
+            ->with([
+                'items' => fn ($items) => $items
+                    ->select('cart_item_id', 'cart_id', 'product_variant_id', 'quantity', 'price')
+                    ->orderBy('cart_item_id'),
+                'items.variant' => fn ($variants) => $variants
+                    ->select('product_variant_id', 'product_id', 'size', 'color', 'is_active')
+                    ->withStorefrontStock()
+                    ->with('product:product_id,product_name,is_active'),
+            ])
             ->where('user_id', $user->id)
             ->where('status', 0)
             ->firstOrFail();
@@ -54,12 +63,12 @@ class OrderService
                 || $item->quantity < 1 || $item->quantity > 1000) {
                 throw new InsufficientStockException('One or more cart items are unavailable.');
             }
-            if (! $this->stockService->hasStock($item->variant, $item->quantity)) {
+            if ((int) ($item->variant->available_stock ?? 0) < $item->quantity) {
                 throw new InsufficientStockException(
                     "Insufficient stock for {$item->variant->product->product_name} ({$item->variant->size}/{$item->variant->color})."
                 );
             }
-            $price = $this->stockService->currentPrice($item->variant);
+            $price = (float) ($item->variant->current_price ?? 0);
             if ($price <= 0) {
                 throw new InsufficientStockException('One or more cart items do not have a valid current price.');
             }

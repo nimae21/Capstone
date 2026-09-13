@@ -68,16 +68,18 @@ class StockService
         }
 
         foreach ($batches as $batch) {
-            if ($remaining <= 0) break;
+            if ($remaining <= 0) {
+                break;
+            }
 
             $take = min($batch->remaining_quantity, $remaining);
             $batch->decrement('remaining_quantity', $take);
 
             StockMovement::create([
-                'stock_id'      => $batch->stock_id,
+                'stock_id' => $batch->stock_id,
                 'order_item_id' => $orderItemId,
-                'quantity'      => $take,
-                'type'          => 'out',
+                'quantity' => $take,
+                'type' => 'out',
             ]);
 
             $remaining -= $take;
@@ -99,10 +101,10 @@ class StockService
             $movement->stock->increment('remaining_quantity', $movement->quantity);
 
             StockMovement::create([
-                'stock_id'      => $movement->stock_id,
+                'stock_id' => $movement->stock_id,
                 'order_item_id' => $orderItem->order_item_id,
-                'quantity'      => $movement->quantity,
-                'type'          => 'adjustment',
+                'quantity' => $movement->quantity,
+                'type' => 'adjustment',
             ]);
         }
     }
@@ -124,7 +126,8 @@ class StockService
 
         $stock = $variant->stocks()
             ->where('is_archived', false)
-            ->latest('deliver_date')
+            ->orderByDesc('deliver_date')
+            ->orderByDesc('stock_id')
             ->first();
 
         return (float) ($stock->price ?? 0);

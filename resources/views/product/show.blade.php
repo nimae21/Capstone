@@ -406,18 +406,9 @@ function renderSizes(color)
     }
 
     colorVariants.forEach(variant => {
+        const quantity = Number(variant.available_stock ?? 0);
 
-        const stock = variant.stocks.length
-            ? variant.stocks[0]
-            : null;
-
-        const quantity = stock
-            ? Number(stock.remaining_quantity)
-            : 0;
-
-        const price = stock
-            ? stock.price
-            : 0;
+        const price = variant.current_price ?? 0;
 
         const button = document.createElement('button');
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Services\CatalogCache;
 use App\View\Components\HeroCarousel;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -69,6 +70,7 @@ class HeroCarouselTest extends TestCase
         $this->assertStringContainsString($view->getData()['fallback'], $view->render());
         $this->assertStringNotContainsString('data-next', $view->render());
         DB::table('products')->insert(['product_name' => 'No image', 'is_active' => true]);
+        app(CatalogCache::class)->invalidate();
         $view = (new HeroCarousel)->render();
         $html = $view->render();
         $this->assertStringContainsString($view->getData()['fallback'], $html);

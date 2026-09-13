@@ -6,10 +6,11 @@ use App\Listeners\LogAuthenticationActivity;
 use App\Models\AdminInvitation;
 use App\Models\ApprovalRequest;
 use App\Models\Brand;
-use App\Models\Cart;
 use App\Models\Category;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\ShoeType;
 use App\Models\Stock;
@@ -17,9 +18,11 @@ use App\Models\User;
 use App\Observers\AdminInvitationObserver;
 use App\Observers\AnalyticsCacheObserver;
 use App\Observers\ApprovalRequestObserver;
+use App\Observers\CatalogCacheObserver;
 use App\Observers\MobileOrderObserver;
 use App\Observers\StockObserver;
 use App\Observers\UserObserver;
+use App\Services\CartSummary;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -87,20 +90,25 @@ class AppServiceProvider extends ServiceProvider
         ] as $analyticsModel) {
             $analyticsModel::observe(AnalyticsCacheObserver::class);
         }
+        foreach ([
+            Order::class,
+            OrderItem::class,
+            Product::class,
+            ProductImage::class,
+            ProductVariant::class,
+            Stock::class,
+        ] as $catalogModel) {
+            $catalogModel::observe(CatalogCacheObserver::class);
+        }
         Event::listen(Login::class, [LogAuthenticationActivity::class, 'handleLogin']);
         Event::listen(Logout::class, [LogAuthenticationActivity::class, 'handleLogout']);
         Event::listen(Failed::class, [LogAuthenticationActivity::class, 'handleFailed']);
         Event::listen(Registered::class, [LogAuthenticationActivity::class, 'handleRegistered']);
         View::composer('partials.customer-header', function ($view) {
-            $cartCount = 0;
-
-            if (auth()->check()) {
-                $cart = Cart::where('user_id', auth()->id())
-                    ->where('status', 0)
-                    ->first();
-
-                $cartCount = $cart ? $cart->items->sum('quantity') : 0;
-            }
+            $user = auth()->user();
+            $cartCount = $user && $user->role === 'user'
+                ? app(CartSummary::class)->quantityForUser($user->getKey())
+                : 0;
 
             $view->with('cartCount', $cartCount);
         });

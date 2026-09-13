@@ -3,6 +3,7 @@
 namespace App\View\Components;
 
 use App\Models\Product;
+use App\Services\CatalogCache;
 use Illuminate\View\Component;
 use Illuminate\View\View;
 
@@ -10,8 +11,7 @@ class HeroCarousel extends Component
 {
     public function render(): View
     {
-        // Bound the hero independently of catalog filters and bestseller sales.
-        $products = Product::query()
+        $products = app(CatalogCache::class)->remember('hero', fn () => Product::query()
             ->where('is_active', true)
             ->with(['images' => fn ($query) => $query
                 ->whereNotNull('image_path')
@@ -20,7 +20,7 @@ class HeroCarousel extends Component
                 ->orderBy('display_order')->orderBy('image_id')->limit(1)])
             ->orderByDesc('product_id')
             ->limit(8)
-            ->get(['product_id', 'product_name']);
+            ->get(['product_id', 'product_name']));
 
         return view('components.hero-carousel', [
             'products' => $products,
